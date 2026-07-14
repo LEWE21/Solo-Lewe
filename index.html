@@ -152,7 +152,7 @@ nav button.on{color:var(--cyan-b)}
 nav button.on .ni{filter:drop-shadow(0 0 8px var(--cyan))}
 nav button:hover{color:var(--txt)}
 
-#nstack{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:45;display:flex;flex-direction:column;gap:8px;width:min(400px,92vw);pointer-events:none}
+#nstack{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:63;display:flex;flex-direction:column;gap:8px;width:min(400px,92vw);pointer-events:none}
 .ncard{pointer-events:auto;background:linear-gradient(180deg,rgba(12,30,56,.97),rgba(8,18,36,.97));border:1px solid var(--cyan);clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);box-shadow:0 0 24px rgba(58,194,255,.4);padding:12px 14px;animation:ncardIn .35s ease both}
 .ncard.out{animation:ncardOut .35s ease forwards}
 .ncard .nt{font-family:var(--font-sys);font-size:9.5px;letter-spacing:.24em;color:var(--cyan);text-transform:uppercase}
@@ -161,7 +161,7 @@ nav button:hover{color:var(--txt)}
 @keyframes ncardIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ncardOut{to{opacity:0;transform:translateY(-10px)}}
 
-#flash{position:fixed;inset:0;z-index:55;display:none;place-items:center;pointer-events:none;background:radial-gradient(circle at 50% 44%,rgba(58,194,255,.16),transparent 62%)}
+#flash{position:fixed;inset:0;z-index:66;display:none;place-items:center;pointer-events:none;background:radial-gradient(circle at 50% 44%,rgba(58,194,255,.16),transparent 62%)}
 #flash.show{display:grid}
 .flashwin{text-align:center;pointer-events:auto;padding:20px;animation:flashIn .5s cubic-bezier(.2,.85,.25,1) both}
 .flashwin .fbig{font-family:var(--font-sys);font-weight:800;font-size:clamp(46px,13vw,92px);letter-spacing:.04em;color:#fff;text-shadow:0 0 30px var(--cyan),0 0 70px rgba(58,194,255,.6);line-height:1}
@@ -170,7 +170,7 @@ nav button:hover{color:var(--txt)}
 .flashwin .fsub{font-family:var(--font-sys);font-size:13px;letter-spacing:.22em;color:var(--cyan-b);margin-top:12px;text-transform:uppercase}
 .flashwin.pen .fsub{color:#ffb3c0}
 @keyframes flashIn{0%{opacity:0;transform:scale(.55)}55%{opacity:1}100%{opacity:1;transform:scale(1)}}
-#ask{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(2,5,11,.8);backdrop-filter:blur(4px);padding:20px}
+#ask{position:fixed;inset:0;z-index:64;display:none;place-items:center;background:rgba(2,5,11,.8);backdrop-filter:blur(4px);padding:20px}
 #ask.show{display:grid}
 .askwin{width:min(430px,92vw);padding:24px;background:linear-gradient(180deg,rgba(12,30,56,.98),rgba(8,18,36,.98));border:1px solid var(--cyan);clip-path:polygon(var(--ch) 0,100% 0,100% calc(100% - var(--ch)),calc(100% - var(--ch)) 100%,0 100%,0 var(--ch));box-shadow:0 0 44px rgba(58,194,255,.4),inset 0 0 40px rgba(58,194,255,.06);animation:flashIn .3s ease both}
 .askwin .ntag{font-family:var(--font-sys);font-size:10px;letter-spacing:.3em;color:var(--cyan);text-transform:uppercase}
@@ -208,6 +208,33 @@ nav button:hover{color:var(--txt)}
 .artn{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.04em;color:var(--dim);margin-top:6px;text-transform:uppercase}
 .bdtext{width:100%;min-height:110px;resize:vertical;background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px;font-family:inherit;font-size:14px;line-height:1.5}
 .bdtext:focus{outline:none;border-color:var(--cyan)}
+/* ---- Écran d'éveil du Système ---- */
+#boot{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:22px;cursor:pointer;
+  background:radial-gradient(1000px 700px at 50% 40%,rgba(31,127,191,.22),transparent 60%),linear-gradient(180deg,#03060d,#060b16 70%,#03060d)}
+#boot.show{display:grid;animation:bootFade .4s ease both}
+#boot .bootwin{width:min(500px,94vw);text-align:center;position:relative;padding:34px 26px;
+  border:1px solid var(--cyan);background:linear-gradient(180deg,rgba(10,24,46,.86),rgba(6,14,28,.92));
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+  box-shadow:0 0 60px rgba(58,194,255,.35),inset 0 0 40px rgba(58,194,255,.06)}
+#boot .bootwin::before,#boot .bootwin::after{content:"";position:absolute;width:22px;height:22px;border:2px solid var(--cyan-b);opacity:.8}
+#boot .bootwin::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+#boot .bootwin::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.bsys{font-family:var(--font-sys);font-size:11px;letter-spacing:.5em;color:var(--cyan-b);text-transform:uppercase;opacity:0;animation:bootLine .5s ease .1s both}
+.bbig{font-family:var(--font-sys);font-weight:800;font-size:clamp(30px,8vw,46px);letter-spacing:.06em;color:#fff;margin:12px 0 4px;text-shadow:0 0 26px var(--cyan),0 0 60px rgba(58,194,255,.5);opacity:0;animation:bootPop .6s cubic-bezier(.2,.85,.25,1) .35s both}
+.bawake{font-family:var(--font-sys);font-size:10.5px;letter-spacing:.32em;color:var(--dim);text-transform:uppercase;opacity:0;animation:bootLine .5s ease .7s both}
+.bawake .dot{animation:blink 1s steps(1) infinite}
+.bstats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:16px 0 4px;font-family:var(--font-sys);font-size:11px;letter-spacing:.14em;color:var(--cyan-b);opacity:0;animation:bootLine .5s ease 1s both}
+.bstats b{color:#fff}
+.bline{width:70%;height:1px;margin:16px auto 0;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;animation:bootLine .5s ease 1.15s both}
+.bgreet{font-size:14px;line-height:1.6;color:var(--txt);margin:16px 4px 0;min-height:22px;opacity:0;animation:bootLine .6s ease 1.35s both}
+.bgreet .who{display:block;font-family:var(--font-sys);font-size:9px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:7px}
+.benter{font-family:var(--font-sys);font-size:9.5px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;margin-top:22px;opacity:0;animation:bootLine .5s ease 1.9s both,pulseDim 1.6s ease 2.2s infinite}
+@keyframes bootFade{from{opacity:0}to{opacity:1}}
+@keyframes bootLine{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes bootPop{0%{opacity:0;transform:scale(.6);filter:blur(6px)}60%{opacity:1;transform:scale(1.06);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
+@keyframes blink{50%{opacity:.2}}
+@keyframes pulseDim{50%{opacity:.4}}
+.flashwin.level .fbig{color:var(--cyan-b);text-shadow:0 0 30px var(--cyan),0 0 80px rgba(58,194,255,.7)}
 </style>
 
 <div id="bg"></div><div id="grid"></div><div id="scan"></div>
@@ -239,13 +266,17 @@ nav button:hover{color:var(--txt)}
 <div id="ask"></div>
 <div id="modal"></div>
 <div class="toast" id="toast"></div>
+<div id="boot"></div>
 
 <script>
 (function(){
 "use strict";
 var KEY="systeme_mathilde_v3";
 var BKEY="systeme_mathilde_v3_bak";
-function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+// Jour de jeu ancré sur le fuseau de Nouvelle-Calédonie (UTC+11, sans heure d'été).
+// Ainsi, changer le fuseau horaire de l'appareil (ex : Los Angeles -> Nouméa) ne décale plus le "jour" du Système : pas de triche par changement de fuseau.
+var GAME_OFFSET_MIN=660;
+function today(){var g=new Date(Date.now()+GAME_OFFSET_MIN*60000);return g.getUTCFullYear()+"-"+String(g.getUTCMonth()+1).padStart(2,"0")+"-"+String(g.getUTCDate()).padStart(2,"0");}
 
 var STATS={
   physique:{name:"Physique",ic:"💪",col:"#3ac2ff"},
@@ -335,7 +366,8 @@ function seed(){
       {id:"q_ip",title:"Trouver un logiciel d'analyse vidéo (IP)",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"},
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
-    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[]
+    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[],
+    absenceUntil:null,lastLearning:null,greetDate:null,greetLine:null
   };
 }
 var S=load();
@@ -349,6 +381,8 @@ function load(){
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
     if(!r.artifacts)r.artifacts=[];if(typeof r.costUsd!=="number")r.costUsd=0;if(!("lastUrgent" in r))r.lastUrgent=null;
+    if(!("absenceUntil" in r))r.absenceUntil=null;if(!("lastLearning" in r))r.lastLearning=null;
+    if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
   }
   ensureProposals(r);
   return r;
@@ -356,10 +390,16 @@ function load(){
 function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j);localStorage.setItem(BKEY,j);}catch(e){}}
 
 function rollover(){
-  if(S.lastDate===today())return null;
+  if(!S.lastDate){S.lastDate=today();save();return null;}
+  // On n'avance QUE vers l'avant : si l'horloge de l'appareil recule, on ne déclenche pas de rollover (anti-triche).
+  if(today()<=S.lastDate)return null;
+  var absent=S.absenceUntil&&S.lastDate<=S.absenceUntil; // la journée écoulée était couverte par une absence déclarée
   var dailies=S.quests.filter(function(q){return q.daily&&dueOn(q,S.lastDate);});
   var out=null;
-  if(dailies.length){
+  if(absent){
+    log("Absence déclarée : journalières neutralisées pour le "+S.lastDate);
+    out={k:"absent"};
+  }else if(dailies.length){
     var allDone=dailies.every(function(q){return q.done;});
     if(allDone){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Quêtes journalières accomplies (série "+S.streak+")");if(S.streak===7)grantArtifact("Flamme de Constance","🔥","Série de 7 jours");if(S.streak===30)grantArtifact("Braise Éternelle","🔆","Série de 30 jours");out={k:"done",streak:S.streak};}
     else{S.hunter.xp=Math.max(0,S.hunter.xp-40);S.streak=0;S.combo=0;log("PÉNALITÉ : journalières non terminées (-40 XP)");out={k:"pen"};}
@@ -382,7 +422,7 @@ function gainXP(statKey,gain,label){
 }
 function afterGain(r){
   if(r.rankChanged){flash("rank","RANG "+r.rank,"Chasseur promu");grantArtifact("Marque du Rang "+r.rank,"🎖","Promotion au rang "+r.rank);sysNotify("Artefact obtenu","🎖 Marque du Rang "+r.rank,["Promotion"]);}
-  else if(r.leveled)flash("level","LEVEL UP","Niveau "+r.level+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));
+  else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ Système ⟫","Niveau "+r.level+" atteint",["Le Système reconnaît ta croissance, Chasseuse."]);}
 }
 function award(q){
   S.doneCount++;S.combo++;
@@ -414,6 +454,7 @@ function bossHit(q){
   m.boss.hp=Math.max(0,m.boss.hp-dmg);
   if(m.boss.hp<=0){m.boss.dead=true;defeatBoss(m);}
 }
+var pendingDungeon=null;
 function defeatBoss(m){
   var bonus=({E:60,D:100,C:160,B:240,A:340,S:500})[m.rank]||100;
   grantArtifact(m.boss.name,m.boss.icon,"Boss vaincu : "+m.title);
@@ -421,6 +462,38 @@ function defeatBoss(m){
   sysNotify("BOSS VAINCU",m.boss.icon+" "+m.boss.name,["+"+bonus+" XP","Artefact obtenu : "+m.boss.name]);
   flash("rank","BOSS VAINCU",m.boss.icon+" "+m.boss.name);
   afterGain(r);
+  // Donjon vaincu : on invite Mathilde à définir la suite (nouvelles tâches + montée de rang).
+  pendingDungeon=m.id;
+  setTimeout(function(){
+    if(!pendingDungeon)return;
+    closeModal();view="maitre";
+    pushChat("assistant","⚔ Tu as vaincu "+m.boss.icon+" "+m.boss.name+" du donjon « "+m.title+" ». Ce donjon peut monter en rang. Dis-moi quelles nouvelles tâches tu veux y accomplir, puis touche « Générer la suite ».");
+    render();
+  },1100);
+}
+function nextRank(r){var o=["E","D","C","B","A","S"];var i=o.indexOf(r);return i<0?"D":o[Math.min(o.length-1,i+1)];}
+function expandDungeon(){
+  if(chatBusy||!pendingDungeon)return;
+  var m=find(S.missions,pendingDungeon);if(!m){pendingDungeon=null;render();return;}
+  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  toast("Le Système forge la suite du donjon...");
+  gm("expand_dungeon",{dungeon:{title:m.title,note:m.note||"",rank:m.rank},description:recent}).then(function(res){
+    var qs=(res&&res.quests)||[];
+    if(!qs.length){pushChat("assistant","Dis-moi au moins une tâche à ajouter à ce donjon avant de générer la suite.");renderChat();return;}
+    qs.slice(0,5).forEach(function(x){
+      var stat=STATS[x.stat]?x.stat:"discipline";
+      var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
+      S.quests.push({id:uid(),title:x.title,stat:stat,daily:false,prio:prio,base:baseFor(prio,false),done:false,mission:m.id});
+    });
+    var old=m.rank;m.rank=nextRank(m.rank);
+    var a=BOSS_ARCH[m.rank]||BOSS_ARCH.D;
+    m.boss={name:a.n,icon:a.i,max:bossMax(m.rank),hp:bossMax(m.rank),dead:false};
+    pendingDungeon=null;log("Donjon « "+m.title+" » : rang "+old+" -> "+m.rank+" ("+qs.length+" nouvelles quêtes)");save();
+    sysNotify("Donjon renforcé",m.title,["Rang "+old+" -> "+m.rank,qs.length+" nouvelles quêtes","Nouveau boss : "+a.n]);
+    flash("rank","RANG "+m.rank,m.title+" · renforcé");
+    pushChat("assistant","✔ "+qs.length+" quêtes ajoutées à « "+m.title+" ». Le donjon passe au rang "+m.rank+" et un nouveau boss t'attend : "+a.i+" "+a.n+".");
+    render();
+  }).catch(function(){toast("Erreur réseau");});
 }
 function grantArtifact(name,icon,from){
   S.artifacts=S.artifacts||[];
@@ -439,7 +512,7 @@ var URGENT_POOL=[
   {title:"Vérifier ton portefeuille et noter 1 observation",stat:"business",mission:"m_invest"}
 ];
 function maybeSpawnUrgent(){
-  if(S.lastUrgent===today())return;
+  if(S.lastUrgent&&S.lastUrgent>=today())return;
   if(S.quests.some(function(q){return q.urgent;}))return;
   S.lastUrgent=today();
   if(Math.random()<0.5){
@@ -465,7 +538,7 @@ function flash(kind,big,sub){
   var el=document.getElementById("flash");if(!el)return;
   el.className="show";
   el.innerHTML='<div class="flashwin '+(kind||"")+'"><div class="fbig">'+big+'</div>'+(sub?'<div class="fsub">'+sub+'</div>':'')+'</div>';
-  clearTimeout(flashT);flashT=setTimeout(function(){el.className="";},kind==="pen"?3400:2100);
+  clearTimeout(flashT);flashT=setTimeout(function(){el.className="";},kind==="pen"?3400:((kind==="level"||kind==="rank")?2900:2100));
   el.onclick=function(){clearTimeout(flashT);el.className="";};
 }
 var tt;
@@ -526,7 +599,9 @@ function dailyInfo(){var d=S.quests.filter(function(q){return q.daily&&dueToday(
 
 /* ---- API serveur (Vercel) ---- */
 function gm(action,extra){
-  return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();}).then(function(j){if(j&&typeof j._usd==="number"){S.costUsd=(S.costUsd||0)+j._usd;save();}return j;});
+  try{
+    return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();}).then(function(j){if(j&&typeof j._usd==="number"){S.costUsd=(S.costUsd||0)+j._usd;save();}return j;});
+  }catch(e){return Promise.reject(e);}
 }
 function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats};}
 
@@ -572,6 +647,7 @@ function openDungeon(mId){
   if(m.note)h+='<div class="mbody" style="margin-bottom:12px">'+esc(m.note)+'</div>';
   h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
   h+='<div style="margin-top:12px">'+bossHtml(m)+'</div>';
+  if(m.boss&&m.boss.dead&&m.rank!=="S")h+='<button class="btn" id="dg-expand" style="margin-top:10px;width:100%">⚔ Renforcer le donjon (monter en rang)</button>';
   h+='<div class="subhead" style="margin:16px 0 4px">Quêtes du donjon</div>';
   h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune quête. Ajoutes-en une ci-dessous.</div>';
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle quête pour ce donjon..."><button class="btn" id="dq-add">Ajouter</button></div>';
@@ -581,6 +657,8 @@ function openDungeon(mId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
   var a=document.getElementById("dq-add");
   if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
+  var ex=document.getElementById("dg-expand");
+  if(ex)ex.onclick=function(){pendingDungeon=m.id;closeModal();view="maitre";pushChat("assistant","⚔ Renforçons « "+m.title+" ». Dis-moi les nouvelles tâches à y accomplir, puis touche « Générer la suite ».");render();};
 }
 
 /* ---- Maître du jeu (chat) ---- */
@@ -639,7 +717,7 @@ function makeQuestFromChat(){
 }
 function claimEpreuve(){
   if(chatBusy)return;
-  if(S.lastEpreuve===today()){toast("Une épreuve récompensée par jour. Reviens demain.");return;}
+  if(S.lastEpreuve&&S.lastEpreuve>=today()){toast("Une épreuve récompensée par jour. Reviens demain.");return;}
   S.lastEpreuve=today();S.epreuveOn=null;
   var r=gainXP("mental",25,"Épreuve d'Épictète relevée");
   sysNotify("Épreuve relevée","+25 XP · MENTAL",["La liberté se gagne par l'exercice"]);
@@ -647,15 +725,28 @@ function claimEpreuve(){
   pushChat("assistant","✔ Épreuve validée. +25 XP Mental. Ce n'est pas l'épreuve qui compte, mais de l'avoir traversée en homme libre.");
   render();
 }
+function debriefLearning(){
+  var el=document.getElementById("c-input");var t=el?el.value.trim():"";
+  if(!t){toast("Écris d'abord ce que tu as appris aujourd'hui");return;}
+  el.value="";
+  if(!S.lastLearning||S.lastLearning<today()){S.lastLearning=today();var r=gainXP("mental",15,"Débrief : ce que j'ai appris");sysNotify("Débrief du jour","+15 XP · MENTAL",["Quête mentale validée"]);afterGain(r);save();}
+  else toast("Débrief déjà récompensé aujourd'hui, mais raconte quand même");
+  sendChat("Voici ce que j'ai appris aujourd'hui. Aide-moi à en tirer une leçon utile à la manière d'Épictète (moderne, en français) :\n\n"+t);
+}
 function vMaitre(){
   var mng=manageId?find(S.quests,manageId):null;
+  var pend=pendingDungeon?find(S.missions,pendingDungeon):null;
+  var absent=S.absenceUntil&&today()<=S.absenceUntil;
   var s='<div class="win"><div class="win-h"><span class="t">Maître du Jeu</span><span class="ln"></span><span class="r">Mentor stoïcien</span></div>';
   if(mng)s+='<div class="mbanner"><span>⚙ Gestion de la journalière : « '+esc(mng.title)+' »</span><a id="c-cancel">annuler</a></div>';
+  else if(pend)s+='<div class="mbanner"><span>⚔ Donjon vaincu : « '+esc(pend.title)+' » (rang '+pend.rank+' → '+nextRank(pend.rank)+')</span><a id="c-pend-cancel">plus tard</a></div>';
+  else if(absent)s+='<div class="mbanner"><span>🌙 Absence jusqu\'au '+S.absenceUntil+' · fais ton débrief pour une quête mentale</span></div>';
   s+='<div id="chatbox" class="chatbox"></div>';
   if(mng)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-apply">✔ Appliquer le changement</button></div>';
-  else{var canClaim=(S.epreuveOn===today()&&S.lastEpreuve!==today());
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
-  s+='<div class="addrow"><input type="text" id="c-input" placeholder="Écris au maître du jeu..."><button class="btn" id="c-send">Envoyer</button></div></div>';
+  else if(pend)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-expand">⚔ Générer la suite (+ monter le rang)</button></div>';
+  else{var canClaim=(S.epreuveOn===today()&&S.lastEpreuve!==today());var canDebrief=(!S.lastLearning||S.lastLearning<today());
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button><button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
+  s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(pend?"Dis les nouvelles tâches du donjon...":"Écris au maître du jeu...")+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
   return s;
 }
 
@@ -748,6 +839,12 @@ function vJournal(){
   s+='<div class="subhead">Écris librement pour te vider la tête. Chaque décharge renforce ton Mental (+12 XP).</div>';
   s+='<textarea id="bd-text" class="bdtext" placeholder="Déverse tout ce que tu as en tête, sans filtre..."></textarea>';
   s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="bd-save">Décharger (+12 XP)</button><button class="btn ghost" id="bd-epictete">Décharger + réponse d\'Épictète</button></div></div>';
+  var absent=S.absenceUntil&&today()<=S.absenceUntil;
+  s+='<div class="win"><div class="win-h"><span class="t">Absence</span><span class="ln"></span><span class="r">'+(absent?"active":"aucune")+'</span></div>';
+  s+='<div class="subhead">Déclare une absence (voyage, service, coupure). Pendant l\'absence : pas de pénalité de journalières, série préservée. Chaque jour, raconte au maître ce que tu as appris pour valider une quête mentale.</div>';
+  if(absent)s+='<div class="warn" style="color:var(--gold);border-color:rgba(255,207,77,.3);background:rgba(255,207,77,.08)">🌙 Absence active jusqu\'au '+S.absenceUntil+'</div><button class="btn ghost" id="ab-clear">Je suis de retour</button>';
+  else s+='<div class="addrow"><input type="date" id="ab-until" style="max-width:180px"><button class="btn" id="ab-set">Je m\'absente</button></div>';
+  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
   if(!S.journal.length)s+='<div class="empty">Aucune entrée. Commence ce soir.</div>';
   else s+=S.journal.slice(0,25).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
@@ -809,6 +906,10 @@ function bind(){
   if(bds)bds.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");sysNotify("Vide-tête","Tête allégée",["+12 XP · MENTAL"]);afterGain(r);render();};
   var bde=document.getElementById("bd-epictete");
   if(bde)bde.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");afterGain(r);view="maitre";render();sendChat("Voici ce que j'avais sur le cœur. Aide-moi à y voir clair, à la manière d'Épictète (moderne, pas radical), en français :\n\n"+t);};
+  var abs=document.getElementById("ab-set");
+  if(abs)abs.onclick=function(){var d=document.getElementById("ab-until").value;if(!d){toast("Choisis une date de retour");return;}if(d<today()){toast("La date doit être aujourd'hui ou après");return;}S.absenceUntil=d;save();sysNotify("Absence déclarée","Jusqu'au "+d,["Pénalités suspendues","Débriefe chaque jour au maître"]);render();};
+  var abc=document.getElementById("ab-clear");
+  if(abc)abc.onclick=function(){S.absenceUntil=null;save();toast("Bon retour, Chasseuse");render();};
   var fs=document.getElementById("ft-start");if(fs)fs.onclick=ftStart;
   var fp=document.getElementById("ft-pause");if(fp)fp.onclick=ftPause;
   var fr=document.getElementById("ft-reset");if(fr)fr.onclick=ftReset;
@@ -822,6 +923,9 @@ function bind(){
   var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
   var cap=document.getElementById("c-apply");if(cap)cap.onclick=applyDailyEdit;
   var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
+  var cex=document.getElementById("c-expand");if(cex)cex.onclick=expandDungeon;
+  var cpc=document.getElementById("c-pend-cancel");if(cpc)cpc.onclick=function(){pendingDungeon=null;pushChat("assistant","D'accord, on renforcera ce donjon plus tard. Touche le boss vaincu quand tu voudras la suite.");render();};
+  var cdb=document.getElementById("c-debrief");if(cdb)cdb.onclick=debriefLearning;
   if(document.getElementById("chatbox"))renderChat();
 }
 
@@ -831,9 +935,38 @@ document.getElementById("btn-export").onclick=function(){var blob=new Blob([JSON
 document.getElementById("btn-import").onclick=function(){document.getElementById("file-import").click();};
 document.getElementById("file-import").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(d&&d.hunter){S=d;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.focus)S.focus={sessions:0,totalMin:0};if(!S.log)S.log=[];if(typeof S.combo!=="number")S.combo=0;save();render();toast("Statut importé");}else{toast("Fichier invalide");}}catch(err){toast("Fichier invalide");}};r.readAsText(f);};
 
+/* ---- Écran d'éveil du Système (ouverture façon Solo Leveling) ---- */
+var BOOT_GREETS=["Lève-toi, Chasseuse. Le jour t'appartient si tu le décides.","Ce qui dépend de toi commence maintenant. Le reste, laisse-le.","Le Système observe. Montre-lui de quoi tu es capable aujourd'hui.","Une quête après l'autre, c'est ainsi qu'on gravit les rangs."];
+var bootTimer=null;
+function showBoot(){
+  var el=document.getElementById("boot");if(!el)return;
+  var h=S.hunter,rk=rankOf(h.level);
+  var cached=(S.greetDate===today()&&S.greetLine);
+  var greet=cached?S.greetLine:BOOT_GREETS[Math.floor(Math.random()*BOOT_GREETS.length)];
+  el.innerHTML='<div class="bootwin">'+
+    '<div class="bsys">◈ Système ◈</div>'+
+    '<div class="bbig">RÉVEIL</div>'+
+    '<div class="bawake">Éveil du Système<span class="dot"> ...</span></div>'+
+    '<div class="bstats"><span>Niv <b>'+h.level+'</b></span><span>Rang <b>'+rk.r+'</b></span><span>Série <b>'+S.streak+' 🔥</b></span></div>'+
+    '<div class="bline"></div>'+
+    '<div class="bgreet" id="boot-greet"><span class="who">Maître du Jeu</span>'+esc(greet)+'</div>'+
+    '<div class="benter">Toucher pour entrer</div>'+
+  '</div>';
+  el.className="show";
+  var closed=false;
+  function closeBoot(){if(closed)return;closed=true;el.className="";el.onclick=null;clearTimeout(bootTimer);}
+  el.onclick=closeBoot;bootTimer=setTimeout(closeBoot,4600);
+  if(!cached){
+    gm("greeting",{state:apiState()}).then(function(r){
+      if(r&&r.line){S.greetDate=today();S.greetLine=r.line;save();var g=document.getElementById("boot-greet");if(g&&el.className==="show")g.innerHTML='<span class="who">Maître du Jeu</span>'+esc(r.line);}
+    }).catch(function(){});
+  }
+}
+
 var ro=rollover();
 maybeSpawnUrgent();
 render();
+showBoot();
 if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
 else if(ro&&ro.k==="done")sysNotify("Système","Journalières accomplies hier",["Série x"+ro.streak]);
 })();

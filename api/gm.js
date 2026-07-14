@@ -213,6 +213,67 @@ export default async function handler(req, res) {
       return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
+    // 6) Message d'accueil du maître à l'ouverture de l'app (JSON structuré)
+    if (action === "greeting") {
+      const st = body.state || {};
+      const sys = "You are THE SYSTEM, game master of Mathilde's life-RPG, mentor in the spirit of Epictetus (modern, grounded, never cruel). Produce ONE short line in FRENCH (max 22 words) to greet her as she opens the app: a bit epic and motivating, stoic, centered on what depends on her. No quotes, no preamble, output only the line.";
+      const user = `Niveau ${st.level || 1}, rang ${st.rank || "E"}, série ${st.streak || 0} jours. Humeur récente ${st.lastMood || "?"}/5.`;
+      const r = await client.messages.create({
+        model: CHAT_MODEL,
+        max_tokens: 120,
+        output_config: {
+          effort: "low",
+          format: { type: "json_schema", schema: { type: "object", properties: { line: { type: "string" } }, required: ["line"], additionalProperties: false } },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
+    }
+
+    // 7) Étendre un donjon vaincu : générer 2 à 4 nouvelles quêtes (JSON structuré)
+    if (action === "expand_dungeon") {
+      const d = body.dungeon || {};
+      const desc = (body.description || "").toString().slice(0, 3000);
+      const sys = "Mathilde vient de vaincre le boss d'un donjon (un de ses projets). À partir de la conversation et de l'objectif du donjon, propose 2 à 4 nouvelles quêtes concrètes et actionnables pour l'étape suivante de ce projet. Titres courts, en français. Choisis pour chacune la meilleure stat et une priorité sensée.";
+      const user = `Donjon : "${d.title || ""}" (rang ${d.rank || "C"}). Objectif : ${d.note || "n/a"}.\n\nConversation :\n${desc || "(rien de précis, propose la suite logique du projet)"}`;
+      const r = await client.messages.create({
+        model: MECH_MODEL,
+        max_tokens: 400,
+        output_config: {
+          effort: "low",
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: {
+                quests: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      stat: { type: "string", enum: STATS },
+                      prio: { type: "string", enum: ["high", "med", "low"] },
+                    },
+                    required: ["title", "stat", "prio"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["quests"],
+              additionalProperties: false,
+            },
+          },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
+    }
+
     return res.status(400).json({ error: "unknown action" });
   } catch (e) {
     return res.status(500).json({ error: e && e.message ? e.message : String(e) });
