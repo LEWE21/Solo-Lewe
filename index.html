@@ -198,6 +198,16 @@ nav button:hover{color:var(--txt)}
 .bub.me{align-self:flex-end;background:linear-gradient(180deg,rgba(58,194,255,.18),rgba(58,194,255,.06));color:var(--cyan-b);border-color:var(--line);clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)}
 .bub.gm{align-self:flex-start;background:rgba(8,19,36,.8);color:var(--txt);clip-path:polygon(0 0,100% 0,100% 100%,8px 100%,0 calc(100% - 8px))}
 .bub.typing{color:var(--dim);letter-spacing:.3em}
+.bossline{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-sys);font-size:10px;letter-spacing:.06em;color:var(--gold);margin-top:12px}
+.bossline.dead{color:var(--green);justify-content:flex-start}
+.bar.boss>i{background:linear-gradient(90deg,#7a1020,#ff4f6d,#ffcf4d);box-shadow:0 0 12px rgba(255,79,109,.7)}
+.urgentwin{border-color:var(--red)!important;box-shadow:0 0 26px rgba(255,79,109,.25)}
+.artifacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+.artcard{text-align:center;padding:12px 6px;border:1px solid var(--line-soft);background:rgba(8,19,36,.6);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.arti{font-size:26px;line-height:1}
+.artn{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.04em;color:var(--dim);margin-top:6px;text-transform:uppercase}
+.bdtext{width:100%;min-height:110px;resize:vertical;background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px;font-family:inherit;font-size:14px;line-height:1.5}
+.bdtext:focus{outline:none;border-color:var(--cyan)}
 </style>
 
 <div id="bg"></div><div id="grid"></div><div id="scan"></div>
@@ -299,7 +309,7 @@ function ensureProposals(state){
 function seed(){
   return {
     hunter:{name:"MATHILDE",level:1,xp:0},
-    lastEpreuve:null,epreuveOn:null,
+    lastEpreuve:null,epreuveOn:null,artifacts:[],costUsd:0,lastUrgent:null,
     stats:{physique:{level:1,xp:0},mental:{level:1,xp:0},creativite:{level:1,xp:0},business:{level:1,xp:0},social:{level:1,xp:0},discipline:{level:1,xp:0}},
     missions:[
       {id:"m_vatican",title:"Vatican — YouTube",rank:"B",note:"Monétiser la chaîne (US) : 1000 abonnés, 4000h"},
@@ -338,6 +348,7 @@ function load(){
     if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
+    if(!r.artifacts)r.artifacts=[];if(typeof r.costUsd!=="number")r.costUsd=0;if(!("lastUrgent" in r))r.lastUrgent=null;
   }
   ensureProposals(r);
   return r;
@@ -350,10 +361,11 @@ function rollover(){
   var out=null;
   if(dailies.length){
     var allDone=dailies.every(function(q){return q.done;});
-    if(allDone){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Quêtes journalières accomplies (série "+S.streak+")");out={k:"done",streak:S.streak};}
+    if(allDone){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Quêtes journalières accomplies (série "+S.streak+")");if(S.streak===7)grantArtifact("Flamme de Constance","🔥","Série de 7 jours");if(S.streak===30)grantArtifact("Braise Éternelle","🔆","Série de 30 jours");out={k:"done",streak:S.streak};}
     else{S.hunter.xp=Math.max(0,S.hunter.xp-40);S.streak=0;S.combo=0;log("PÉNALITÉ : journalières non terminées (-40 XP)");out={k:"pen"};}
   }
   S.history.push({date:S.lastDate,level:S.hunter.level});if(S.history.length>120)S.history.shift();
+  S.quests=S.quests.filter(function(q){return !q.urgent;});
   S.quests.forEach(function(q){if(q.daily)q.done=false;});
   S.lastDate=today();save();
   return out;
@@ -369,17 +381,75 @@ function gainXP(statKey,gain,label){
   return {gain:gain,statKey:statKey,statLeveled:su>0,statLevel:st.level,leveled:lu>0,level:h.level,rankChanged:rankOf(h.level).r!==beforeRank,rank:rankOf(h.level).r};
 }
 function afterGain(r){
-  if(r.rankChanged)flash("rank","RANG "+r.rank,"Chasseur promu");
+  if(r.rankChanged){flash("rank","RANG "+r.rank,"Chasseur promu");grantArtifact("Marque du Rang "+r.rank,"🎖","Promotion au rang "+r.rank);sysNotify("Artefact obtenu","🎖 Marque du Rang "+r.rank,["Promotion"]);}
   else if(r.leveled)flash("level","LEVEL UP","Niveau "+r.level+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));
 }
 function award(q){
   S.doneCount++;S.combo++;
-  var r=gainXP(q.stat,q.base,"Quête : "+q.title);
+  var mult=comboMult();
+  var gain=Math.max(1,Math.round(q.base*mult));
+  var r=gainXP(q.stat,gain,"Quête : "+q.title);
   var m=STATS[q.stat];
-  var lines=["+"+r.gain+" XP · "+m.name.toUpperCase(),"COMBO x"+S.combo];
+  var lines=["+"+r.gain+" XP · "+m.name.toUpperCase(),"COMBO x"+S.combo+(mult>1?" (×"+mult.toFixed(2)+" XP)":"")];
   if(r.statLeveled)lines.push(m.name+" niv "+r.statLevel);
-  sysNotify("Quête accomplie",esc(q.title),lines);
-  afterGain(r);save();
+  sysNotify(q.urgent?"Quête urgente accomplie":"Quête accomplie",esc(q.title),lines);
+  afterGain(r);
+  bossHit(q);
+  save();
+}
+/* ---- Mécaniques RPG : combo, boss, artefacts, quêtes urgentes ---- */
+function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
+var BOSS_ARCH={E:{n:"Gobelin des Ombres",i:"👺"},D:{n:"Orc de Garde",i:"👹"},C:{n:"Chevalier Déchu",i:"🗡"},B:{n:"Golem de Pierre",i:"🗿"},A:{n:"Démon Supérieur",i:"😈"},S:{n:"Monarque du Donjon",i:"👑"}};
+function bossMax(rank){return ({E:8,D:12,C:18,B:26,A:36,S:50})[rank]||12;}
+function ensureBoss(m){if(!m)return;if(!m.boss){var a=BOSS_ARCH[m.rank]||BOSS_ARCH.D;m.boss={name:a.n,icon:a.i,max:bossMax(m.rank),hp:bossMax(m.rank),dead:false};}}
+function bossHtml(m){
+  ensureBoss(m);if(!m.boss)return"";
+  if(m.boss.dead)return '<div class="bossline dead">'+m.boss.icon+' '+esc(m.boss.name)+' · vaincu ✔</div>';
+  return '<div class="bossline"><span>⚔ '+m.boss.icon+' '+esc(m.boss.name)+'</span><span>'+m.boss.hp+' / '+m.boss.max+' PV</span></div><div class="bar boss"><i style="transform:scaleX('+(m.boss.hp/m.boss.max)+')"></i></div>';
+}
+function bossHit(q){
+  if(!q||!q.mission)return;
+  var m=find(S.missions,q.mission);if(!m)return;ensureBoss(m);if(m.boss.dead)return;
+  var dmg=1+((q.prio==="high")?1:0);
+  m.boss.hp=Math.max(0,m.boss.hp-dmg);
+  if(m.boss.hp<=0){m.boss.dead=true;defeatBoss(m);}
+}
+function defeatBoss(m){
+  var bonus=({E:60,D:100,C:160,B:240,A:340,S:500})[m.rank]||100;
+  grantArtifact(m.boss.name,m.boss.icon,"Boss vaincu : "+m.title);
+  var r=gainXP("discipline",bonus,"BOSS VAINCU : "+m.boss.name+" ("+m.title+")");
+  sysNotify("BOSS VAINCU",m.boss.icon+" "+m.boss.name,["+"+bonus+" XP","Artefact obtenu : "+m.boss.name]);
+  flash("rank","BOSS VAINCU",m.boss.icon+" "+m.boss.name);
+  afterGain(r);
+}
+function grantArtifact(name,icon,from){
+  S.artifacts=S.artifacts||[];
+  S.artifacts.unshift({id:uid(),name:name,icon:icon,from:from,date:today()});
+  if(S.artifacts.length>60)S.artifacts.pop();
+  log("Artefact obtenu : "+name);
+}
+var URGENT_POOL=[
+  {title:"Publier 1 short ou story pour la chaîne Vatican",stat:"creativite",mission:"m_vatican"},
+  {title:"15 min de sport, maintenant",stat:"physique",mission:"m_orga"},
+  {title:"Écrire 200 mots sur la BD",stat:"creativite",mission:"m_bd"},
+  {title:"Décortiquer 1 vidéo concurrente (Vatican US)",stat:"business",mission:"m_vatican"},
+  {title:"20 min d'anglais tout de suite",stat:"mental",mission:"m_english"},
+  {title:"Ranger un espace pendant 10 min",stat:"discipline",mission:"m_orga"},
+  {title:"Noter 3 idées de contenu",stat:"creativite",mission:"m_vatican"},
+  {title:"Vérifier ton portefeuille et noter 1 observation",stat:"business",mission:"m_invest"}
+];
+function maybeSpawnUrgent(){
+  if(S.lastUrgent===today())return;
+  if(S.quests.some(function(q){return q.urgent;}))return;
+  S.lastUrgent=today();
+  if(Math.random()<0.5){
+    var t=URGENT_POOL[Math.floor(Math.random()*URGENT_POOL.length)];
+    var mi=find(S.missions,t.mission)?t.mission:null;
+    S.quests.push({id:uid(),title:t.title,stat:t.stat,daily:false,prio:"high",base:baseFor("high",false)*2,done:false,mission:mi,urgent:true,day:today()});
+    save();
+    sysNotify("⚠ QUÊTE URGENTE",esc(t.title),["Bonus XP ×2","Expire à minuit"]);
+    flash("","⚠ QUÊTE URGENTE","Bonus ×2 · expire à minuit");
+  }
 }
 
 /* notifications */
@@ -456,7 +526,7 @@ function dailyInfo(){var d=S.quests.filter(function(q){return q.daily&&dueToday(
 
 /* ---- API serveur (Vercel) ---- */
 function gm(action,extra){
-  return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();});
+  return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();}).then(function(j){if(j&&typeof j._usd==="number"){S.costUsd=(S.costUsd||0)+j._usd;save();}return j;});
 }
 function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats};}
 
@@ -501,6 +571,7 @@ function openDungeon(mId){
   var h='<div class="mtag" style="color:'+rk.c+'">▸ Donjon · Rang '+m.rank+'</div><div class="mtitle" style="color:'+rk.c+'">'+esc(m.title)+'</div>';
   if(m.note)h+='<div class="mbody" style="margin-bottom:12px">'+esc(m.note)+'</div>';
   h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
+  h+='<div style="margin-top:12px">'+bossHtml(m)+'</div>';
   h+='<div class="subhead" style="margin:16px 0 4px">Quêtes du donjon</div>';
   h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune quête. Ajoutes-en une ci-dessous.</div>';
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle quête pour ce donjon..."><button class="btn" id="dq-add">Ajouter</button></div>';
@@ -632,11 +703,16 @@ function dailyRow(q){
     '<span class="xpv">+'+q.base+'</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec le Système">⚙</span></div>';
 }
 function vQuetes(){
-  var dailies=S.quests.filter(function(q){return q.daily;}),reg=S.quests.filter(function(q){return !q.daily;});
+  var dailies=S.quests.filter(function(q){return q.daily;});
+  var nd=S.quests.filter(function(q){return !q.daily;});
+  var urgent=nd.filter(function(q){return q.urgent&&!q.done;});
+  var reg=nd.filter(function(q){return !q.urgent;});
   var active=dailies.filter(function(q){return dueToday(q);});
   var dd=active.filter(function(q){return q.done;}).length;
   var ordered=dailies.slice().sort(function(a,b){return (dueToday(b)?1:0)-(dueToday(a)?1:0);});
-  var s='<div class="win"><div class="win-h"><span class="t">Quêtes Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+active.length+' '+iBtn("daily")+'</span></div>';
+  var s='';
+  if(urgent.length)s+='<div class="win urgentwin"><div class="win-h"><span class="t" style="color:var(--red)">⚠ Quête Urgente</span><span class="ln"></span><span class="r">expire à minuit · ×2 XP</span></div>'+urgent.map(questRow).join("")+'</div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Quêtes Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+active.length+' '+iBtn("daily")+'</span></div>';
   s+='<div class="warn">⚠ Termine tes journalières du jour avant minuit, sous peine de pénalité '+iBtn("penalty")+' (-40 XP · série et combo perdus). Pour changer une journalière (fréquence, pause, retrait), touche ⚙ et parles-en au Système.</div>';
   s+=dailies.length?ordered.map(dailyRow).join(""):'<div class="empty">Aucune quête journalière.</div>';
   s+='</div>';
@@ -654,7 +730,7 @@ function vDonjons(){
     var done=qs.filter(function(q){return q.done;}).length;
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
     var clear=qs.length>0&&done===qs.length;
-    s+='<div class="mission'+(clear?" clear":"")+'" data-dungeon="'+m.id+'" style="cursor:pointer"><div class="mrank" style="color:'+rk.c+'">'+m.rank+'</div><div class="mt">'+esc(m.title)+'</div><div class="mn">'+esc(m.note||"")+'</div><div class="mp"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length))+'</div>';
+    s+='<div class="mission'+(clear?" clear":"")+'" data-dungeon="'+m.id+'" style="cursor:pointer"><div class="mrank" style="color:'+rk.c+'">'+m.rank+'</div><div class="mt">'+esc(m.title)+'</div><div class="mn">'+esc(m.note||"")+'</div><div class="mp"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length))+bossHtml(m)+'</div>';
   });
   s+='</div><div class="addrow"><input type="text" id="m-title" placeholder="Nouveau donjon (projet)..."><input type="text" id="m-note" placeholder="Objectif (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">Le Système attribue le rang. Touche un donjon pour l\'ouvrir et y ajouter des quêtes.</div></div>';
   return s;
@@ -668,6 +744,10 @@ function vJournal(){
   s+='<div class="nm" style="margin-bottom:8px">Humeur</div><div style="display:flex;gap:8px">';
   for(var i=1;i<=5;i++){s+='<button type="button" class="btn ghost jm'+(jMood===i?" sel":"")+'" data-m="'+i+'" style="flex:1;font-size:20px;padding:10px">'+MOODS[i-1]+'</button>';}
   s+='</div><div class="addrow"><input type="number" id="j-sleep" placeholder="Sommeil (h)" step="0.5" min="0" max="24" style="max-width:130px"><input type="text" id="j-note" placeholder="Quelques mots sur ta journée..."><button class="btn" id="j-add">Enregistrer</button></div></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Vide-tête</span><span class="ln"></span><span class="r">Brain-dump</span></div>';
+  s+='<div class="subhead">Écris librement pour te vider la tête. Chaque décharge renforce ton Mental (+12 XP).</div>';
+  s+='<textarea id="bd-text" class="bdtext" placeholder="Déverse tout ce que tu as en tête, sans filtre..."></textarea>';
+  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="bd-save">Décharger (+12 XP)</button><button class="btn ghost" id="bd-epictete">Décharger + réponse d\'Épictète</button></div></div>';
   s+='<div class="win"><div class="win-h"><span class="t">Entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
   if(!S.journal.length)s+='<div class="empty">Aucune entrée. Commence ce soir.</div>';
   else s+=S.journal.slice(0,25).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
@@ -697,10 +777,14 @@ function vEvolution(){
   var h=S.hunter,rk=rankOf(h.level);
   var s='<div class="win"><div class="win-h"><span class="t">Évolution</span><span class="ln"></span><span class="r">Progression</span></div>';
   s+='<div class="evgrid">'+kpi(h.level,"Niveau")+kpi(rk.r,"Rang")+kpi(S.doneCount,"Quêtes")+kpi(S.best,"Record série")+'</div>';
+  s+='<div class="subhead" style="margin-top:6px">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
   s+='<div class="subhead">Caractéristiques</div><div style="display:grid;gap:10px">';
   Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];
     s+='<div><div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:5px"><span>'+m.ic+' '+m.name+'</span><span>Niv '+st.level+'</span></div><div class="bar" style="height:8px"><i style="transform:scaleX('+Math.min(1,st.level/Math.max(10,st.level+2))+');background:linear-gradient(90deg,'+m.col+'44,'+m.col+')"></i></div></div>';});
   s+='</div></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Artefacts</span><span class="ln"></span><span class="r">'+(S.artifacts?S.artifacts.length:0)+'</span></div>';
+  s+=(S.artifacts&&S.artifacts.length)?'<div class="artifacts">'+S.artifacts.map(function(a){return '<div class="artcard" title="'+esc(a.from)+' · '+a.date+'"><div class="arti">'+a.icon+'</div><div class="artn">'+esc(a.name)+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun artefact. Vaincs des boss, gagne des rangs et tiens ta série pour en obtenir.</div>';
+  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Journal du Système</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
   s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
   s+='</div>';
@@ -721,6 +805,10 @@ function bind(){
   Array.prototype.forEach.call(jbs,function(b){b.onclick=function(){jMood=parseInt(b.dataset.m,10);Array.prototype.forEach.call(jbs,function(x){x.classList.toggle("sel",x===b);});};});
   var ja=document.getElementById("j-add");
   if(ja)ja.onclick=function(){var sl=document.getElementById("j-sleep").value,nt=document.getElementById("j-note").value.trim();S.journal.unshift({date:today(),mood:jMood,sleep:sl!==""?parseFloat(sl):null,note:nt});var r=gainXP("mental",10,"Entrée de journal");sysNotify("Journal","Entrée enregistrée",["+10 XP · MENTAL"]);afterGain(r);jMood=3;render();};
+  var bds=document.getElementById("bd-save");
+  if(bds)bds.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");sysNotify("Vide-tête","Tête allégée",["+12 XP · MENTAL"]);afterGain(r);render();};
+  var bde=document.getElementById("bd-epictete");
+  if(bde)bde.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");afterGain(r);view="maitre";render();sendChat("Voici ce que j'avais sur le cœur. Aide-moi à y voir clair, à la manière d'Épictète (moderne, pas radical), en français :\n\n"+t);};
   var fs=document.getElementById("ft-start");if(fs)fs.onclick=ftStart;
   var fp=document.getElementById("ft-pause");if(fp)fp.onclick=ftPause;
   var fr=document.getElementById("ft-reset");if(fr)fr.onclick=ftReset;
@@ -744,6 +832,7 @@ document.getElementById("btn-import").onclick=function(){document.getElementById
 document.getElementById("file-import").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(d&&d.hunter){S=d;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.focus)S.focus={sessions:0,totalMin:0};if(!S.log)S.log=[];if(typeof S.combo!=="number")S.combo=0;save();render();toast("Statut importé");}else{toast("Fichier invalide");}}catch(err){toast("Fichier invalide");}};r.readAsText(f);};
 
 var ro=rollover();
+maybeSpawnUrgent();
 render();
 if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
 else if(ro&&ro.k==="done")sysNotify("Système","Journalières accomplies hier",["Série x"+ro.streak]);

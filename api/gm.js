@@ -3,7 +3,25 @@ import Anthropic from "@anthropic-ai/sdk";
 // Le modèle par défaut. Pour réduire les coûts, mets SYSTEME_MODEL=claude-sonnet-5
 // (ou claude-haiku-4-5) dans les variables d'environnement Vercel.
 const MODEL = process.env.SYSTEME_MODEL || "claude-opus-4-8";
+// Split de modèles : le mentor (chat) reste sur un modèle haut de gamme,
+// les tâches mécaniques (traduction, création/édition de quête) tournent sur Haiku (moins cher).
+const CHAT_MODEL = process.env.SYSTEME_CHAT_MODEL || MODEL;
+const MECH_MODEL = process.env.SYSTEME_MECH_MODEL || "claude-haiku-4-5";
 const STATS = ["physique", "mental", "creativite", "business", "social", "discipline"];
+
+// Prix en $ par million de tokens [entrée, sortie], pour l'estimation de coût renvoyée au client.
+const PRICES = {
+  "claude-opus-4-8": [5, 25], "claude-opus-4-7": [5, 25], "claude-opus-4-6": [5, 25],
+  "claude-sonnet-5": [3, 15], "claude-sonnet-4-6": [3, 15], "claude-haiku-4-5": [1, 5], "claude-fable-5": [10, 50],
+};
+function costUsd(model, usage) {
+  const p = PRICES[model] || [5, 25];
+  const i = (usage && usage.input_tokens) || 0, o = (usage && usage.output_tokens) || 0;
+  return (i * p[0] + o * p[1]) / 1e6;
+}
+function ok(res, model, r, payload) {
+  return res.status(200).json(Object.assign({}, payload, { _usd: costUsd(model, r && r.usage) }));
+}
 
 function toneLine(s) {
   const mood = Number(s.lastMood);
@@ -61,14 +79,14 @@ export default async function handler(req, res) {
       const msg = (body.message || "").toString().slice(0, 4000);
       if (!msg) return res.status(400).json({ error: "message required" });
       const r = await client.messages.create({
-        model: MODEL,
+        model: CHAT_MODEL,
         max_tokens: 700,
         output_config: { effort: "medium" },
         system: mentorSystem(body.state),
         messages: [...history, { role: "user", content: msg }],
       });
       const reply = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
-      return res.status(200).json({ reply });
+      return ok(res, CHAT_MODEL, r, { reply });
     }
 
     // 2) Générer la prochaine quête d'un donjon (sortie JSON structurée)
@@ -78,7 +96,7 @@ export default async function handler(req, res) {
       const sys = "You are the game master of Mathilde's life RPG. Generate ONE next quest (a concrete, doable step) for the dungeon below, based on her real objective. Do not repeat quests already done; propose the sensible next step. Keep the title short and actionable, in English.";
       const user = `Dungeon: "${d.title || ""}" (rank ${d.rank || "C"}). Objective: ${d.note || "n/a"}. Already done: ${done.join("; ") || "none"}.`;
       const r = await client.messages.create({
-        model: MODEL,
+        model: MECH_MODEL,
         max_tokens: 250,
         output_config: {
           effort: "low",
@@ -100,7 +118,7 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: user }],
       });
       const t = r.content.find((b) => b.type === "text");
-      return res.status(200).json(JSON.parse(t.text));
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
     // 3) Traduire un titre de quête FR -> EN (sortie JSON structurée)
@@ -108,7 +126,7 @@ export default async function handler(req, res) {
       const fr = (body.text || "").toString().slice(0, 500);
       if (!fr) return res.status(400).json({ error: "text required" });
       const r = await client.messages.create({
-        model: MODEL,
+        model: MECH_MODEL,
         max_tokens: 120,
         output_config: {
           effort: "low",
@@ -126,7 +144,7 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: fr }],
       });
       const t = r.content.find((b) => b.type === "text");
-      return res.status(200).json(JSON.parse(t.text));
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
     // 4) Créer une quête à partir d'une conversation / description (JSON structuré)
@@ -136,7 +154,7 @@ export default async function handler(req, res) {
       const sys = "From the conversation/description below, produce ONE concrete quest for Mathilde's life-RPG. Pick the best-fitting stat and a sensible priority. Set daily=true only for a recurring daily habit. If it clearly belongs to one of the listed dungeons, set mission to that dungeon's id, otherwise empty string. Keep the title short and actionable, in French.";
       const user = `Conversation / description:\n${desc}\n\nDungeons (id=title): ${dungeons.map((d) => d.id + "=" + d.title).join("; ") || "none"}`;
       const r = await client.messages.create({
-        model: MODEL,
+        model: MECH_MODEL,
         max_tokens: 250,
         output_config: {
           effort: "low",
@@ -160,7 +178,7 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: user }],
       });
       const t = r.content.find((b) => b.type === "text");
-      return res.status(200).json(JSON.parse(t.text));
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
     // 5) Modifier une quête journalière à partir de la conversation (JSON structuré)
@@ -170,7 +188,7 @@ export default async function handler(req, res) {
       const sys = "Decide how Mathilde wants to change her recurring daily quest, based on the conversation. Options for op: cadence_everyN (recurs every N days; everyN=1 means every day), cadence_weekdays (recurs on specific weekdays; fill weekdays with integers where 0=Sunday, 1=Monday, ... 6=Saturday), pause (stop it without deleting), resume (reactivate), delete (remove it), none (intent not clear yet). Fill everyN only for cadence_everyN, otherwise 1. Fill weekdays only for cadence_weekdays, otherwise an empty array.";
       const user = `Quest: "${q.title || ""}". Current cadence: ${JSON.stringify(q.cad || null)}, paused: ${!!q.paused}.\n\nConversation:\n${desc}`;
       const r = await client.messages.create({
-        model: MODEL,
+        model: MECH_MODEL,
         max_tokens: 200,
         output_config: {
           effort: "low",
@@ -192,7 +210,7 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: user }],
       });
       const t = r.content.find((b) => b.type === "text");
-      return res.status(200).json(JSON.parse(t.text));
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
     return res.status(400).json({ error: "unknown action" });
