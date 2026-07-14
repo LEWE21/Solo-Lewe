@@ -105,6 +105,8 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font-body)
 .q .check.off:hover{border-color:var(--line-soft);box-shadow:none}
 .q .gear{color:var(--dim2);cursor:pointer;font-size:15px;padding:2px 6px;flex:none}
 .q .gear:hover{color:var(--cyan)}
+.q .mv{color:var(--dim2);cursor:pointer;font-size:15px;padding:2px 5px;flex:none}
+.q .mv:hover{color:var(--cyan)}
 .mbanner{font-family:var(--font-sys);font-size:11px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);background:rgba(255,207,77,.08);padding:9px 11px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .mbanner a{color:var(--dim);cursor:pointer;font-size:10px;text-decoration:underline}
 .addrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
@@ -206,6 +208,17 @@ nav button:hover{color:var(--txt)}
 .artcard{text-align:center;padding:12px 6px;border:1px solid var(--line-soft);background:rgba(8,19,36,.6);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
 .arti{font-size:26px;line-height:1}
 .artn{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.04em;color:var(--dim);margin-top:6px;text-transform:uppercase}
+.enemies{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.enemy{text-align:center;padding:12px 6px 10px;border:1px solid var(--line-soft);background:radial-gradient(120px 80px at 50% 20%,rgba(58,194,255,.06),transparent 70%),rgba(8,19,36,.6);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.enemy.slain{opacity:.5}
+.eface{line-height:0;margin-bottom:6px}
+.ename{font-size:11px;color:var(--txt);line-height:1.25}
+.einfo{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+.estat{font-family:var(--font-sys);font-size:9px;letter-spacing:.06em;color:var(--dim);margin-top:2px}
+.absrow{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 11px;border:1px solid var(--line-soft);background:rgba(8,19,36,.5)}
+.absrow .absst{margin-left:auto;font-family:var(--font-sys);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.absrow .absx{cursor:pointer;color:var(--dim2);font-size:15px;padding:0 2px}
+.absrow .absx:hover{color:var(--red)}
 .bdtext{width:100%;min-height:110px;resize:vertical;background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px;font-family:inherit;font-size:14px;line-height:1.5}
 .bdtext:focus{outline:none;border-color:var(--cyan)}
 /* ---- Écran d'éveil du Système ---- */
@@ -257,8 +270,8 @@ nav button:hover{color:var(--txt)}
   <button data-v="donjons"><span class="ni">▲</span>Donjons</button>
   <button data-v="journal"><span class="ni">✎</span>Journal</button>
   <button data-v="focus"><span class="ni">◎</span>Focus</button>
-  <button data-v="maitre"><span class="ni">🗨</span>Maître</button>
-  <button data-v="evolution"><span class="ni">📈</span>Évolution</button>
+  <button data-v="maitre"><span class="ni">☰</span>Maître</button>
+  <button data-v="evolution"><span class="ni">◆</span>Évolution</button>
 </nav>
 
 <div id="nstack"></div>
@@ -367,10 +380,11 @@ function seed(){
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
     streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[],
-    absenceUntil:null,lastLearning:null,greetDate:null,greetLine:null
+    absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0
   };
 }
 var S=load();
+save(); // persiste immédiatement l'état chargé (migrations + sauvegarde miroir anti-reset)
 function readState(k){try{var r=JSON.parse(localStorage.getItem(k));return (r&&r.hunter)?r:null;}catch(e){return null;}}
 function load(){
   var r=readState(KEY)||readState(BKEY);
@@ -381,8 +395,10 @@ function load(){
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
     if(!r.artifacts)r.artifacts=[];if(typeof r.costUsd!=="number")r.costUsd=0;if(!("lastUrgent" in r))r.lastUrgent=null;
-    if(!("absenceUntil" in r))r.absenceUntil=null;if(!("lastLearning" in r))r.lastLearning=null;
+    if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
+    if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
+    if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;
   }
   ensureProposals(r);
   return r;
@@ -393,7 +409,7 @@ function rollover(){
   if(!S.lastDate){S.lastDate=today();save();return null;}
   // On n'avance QUE vers l'avant : si l'horloge de l'appareil recule, on ne déclenche pas de rollover (anti-triche).
   if(today()<=S.lastDate)return null;
-  var absent=S.absenceUntil&&S.lastDate<=S.absenceUntil; // la journée écoulée était couverte par une absence déclarée
+  var absent=isAbsent(S.lastDate); // la journée écoulée était couverte par une absence planifiée
   var dailies=S.quests.filter(function(q){return q.daily&&dueOn(q,S.lastDate);});
   var out=null;
   if(absent){
@@ -406,6 +422,9 @@ function rollover(){
   }
   S.history.push({date:S.lastDate,level:S.hunter.level});if(S.history.length>120)S.history.shift();
   S.quests=S.quests.filter(function(q){return !q.urgent;});
+  // Les quêtes normales validées la veille sont retirées (déjà comptées et tracées dans le Journal du Système),
+  // pour que la liste reste vivante et alignée sur ta progression. Les journalières, elles, se réinitialisent.
+  S.quests=S.quests.filter(function(q){return q.daily||!q.done;});
   S.quests.forEach(function(q){if(q.daily)q.done=false;});
   S.lastDate=today();save();
   return out;
@@ -442,10 +461,24 @@ function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
 var BOSS_ARCH={E:{n:"Gobelin des Ombres",i:"👺"},D:{n:"Orc de Garde",i:"👹"},C:{n:"Chevalier Déchu",i:"🗡"},B:{n:"Golem de Pierre",i:"🗿"},A:{n:"Démon Supérieur",i:"😈"},S:{n:"Monarque du Donjon",i:"👑"}};
 function bossMax(rank){return ({E:8,D:12,C:18,B:26,A:36,S:50})[rank]||12;}
 function ensureBoss(m){if(!m)return;if(!m.boss){var a=BOSS_ARCH[m.rank]||BOSS_ARCH.D;m.boss={name:a.n,icon:a.i,max:bossMax(m.rank),hp:bossMax(m.rank),dead:false};}}
+// Portraits d'ennemis en SVG holographique (une tête par rang), dans le style de l'app.
+var BOSS_SHAPES={
+  E:function(c){return '<path d="M22 24 L10 12 L24 26"/><path d="M42 24 L54 12 L40 26"/><path d="M20 24 Q32 18 44 24 L42 42 Q32 52 22 42 Z"/><path d="M24 32 l7 3 M40 32 l-7 3"/><circle cx="27" cy="35" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="35" r="2.2" fill="'+c+'" stroke="none"/><path d="M26 44 l3 -3 l3 3 l3 -3 l-1 5 l-8 0 z"/>';},
+  D:function(c){return '<path d="M16 26 Q32 14 48 26 L46 40 Q32 50 18 40 Z"/><path d="M12 24 l6 4 M52 24 l-6 4"/><path d="M27 42 q-1 8 -5 10 M37 42 q1 8 5 10"/><path d="M24 30 l8 2 M40 30 l-8 2"/><circle cx="27" cy="33" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="33" r="2.2" fill="'+c+'" stroke="none"/>';},
+  C:function(c){return '<path d="M18 28 Q18 14 32 12 Q46 14 46 28 L46 44 L18 44 Z"/><path d="M32 16 L32 44"/><path d="M22 30 L42 30"/><rect x="24" y="27" width="6" height="4" fill="'+c+'" stroke="none"/><rect x="34" y="27" width="6" height="4" fill="'+c+'" stroke="none"/><path d="M28 12 L32 6 L36 12"/>';},
+  B:function(c){return '<path d="M16 24 L24 16 L40 16 L48 24 L46 42 L36 48 L28 48 L18 42 Z"/><rect x="22" y="22" width="8" height="6" fill="'+c+'" stroke="none"/><rect x="34" y="22" width="8" height="6" fill="'+c+'" stroke="none"/><path d="M24 38 L40 38"/><path d="M20 30 L18 34 M44 30 L46 34"/>';},
+  A:function(c){return '<path d="M14 16 Q20 26 24 24 M50 16 Q44 26 40 24"/><path d="M22 24 L42 24 L32 50 Z"/><path d="M25 30 l5 2 M39 30 l-5 2"/><circle cx="28" cy="32" r="2" fill="'+c+'" stroke="none"/><circle cx="36" cy="32" r="2" fill="'+c+'" stroke="none"/><path d="M27 40 l3 3 l2 -3 l2 3 l3 -3"/>';},
+  S:function(c){return '<path d="M18 22 L18 14 L24 20 L32 10 L40 20 L46 14 L46 22 Z"/><path d="M20 22 L44 22 L42 40 Q32 50 22 40 Z"/><path d="M24 30 l7 2 M40 30 l-7 2"/><circle cx="27" cy="32" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="32" r="2.2" fill="'+c+'" stroke="none"/><circle cx="21" cy="15" r="1.6" fill="'+c+'" stroke="none"/><circle cx="43" cy="15" r="1.6" fill="'+c+'" stroke="none"/><path d="M28 43 L36 43"/>';}
+};
+function bossSvg(rank,size){
+  var c=(RANKS.filter(function(r){return r.r===rank;})[0]||RANKS[0]).c;
+  var shp=(BOSS_SHAPES[rank]||BOSS_SHAPES.E)(c);
+  return '<svg viewBox="0 0 64 64" width="'+size+'" height="'+size+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="vertical-align:middle;filter:drop-shadow(0 0 5px '+c+'88)">'+shp+'</svg>';
+}
 function bossHtml(m){
   ensureBoss(m);if(!m.boss)return"";
-  if(m.boss.dead)return '<div class="bossline dead">'+m.boss.icon+' '+esc(m.boss.name)+' · vaincu ✔</div>';
-  return '<div class="bossline"><span>⚔ '+m.boss.icon+' '+esc(m.boss.name)+'</span><span>'+m.boss.hp+' / '+m.boss.max+' PV</span></div><div class="bar boss"><i style="transform:scaleX('+(m.boss.hp/m.boss.max)+')"></i></div>';
+  if(m.boss.dead)return '<div class="bossline dead">'+bossSvg(m.rank,18)+' '+esc(m.boss.name)+' · vaincu ✔</div>';
+  return '<div class="bossline"><span>'+bossSvg(m.rank,18)+' '+esc(m.boss.name)+'</span><span>'+m.boss.hp+' / '+m.boss.max+' PV</span></div><div class="bar boss"><i style="transform:scaleX('+(m.boss.hp/m.boss.max)+')"></i></div>';
 }
 function bossHit(q){
   if(!q||!q.mission)return;
@@ -592,6 +625,10 @@ function find(arr,id){for(var i=0;i<arr.length;i++)if(arr[i].id===id)return arr[
 function uid(){return "x"+Math.random().toString(36).slice(2,9);}
 function kpi(v,k){return '<div class="kpi"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>';}
 function dayDiff(a,b){return Math.round((new Date(a)-new Date(b))/86400000);}
+function isoPlus(ds,n){var d=new Date(ds+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");}
+function fmtD(ds){var p=String(ds).split("-");return p.length===3?p[2]+"/"+p[1]:ds;}
+function fmtAbs(a){return a.from===a.to?("le "+fmtD(a.from)):("du "+fmtD(a.from)+" au "+fmtD(a.to));}
+function isAbsent(ds){return (S.absences||[]).some(function(a){return a.from<=ds&&ds<=a.to;});}
 function cadLabel(q){var c=q.cad;if(q.paused)return "en pause";if(!c||(!(c.days&&c.days.length)&&(!c.n||c.n<=1)))return "chaque jour";if(c.days&&c.days.length){var J=["dim","lun","mar","mer","jeu","ven","sam"];return c.days.map(function(d){return J[d];}).join("/");}return "tous les "+c.n+" jours";}
 function dueOn(q,ds){if(!q.daily)return true;if(q.paused)return false;var c=q.cad;if(!c)return true;if(c.days&&c.days.length)return c.days.indexOf(new Date(ds+"T12:00:00").getDay())>=0;var n=c.n||1;if(n<=1)return true;var anc=c.anchor||ds;var d=dayDiff(ds,anc);return ((d%n)+n)%n===0;}
 function dueToday(q){return dueOn(q,today());}
@@ -636,6 +673,15 @@ function openModal(html,color){
 }
 function closeModal(){var el=document.getElementById("modal");if(el)el.className="";}
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ Système</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
+function openMoveQuest(qId){
+  var q=find(S.quests,qId);if(!q)return;
+  var h='<div class="mtag">▸ Changer de donjon</div><div class="mtitle">'+esc(q.title)+'</div><div class="subhead" style="margin:6px 0 12px">Choisis son donjon :</div><div style="display:grid;gap:8px">';
+  h+='<button class="btn ghost" data-dest="" style="text-align:left">Aucun donjon'+(!q.mission?' ✓':'')+'</button>';
+  S.missions.forEach(function(m){var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);h+='<button class="btn ghost" data-dest="'+m.id+'" style="text-align:left;border-color:'+rk.c+'55">'+esc(m.title)+' · rang '+m.rank+(q.mission===m.id?' ✓':'')+'</button>';});
+  h+='</div>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){el.onclick=function(){var dest=el.dataset.dest||null;q.mission=dest;save();closeModal();sysNotify("Quête déplacée",esc(q.title),[dest?("→ "+((find(S.missions,dest)||{}).title||"")):"→ Aucun donjon"]);render();};});
+}
 
 /* ---- Donjon : fenêtre détaillée ---- */
 function openDungeon(mId){
@@ -655,6 +701,7 @@ function openDungeon(mId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","Le Système ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var a=document.getElementById("dq-add");
   if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
   var ex=document.getElementById("dg-expand");
@@ -733,20 +780,72 @@ function debriefLearning(){
   else toast("Débrief déjà récompensé aujourd'hui, mais raconte quand même");
   sendChat("Voici ce que j'ai appris aujourd'hui. Aide-moi à en tirer une leçon utile à la manière d'Épictète (moderne, en français) :\n\n"+t);
 }
+function suggestTool(){
+  if(chatBusy)return;
+  var el=document.getElementById("c-input");var focus=el?el.value.trim():"";if(el)el.value="";
+  pushChat("user",focus?("Fais évoluer mon setup sur : "+focus):"Propose-moi un outil ou une skill pour faire évoluer un de mes projets.");
+  chatBusy=true;renderChat();
+  var projects=S.missions.map(function(m){return m.title;});
+  var recent=S.quests.slice(-8).map(function(q){return q.title;});
+  gm("suggest",{focus:focus,projects:projects,recent:recent,state:apiState()}).then(function(r){
+    chatBusy=false;pushChat("assistant",(r&&r.reply)?r.reply:"(Pas d'idée pour l'instant, réessaie.)");if(view==="maitre")renderChat();
+  }).catch(function(){chatBusy=false;pushChat("assistant","(Connexion au Système impossible. Réessaie.)");if(view==="maitre")renderChat();});
+}
+var reviewMode=false;
+// Quotidien au départ (le temps que le maître comprenne bien tes projets), puis hebdomadaire après 7 bilans.
+function reviewInterval(){return (S.reviewCount||0)<7?1:7;}
+function reviewLabel(){return reviewInterval()===1?"Bilan du jour":"Bilan hebdo";}
+function reviewDue(){return !S.lastReview||dayDiff(today(),S.lastReview)>=reviewInterval();}
+function startReview(){
+  reviewMode=true;view="maitre";
+  var projs=S.missions.map(function(m){return "• "+m.title+" (rang "+m.rank+")";}).join("\n");
+  var daily=reviewInterval()===1;
+  pushChat("assistant","📋 "+(daily?"Point du jour":"Bilan hebdomadaire")+". Faisons le point projet par projet, sans détour. Pour chacun de tes donjons, dis-moi où tu en es et la prochaine étape :\n\n"+projs+"\n\nÉcris ton point ci-dessous (un seul message suffit), puis touche « Réaligner mes quêtes ».");
+  render();
+}
+function applyReview(){
+  if(chatBusy)return;
+  // On lit ce que tu as écrit dans le champ SANS l'envoyer au mentor : ça évite un appel coûteux, seul le réalignement (modèle économique) tourne.
+  var el=document.getElementById("c-input");var pending=el?el.value.trim():"";if(el)el.value="";
+  if(pending)pushChat("user",pending);
+  var recent=(S.chat||[]).slice(-14).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  if(!recent){toast("Écris d'abord ton point du jour");renderChat();return;}
+  var dungeons=S.missions.map(function(m){return {id:m.id,title:m.title,note:m.note||"",rank:m.rank};});
+  toast("Le Système réaligne tes quêtes...");renderChat();
+  gm("weekly_review",{dungeons:dungeons,description:recent}).then(function(res){
+    var qs=(res&&res.quests)||[];
+    if(!qs.length){pushChat("assistant","Je n'ai pas assez d'éléments. Dis-m'en un peu plus sur chaque projet, puis retouche « Réaligner ».");renderChat();return;}
+    var added=0;
+    qs.slice(0,12).forEach(function(x){
+      var stat=STATS[x.stat]?x.stat:"discipline";
+      var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
+      var mission=(x.mission&&find(S.missions,x.mission))?x.mission:null;
+      S.quests.push({id:uid(),title:x.title,stat:stat,daily:false,prio:prio,base:baseFor(prio,false),done:false,mission:mission});added++;
+    });
+    S.lastReview=today();S.reviewCount=(S.reviewCount||0)+1;reviewMode=false;log("Bilan : "+added+" quêtes réalignées");save();
+    sysNotify("Bilan validé",added+" quêtes réalignées",["Ta liste suit ta progression"]);
+    pushChat("assistant","✔ J'ai réaligné ta liste : "+added+" nouvelles quêtes ajoutées, en phase avec où tu en es. À l'attaque.");
+    render();
+  }).catch(function(){toast("Erreur réseau");});
+}
 function vMaitre(){
   var mng=manageId?find(S.quests,manageId):null;
   var pend=pendingDungeon?find(S.missions,pendingDungeon):null;
-  var absent=S.absenceUntil&&today()<=S.absenceUntil;
+  var curAbs=(S.absences||[]).filter(function(a){return a.from<=today()&&today()<=a.to;})[0];
+  var absent=!!curAbs;
   var s='<div class="win"><div class="win-h"><span class="t">Maître du Jeu</span><span class="ln"></span><span class="r">Mentor stoïcien</span></div>';
+  var due=reviewDue();
   if(mng)s+='<div class="mbanner"><span>⚙ Gestion de la journalière : « '+esc(mng.title)+' »</span><a id="c-cancel">annuler</a></div>';
   else if(pend)s+='<div class="mbanner"><span>⚔ Donjon vaincu : « '+esc(pend.title)+' » (rang '+pend.rank+' → '+nextRank(pend.rank)+')</span><a id="c-pend-cancel">plus tard</a></div>';
-  else if(absent)s+='<div class="mbanner"><span>🌙 Absence jusqu\'au '+S.absenceUntil+' · fais ton débrief pour une quête mentale</span></div>';
+  else if(reviewMode)s+='<div class="mbanner"><span>📋 '+reviewLabel()+' en cours · fais ton point projet par projet</span><a id="c-review-cancel">annuler</a></div>';
+  else if(absent)s+='<div class="mbanner"><span>🌙 Absence jusqu\'au '+fmtD(curAbs.to)+' · fais ton débrief pour une quête mentale</span></div>';
   s+='<div id="chatbox" class="chatbox"></div>';
   if(mng)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-apply">✔ Appliquer le changement</button></div>';
   else if(pend)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-expand">⚔ Générer la suite (+ monter le rang)</button></div>';
+  else if(reviewMode)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-review-apply">✔ Réaligner mes quêtes</button></div>';
   else{var canClaim=(S.epreuveOn===today()&&S.lastEpreuve!==today());var canDebrief=(!S.lastLearning||S.lastLearning<today());
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button><button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
-  s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(pend?"Dis les nouvelles tâches du donjon...":"Écris au maître du jeu...")+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-guide">☰ M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
+  s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(pend?"Dis les nouvelles tâches du donjon...":(reviewMode?"Réponds projet par projet...":"Écris au maître du jeu..."))+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
   return s;
 }
 
@@ -774,7 +873,7 @@ function vStatut(){
   s+='<div class="vitals"><div><div class="vlab"><span>HP '+iBtn("hp")+'</span><span>'+maxHP+' / '+maxHP+'</span></div><div class="vbar hp"><i style="transform:scaleX(1)"></i></div></div>';
   s+='<div><div class="vlab"><span>STAMINA '+iBtn("stamina")+'</span><span>'+stamina+' / 100</span></div><div class="vbar st"><i style="transform:scaleX('+(stamina/100)+')"></i></div></div></div>';
   s+='<div class="xprow"><div class="lab"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
-  s+='<div class="chips"><div class="chip">Combo '+iBtn("combo")+' <b>x'+S.combo+'</b></div><div class="chip">Série '+iBtn("streak")+' <b>'+S.streak+'🔥</b></div><div class="chip">Quêtes <b>'+S.doneCount+'</b></div><div class="chip">Record <b>'+S.best+'</b></div></div></div></div></div>';
+  s+='<div class="chips"><div class="chip">Combo '+iBtn("combo")+' <b>x'+S.combo+'</b>'+(comboMult()>1?' <span style="color:var(--dim2)">+'+Math.round((comboMult()-1)*100)+'% XP</span>':'')+'</div><div class="chip">Série '+iBtn("streak")+' <b>'+S.streak+'🔥</b></div><div class="chip">Record <b>'+S.best+'</b></div></div></div></div></div>';
   s+='<div class="win"><div class="win-h"><span class="t">Caractéristiques</span><span class="ln"></span><span class="r">0'+Object.keys(STATS).length+'</span></div><div class="stats">';
   Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k],nd=statNeed(st.level);
     s+='<div class="stat"><div class="top"><span class="ic" style="color:'+m.col+'">'+m.ic+'</span><span class="sv">'+st.level+'</span></div><div class="nm">'+m.name+' '+iBtn(k)+'</div>'+bar(st.xp,nd)+'<div class="xp">'+st.xp+' / '+nd+' XP</div></div>';});
@@ -784,14 +883,14 @@ function vStatut(){
 
 function questRow(q){
   var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  return '<div class="q'+(q.done?" done":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+'</div></div><span class="xpv">+'+q.base+'</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec le Système">⚙</span>':'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer de donjon">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec le Système">⚙</span>':'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function dailyRow(q){
   var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec le Système">⚙</span></div>';
+    '<span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer de donjon">⇄</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec le Système">⚙</span></div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -839,11 +938,14 @@ function vJournal(){
   s+='<div class="subhead">Écris librement pour te vider la tête. Chaque décharge renforce ton Mental (+12 XP).</div>';
   s+='<textarea id="bd-text" class="bdtext" placeholder="Déverse tout ce que tu as en tête, sans filtre..."></textarea>';
   s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="bd-save">Décharger (+12 XP)</button><button class="btn ghost" id="bd-epictete">Décharger + réponse d\'Épictète</button></div></div>';
-  var absent=S.absenceUntil&&today()<=S.absenceUntil;
-  s+='<div class="win"><div class="win-h"><span class="t">Absence</span><span class="ln"></span><span class="r">'+(absent?"active":"aucune")+'</span></div>';
-  s+='<div class="subhead">Déclare une absence (voyage, service, coupure). Pendant l\'absence : pas de pénalité de journalières, série préservée. Chaque jour, raconte au maître ce que tu as appris pour valider une quête mentale.</div>';
-  if(absent)s+='<div class="warn" style="color:var(--gold);border-color:rgba(255,207,77,.3);background:rgba(255,207,77,.08)">🌙 Absence active jusqu\'au '+S.absenceUntil+'</div><button class="btn ghost" id="ab-clear">Je suis de retour</button>';
-  else s+='<div class="addrow"><input type="date" id="ab-until" style="max-width:180px"><button class="btn" id="ab-set">Je m\'absente</button></div>';
+  var absences=(S.absences||[]).slice().sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});
+  var absentNow=isAbsent(today());
+  s+='<div class="win"><div class="win-h"><span class="t">Absences</span><span class="ln"></span><span class="r">'+(absentNow?"active":(absences.length?absences.length+" planifiée(s)":"aucune"))+'</span></div>';
+  s+='<div class="subhead">Planifie une ou plusieurs absences (voyage, service, coupure). Pendant une absence : pas de pénalité de journalières, série préservée. Chaque jour, débriefe au maître ce que tu as appris pour valider une quête mentale.</div>';
+  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn ghost" id="ab-day">Aujourd\'hui</button><button class="btn ghost" id="ab-week">Cette semaine</button></div>';
+  s+='<div class="subhead" style="margin:0 0 6px">Ou une période précise</div><div class="addrow"><input type="date" id="ab-from" style="max-width:150px"><input type="date" id="ab-to" style="max-width:150px"><button class="btn" id="ab-set">Planifier</button></div>';
+  if(absences.length)s+='<div style="margin-top:12px;display:grid;gap:8px">'+absences.map(function(a){var status=(today()<a.from)?"à venir":(today()>a.to?"passée":"en cours");var col=status==="en cours"?"var(--gold)":(status==="à venir"?"var(--cyan-b)":"var(--dim2)");return '<div class="absrow"><span style="color:'+col+'">🌙 '+fmtAbs(a)+'</span><span class="absst">'+status+'</span><span class="absx" data-abs="'+a.from+'|'+a.to+'">✕</span></div>';}).join("")+'</div>';
+  else s+='<div class="empty" style="margin-top:8px">Aucune absence planifiée.</div>';
   s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
   if(!S.journal.length)s+='<div class="empty">Aucune entrée. Commence ce soir.</div>';
@@ -882,6 +984,10 @@ function vEvolution(){
   s+='<div class="win"><div class="win-h"><span class="t">Artefacts</span><span class="ln"></span><span class="r">'+(S.artifacts?S.artifacts.length:0)+'</span></div>';
   s+=(S.artifacts&&S.artifacts.length)?'<div class="artifacts">'+S.artifacts.map(function(a){return '<div class="artcard" title="'+esc(a.from)+' · '+a.date+'"><div class="arti">'+a.icon+'</div><div class="artn">'+esc(a.name)+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun artefact. Vaincs des boss, gagne des rangs et tiens ta série pour en obtenir.</div>';
   s+='</div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Ennemis</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
+  s+='<div class="subhead">La tête des boss qui gardent tes donjons.</div>';
+  s+=S.missions.length?'<div class="enemies">'+S.missions.map(function(m){ensureBoss(m);var c=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]).c;var dead=m.boss.dead;return '<div class="enemy'+(dead?" slain":"")+'"><div class="eface">'+bossSvg(m.rank,58)+'</div><div class="ename">'+esc(m.boss.name)+'</div><div class="einfo" style="color:'+c+'">Rang '+m.rank+'</div><div class="estat">'+(dead?'⚔ vaincu':m.boss.hp+' / '+m.boss.max+' PV')+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun ennemi. Crée un donjon pour invoquer son gardien.</div>';
+  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Journal du Système</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
   s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
   s+='</div>';
@@ -894,6 +1000,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun donjon"):"Aucun donjon";sysNotify("Quête classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Donjon : "+mn]);render();};
   var ma=document.getElementById("m-add");
@@ -906,10 +1013,17 @@ function bind(){
   if(bds)bds.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");sysNotify("Vide-tête","Tête allégée",["+12 XP · MENTAL"]);afterGain(r);render();};
   var bde=document.getElementById("bd-epictete");
   if(bde)bde.onclick=function(){var el=document.getElementById("bd-text");var t=el?el.value.trim():"";if(!t){toast("Écris d'abord quelques mots");return;}S.journal.unshift({date:today(),mood:jMood,sleep:null,note:t,dump:true});var r=gainXP("mental",12,"Vide-tête");afterGain(r);view="maitre";render();sendChat("Voici ce que j'avais sur le cœur. Aide-moi à y voir clair, à la manière d'Épictète (moderne, pas radical), en français :\n\n"+t);};
+  function addAbsence(from,to){
+    if(to<from){var tmp=from;from=to;to=tmp;}
+    if(to<today()){toast("Choisis des dates à venir");return;}
+    S.absences=S.absences||[];S.absences.push({from:from,to:to});save();
+    sysNotify("Absence planifiée",fmtAbs({from:from,to:to}),["Pénalités suspendues","Débriefe chaque jour au maître"]);render();
+  }
+  var abday=document.getElementById("ab-day");if(abday)abday.onclick=function(){addAbsence(today(),today());};
+  var abweek=document.getElementById("ab-week");if(abweek)abweek.onclick=function(){addAbsence(today(),isoPlus(today(),6));};
   var abs=document.getElementById("ab-set");
-  if(abs)abs.onclick=function(){var d=document.getElementById("ab-until").value;if(!d){toast("Choisis une date de retour");return;}if(d<today()){toast("La date doit être aujourd'hui ou après");return;}S.absenceUntil=d;save();sysNotify("Absence déclarée","Jusqu'au "+d,["Pénalités suspendues","Débriefe chaque jour au maître"]);render();};
-  var abc=document.getElementById("ab-clear");
-  if(abc)abc.onclick=function(){S.absenceUntil=null;save();toast("Bon retour, Chasseuse");render();};
+  if(abs)abs.onclick=function(){var f=document.getElementById("ab-from").value,t=document.getElementById("ab-to").value;if(!f&&!t){toast("Choisis au moins une date");return;}if(!f)f=t;if(!t)t=f;addAbsence(f,t);};
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-abs]"),function(el){el.onclick=function(){var p=el.dataset.abs.split("|");S.absences=(S.absences||[]).filter(function(a){return !(a.from===p[0]&&a.to===p[1]);});save();toast("Absence retirée");render();};});
   var fs=document.getElementById("ft-start");if(fs)fs.onclick=ftStart;
   var fp=document.getElementById("ft-pause");if(fp)fp.onclick=ftPause;
   var fr=document.getElementById("ft-reset");if(fr)fr.onclick=ftReset;
@@ -926,6 +1040,10 @@ function bind(){
   var cex=document.getElementById("c-expand");if(cex)cex.onclick=expandDungeon;
   var cpc=document.getElementById("c-pend-cancel");if(cpc)cpc.onclick=function(){pendingDungeon=null;pushChat("assistant","D'accord, on renforcera ce donjon plus tard. Touche le boss vaincu quand tu voudras la suite.");render();};
   var cdb=document.getElementById("c-debrief");if(cdb)cdb.onclick=debriefLearning;
+  var crs=document.getElementById("c-review-start");if(crs)crs.onclick=startReview;
+  var csg=document.getElementById("c-suggest");if(csg)csg.onclick=suggestTool;
+  var cra=document.getElementById("c-review-apply");if(cra)cra.onclick=applyReview;
+  var crc=document.getElementById("c-review-cancel");if(crc)crc.onclick=function(){reviewMode=false;pushChat("assistant","Bilan interrompu. On le reprendra quand tu voudras.");render();};
   if(document.getElementById("chatbox"))renderChat();
 }
 
@@ -955,7 +1073,7 @@ function showBoot(){
   el.className="show";
   var closed=false;
   function closeBoot(){if(closed)return;closed=true;el.className="";el.onclick=null;clearTimeout(bootTimer);}
-  el.onclick=closeBoot;bootTimer=setTimeout(closeBoot,4600);
+  el.onclick=closeBoot; // reste affiché jusqu'à ce que Mathilde le touche (pas d'auto-fermeture)
   if(!cached){
     gm("greeting",{state:apiState()}).then(function(r){
       if(r&&r.line){S.greetDate=today();S.greetLine=r.line;save();var g=document.getElementById("boot-greet");if(g&&el.className==="show")g.innerHTML='<span class="who">Maître du Jeu</span>'+esc(r.line);}

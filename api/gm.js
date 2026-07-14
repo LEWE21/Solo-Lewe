@@ -274,6 +274,67 @@ export default async function handler(req, res) {
       return ok(res, MECH_MODEL, r, JSON.parse(t.text));
     }
 
+    // 8) Bilan hebdomadaire : réaligner les quêtes sur l'avancement réel des projets (JSON structuré)
+    if (action === "weekly_review") {
+      const dungeons = Array.isArray(body.dungeons) ? body.dungeons.slice(0, 20) : [];
+      const desc = (body.description || "").toString().slice(0, 4000);
+      const sys = "Voici le bilan hebdomadaire de Mathilde, projet par projet (ses donjons). À partir de ce qu'elle raconte de son avancement, propose 4 à 10 quêtes concrètes et actionnables pour la semaine à venir, réparties sur les bons projets. Titres courts, en français. Pour chaque quête : la meilleure stat, une priorité sensée, et l'id du donjon concerné (mission) si elle s'y rattache, sinon chaîne vide.";
+      const user = `Donjons (id=titre, rang, objectif) :\n${dungeons.map((d) => `${d.id}=${d.title} [${d.rank}] ${d.note || ""}`).join("\n") || "aucun"}\n\nBilan de Mathilde :\n${desc}`;
+      const r = await client.messages.create({
+        model: MECH_MODEL,
+        max_tokens: 700,
+        output_config: {
+          effort: "low",
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: {
+                quests: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      stat: { type: "string", enum: STATS },
+                      prio: { type: "string", enum: ["high", "med", "low"] },
+                      mission: { type: "string" },
+                    },
+                    required: ["title", "stat", "prio", "mission"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["quests"],
+              additionalProperties: false,
+            },
+          },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
+    }
+
+    // 9) Suggestion d'outil / skill / automatisation selon l'avancement (texte)
+    if (action === "suggest") {
+      const focus = (body.focus || "").toString().slice(0, 600);
+      const projects = Array.isArray(body.projects) ? body.projects.slice(0, 12) : [];
+      const recent = Array.isArray(body.recent) ? body.recent.slice(0, 12) : [];
+      const sys = "You are THE SYSTEM's strategist for Mathilde. Context: she runs a YouTube channel about the Vatican (US market), makes a comic book (BD) about WWII Pacific volunteers for local schools, is building an automated markets/crypto analysis site, learns English, and works daily in Claude Code. Based on what she is working on now and her projects, propose ONE concrete lever to level up her automation or workflow: name a specific tool, an Anthropic Skill, a Claude Code workflow/command/subagent/MCP, or an automation. Say in one line why it fits, then give 2-3 concrete steps to set it up. If she already built something (e.g. SEO automation in Claude Code), propose the NEXT step beyond it, not the same thing. If you are not certain a specific named tool exists, describe the capability to look for rather than inventing a precise product name. Practical and concise, in FRENCH, 4 to 7 short lines. No preamble.";
+      const user = `En ce moment : ${focus || "(non précisé, choisis selon ses projets)"}\nProjets : ${projects.join(", ") || "n/a"}\nQuêtes récentes : ${recent.join(", ") || "n/a"}`;
+      const r = await client.messages.create({
+        model: CHAT_MODEL,
+        max_tokens: 500,
+        output_config: { effort: "medium" },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const reply = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      return ok(res, CHAT_MODEL, r, { reply });
+    }
+
     return res.status(400).json({ error: "unknown action" });
   } catch (e) {
     return res.status(500).json({ error: e && e.message ? e.message : String(e) });
