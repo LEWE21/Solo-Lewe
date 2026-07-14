@@ -234,6 +234,7 @@ nav button:hover{color:var(--txt)}
 (function(){
 "use strict";
 var KEY="systeme_mathilde_v3";
+var BKEY="systeme_mathilde_v3_bak";
 function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 
 var STATS={
@@ -298,6 +299,7 @@ function ensureProposals(state){
 function seed(){
   return {
     hunter:{name:"MATHILDE",level:1,xp:0},
+    lastEpreuve:null,epreuveOn:null,
     stats:{physique:{level:1,xp:0},mental:{level:1,xp:0},creativite:{level:1,xp:0},business:{level:1,xp:0},social:{level:1,xp:0},discipline:{level:1,xp:0}},
     missions:[
       {id:"m_vatican",title:"Vatican — YouTube",rank:"B",note:"Monétiser la chaîne (US) : 1000 abonnés, 4000h"},
@@ -327,20 +329,20 @@ function seed(){
   };
 }
 var S=load();
+function readState(k){try{var r=JSON.parse(localStorage.getItem(k));return (r&&r.hunter)?r:null;}catch(e){return null;}}
 function load(){
-  try{
-    var r=JSON.parse(localStorage.getItem(KEY));
-    if(!r||!r.hunter){r=seed();}
-    else{
-      if(!r.stats)r.stats={};Object.keys(STATS).forEach(function(k){if(!r.stats[k])r.stats[k]={level:1,xp:0};});
-      if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];
-      if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
-    }
-    ensureProposals(r);
-    return r;
-  }catch(e){var x=seed();ensureProposals(x);return x;}
+  var r=readState(KEY)||readState(BKEY);
+  if(!r){r=seed();}
+  else{
+    if(!r.stats)r.stats={};Object.keys(STATS).forEach(function(k){if(!r.stats[k])r.stats[k]={level:1,xp:0};});
+    if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];
+    if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
+    if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
+  }
+  ensureProposals(r);
+  return r;
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j);localStorage.setItem(BKEY,j);}catch(e){}}
 
 function rollover(){
   if(S.lastDate===today())return null;
@@ -564,13 +566,24 @@ function makeQuestFromChat(){
     sysNotify("Quête créée",q.title,[STATS[stat].name]);
   }).catch(function(){toast("Erreur réseau");});
 }
+function claimEpreuve(){
+  if(chatBusy)return;
+  if(S.lastEpreuve===today()){toast("Une épreuve récompensée par jour. Reviens demain.");return;}
+  S.lastEpreuve=today();S.epreuveOn=null;
+  var r=gainXP("mental",25,"Épreuve d'Épictète relevée");
+  sysNotify("Épreuve relevée","+25 XP · MENTAL",["La liberté se gagne par l'exercice"]);
+  afterGain(r);save();
+  pushChat("assistant","✔ Épreuve validée. +25 XP Mental. Ce n'est pas l'épreuve qui compte, mais de l'avoir traversée en homme libre.");
+  render();
+}
 function vMaitre(){
   var mng=manageId?find(S.quests,manageId):null;
   var s='<div class="win"><div class="win-h"><span class="t">Maître du Jeu</span><span class="ln"></span><span class="r">Mentor stoïcien</span></div>';
   if(mng)s+='<div class="mbanner"><span>⚙ Gestion de la journalière : « '+esc(mng.title)+' »</span><a id="c-cancel">annuler</a></div>';
   s+='<div id="chatbox" class="chatbox"></div>';
   if(mng)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-apply">✔ Appliquer le changement</button></div>';
-  else s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button><button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';
+  else{var canClaim=(S.epreuveOn===today()&&S.lastEpreuve!==today());
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
   s+='<div class="addrow"><input type="text" id="c-input" placeholder="Écris au maître du jeu..."><button class="btn" id="c-send">Envoyer</button></div></div>';
   return s;
 }
@@ -715,7 +728,8 @@ function bind(){
   function doSend(){if(!ci)return;var t=ci.value.trim();if(!t)return;ci.value="";sendChat(t);}
   if(cs)cs.onclick=doSend;
   if(ci)ci.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();doSend();}};
-  var ce=document.getElementById("c-epreuve");if(ce)ce.onclick=function(){sendChat("Maître, mets-moi à l'épreuve aujourd'hui. Donne-moi un défi stoïcien concret, inspiré d'Épictète, adapté à ma journée. Reste moderne, pas radical. Réponds-moi en français.");};
+  var ce=document.getElementById("c-epreuve");if(ce)ce.onclick=function(){S.epreuveOn=today();save();sendChat("Maître, mets-moi à l'épreuve aujourd'hui. Donne-moi un défi stoïcien concret, inspiré d'Épictète, adapté à ma journée. Reste moderne, pas radical. Réponds-moi en français.");render();};
+  var ccm=document.getElementById("c-claim");if(ccm)ccm.onclick=claimEpreuve;
   var cg=document.getElementById("c-guide");if(cg)cg.onclick=function(){sendChat("Aide-moi à créer une quête. Pose-moi 1 ou 2 questions courtes pour préciser ce que je dois faire, puis propose un titre concret. Réponds en français.");};
   var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
   var cap=document.getElementById("c-apply");if(cap)cap.onclick=applyDailyEdit;
