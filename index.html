@@ -25,7 +25,8 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font-body)
 @keyframes pulse{0%,100%{box-shadow:0 0 22px rgba(58,194,255,.22)}50%{box-shadow:0 0 42px rgba(58,194,255,.42)}}
 @media (prefers-reduced-motion:reduce){#scan{display:none}.ring{animation:none!important}}
 
-#app{max-width:1080px;margin:0 auto;padding:18px 16px 130px;min-height:100vh}
+#app{max-width:720px;margin:0 auto;padding:18px 16px 130px;min-height:100vh}
+@media (max-width:400px){#app{padding:14px 11px 128px}}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
 .brand{display:flex;align-items:center;gap:12px}
 .brand .mark{width:34px;height:34px;display:grid;place-items:center;color:var(--cyan);border:1px solid var(--line);background:var(--panel);clip-path:polygon(0 0,100% 0,100% 70%,70% 100%,0 100%);box-shadow:var(--glow);font-size:18px}
@@ -109,6 +110,9 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font-body)
 .q .mv:hover{color:var(--cyan)}
 .mbanner{font-family:var(--font-sys);font-size:11px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);background:rgba(255,207,77,.08);padding:9px 11px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .mbanner a{color:var(--dim);cursor:pointer;font-size:10px;text-decoration:underline}
+.mgrouplab{font-family:var(--font-sys);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px}
+.mgroup{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+.mdone{font-family:var(--font-sys);font-size:10px;letter-spacing:.05em;color:var(--green);align-self:center;padding:0 4px}
 .addrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .addrow input[type=text]{flex:1;min-width:150px;background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px 12px;font-family:var(--font-body);font-size:14px;outline:none}
 .addrow input[type=number]{background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px 12px;font-family:var(--font-body);font-size:14px;outline:none}
@@ -303,6 +307,8 @@ var MOODS=["😔","😕","😐","🙂","😄"];
 var PCOL={high:"var(--red)",med:"var(--gold)",low:"var(--dim2)"};
 var RANKS=[{r:"E",min:1,c:"#7c93ab"},{r:"D",min:5,c:"#59d0a8"},{r:"C",min:10,c:"#3ac2ff"},{r:"B",min:16,c:"#6ea8ff"},{r:"A",min:23,c:"#9a6cff"},{r:"S",min:31,c:"#ffcf4d"}];
 function rankOf(lvl){var r=RANKS[0];for(var i=0;i<RANKS.length;i++){if(lvl>=RANKS[i].min)r=RANKS[i];}return r;}
+function rankOrder(r){var i=["E","D","C","B","A","S"].indexOf(r);return i<0?0:i;} // S le plus élevé
+function byRankDesc(a,b){return rankOrder(b.rank)-rankOrder(a.rank);} // du plus fort (S) au plus faible (E)
 function xpNeed(lvl){return 100+(lvl-1)*40;}
 function statNeed(lvl){return 60+(lvl-1)*25;}
 function baseFor(prio,daily){return daily?15:({high:25,med:18,low:12})[prio||"med"];}
@@ -380,7 +386,7 @@ function seed(){
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
     streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[],
-    absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0
+    absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0,ft:null
   };
 }
 var S=load();
@@ -398,7 +404,7 @@ function load(){
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
-    if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;
+    if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;if(!("ft" in r))r.ft=null;
   }
   ensureProposals(r);
   return r;
@@ -585,9 +591,12 @@ function sysConfirm(title,lines,onYes){
 }
 
 /* focus timer */
-var FT={running:false,started:false,phase:"focus",remaining:0,focusMin:30,breakMin:5,cycles:4,cycleNow:1,stat:"mental"};
+var FT={running:false,started:false,phase:"focus",remaining:0,endAt:0,focusMin:30,breakMin:5,cycles:4,cycleNow:1,stat:"mental"};
 var ftInt=null,jMood=3;
 function ftFmt(s){var m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");}
+// Temps restant calculé à partir de l'horodatage de fin : le minuteur reste juste même si l'app a été fermée/mise en veille.
+function ftRemaining(){return FT.running?Math.max(0,Math.round((FT.endAt-Date.now())/1000)):Math.max(0,FT.remaining);}
+function saveFt(){S.ft={running:FT.running,started:FT.started,phase:FT.phase,remaining:FT.remaining,endAt:FT.endAt,focusMin:FT.focusMin,breakMin:FT.breakMin,cycles:FT.cycles,cycleNow:FT.cycleNow,stat:FT.stat};save();}
 function readFtCfg(){
   var f=document.getElementById("ft-focus"),b=document.getElementById("ft-break"),c=document.getElementById("ft-cycles"),st=document.getElementById("ft-stat");
   if(f)FT.focusMin=Math.max(1,parseInt(f.value,10)||FT.focusMin);
@@ -595,25 +604,25 @@ function readFtCfg(){
   if(c)FT.cycles=Math.max(1,parseInt(c.value,10)||FT.cycles);
   if(st)FT.stat=st.value;
 }
-function ftStart(){if(!FT.started){readFtCfg();FT.phase="focus";FT.cycleNow=1;FT.remaining=FT.focusMin*60;FT.started=true;}FT.running=true;if(ftInt)clearInterval(ftInt);ftInt=setInterval(ftTick,1000);render();}
-function ftPause(){FT.running=false;if(ftInt){clearInterval(ftInt);ftInt=null;}render();}
-function ftReset(){FT.running=false;FT.started=false;if(ftInt){clearInterval(ftInt);ftInt=null;}FT.phase="focus";FT.cycleNow=1;FT.remaining=FT.focusMin*60;render();}
+function ftStart(){if(!FT.started){readFtCfg();FT.phase="focus";FT.cycleNow=1;FT.remaining=FT.focusMin*60;FT.started=true;}FT.running=true;FT.endAt=Date.now()+FT.remaining*1000;saveFt();if(ftInt)clearInterval(ftInt);ftInt=setInterval(ftTick,1000);render();}
+function ftPause(){FT.remaining=ftRemaining();FT.running=false;FT.endAt=0;if(ftInt){clearInterval(ftInt);ftInt=null;}saveFt();render();}
+function ftReset(){FT.running=false;FT.started=false;if(ftInt){clearInterval(ftInt);ftInt=null;}FT.phase="focus";FT.cycleNow=1;FT.remaining=FT.focusMin*60;FT.endAt=0;saveFt();render();}
+function ftComplete(){
+  if(FT.phase==="focus"){
+    S.focus.sessions++;S.focus.totalMin+=FT.focusMin;
+    var r=gainXP(FT.stat,20,"Session Focus ("+FT.focusMin+" min)");
+    sysNotify("Focus",FT.focusMin+" min de concentration",["+20 XP · "+STATS[FT.stat].name.toUpperCase()]);
+    afterGain(r);
+    if(FT.cycleNow>=FT.cycles){FT.running=false;FT.started=false;FT.phase="focus";FT.cycleNow=1;FT.remaining=FT.focusMin*60;FT.endAt=0;if(ftInt){clearInterval(ftInt);ftInt=null;}saveFt();flash("level","FOCUS COMPLET",FT.cycles+" cycles terminés");return;}
+    FT.phase="break";FT.remaining=FT.breakMin*60;FT.endAt=Date.now()+FT.remaining*1000;
+  }else{FT.phase="focus";FT.cycleNow++;FT.remaining=FT.focusMin*60;FT.endAt=Date.now()+FT.remaining*1000;}
+  saveFt();
+}
+function ftCatchUp(){var guard=0;while(FT.running&&ftRemaining()<=0&&guard<200){ftComplete();guard++;}}
 function ftTick(){
   if(!FT.running)return;
-  FT.remaining--;
-  if(FT.remaining<=0){
-    if(FT.phase==="focus"){
-      S.focus.sessions++;S.focus.totalMin+=FT.focusMin;
-      var r=gainXP(FT.stat,20,"Session Focus ("+FT.focusMin+" min)");
-      sysNotify("Focus",FT.focusMin+" min de concentration",["+20 XP · "+STATS[FT.stat].name.toUpperCase()]);
-      afterGain(r);
-      if(FT.cycleNow>=FT.cycles){ftReset();flash("level","FOCUS COMPLET",FT.cycles+" cycles terminés");return;}
-      FT.phase="break";FT.remaining=FT.breakMin*60;
-    }else{FT.phase="focus";FT.cycleNow++;FT.remaining=FT.focusMin*60;}
-    if(view==="focus")render();
-    return;
-  }
-  var el=document.getElementById("ft-clock");if(el)el.textContent=ftFmt(FT.remaining);
+  if(ftRemaining()<=0){ftCatchUp();if(view==="focus")render();return;}
+  var el=document.getElementById("ft-clock");if(el)el.textContent=ftFmt(ftRemaining());
 }
 
 /* render */
@@ -747,8 +756,10 @@ function sendChat(message){
 }
 function makeQuestFromChat(){
   if(chatBusy)return;
+  var el=document.getElementById("c-input");var pending=el?el.value.trim():"";if(el)el.value="";
+  if(pending){pushChat("user",pending);renderChat();}
   var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
-  if(!recent){toast("Parle d'abord de ce que tu veux faire");return;}
+  if(!recent){toast("Écris d'abord ce que tu veux faire");return;}
   var dungeons=S.missions.map(function(m){return {id:m.id,title:m.title};});
   toast("Le Système forge la quête...");
   gm("make_quest",{description:recent,dungeons:dungeons}).then(function(q){
@@ -843,8 +854,17 @@ function vMaitre(){
   if(mng)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-apply">✔ Appliquer le changement</button></div>';
   else if(pend)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-expand">⚔ Générer la suite (+ monter le rang)</button></div>';
   else if(reviewMode)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-review-apply">✔ Réaligner mes quêtes</button></div>';
-  else{var canClaim=(S.epreuveOn===today()&&S.lastEpreuve!==today());var canDebrief=(!S.lastLearning||S.lastLearning<today());
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>'+(canClaim?'<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>':'')+'<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-guide">☰ M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';}
+  else{
+    var doneEp=(S.lastEpreuve&&S.lastEpreuve>=today());var startedEp=(S.epreuveOn&&S.epreuveOn>=today());
+    var canClaim=startedEp&&!doneEp;var canStartEp=!startedEp&&!doneEp;
+    var canDebrief=(!S.lastLearning||S.lastLearning<today());
+    s+='<div class="mgrouplab">Rituels du jour</div><div class="mgroup">';
+    if(canStartEp)s+='<button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button>';
+    if(canClaim)s+='<button class="btn" id="c-claim">✔ J\'ai relevé l\'épreuve (+25 XP)</button>';
+    if(doneEp)s+='<span class="mdone">⚡ Épreuve du jour relevée ✔</span>';
+    s+='<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button></div>';
+    s+='<div class="mgrouplab">Tes projets</div><div class="mgroup"><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-valider">✔ Créer une quête</button></div>';
+  }
   s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(pend?"Dis les nouvelles tâches du donjon...":(reviewMode?"Réponds projet par projet...":"Écris au maître du jeu..."))+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
   return s;
 }
@@ -896,7 +916,7 @@ function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
   var nd=S.quests.filter(function(q){return !q.daily;});
   var urgent=nd.filter(function(q){return q.urgent&&!q.done;});
-  var reg=nd.filter(function(q){return !q.urgent;});
+  var reg=nd.filter(function(q){return !q.urgent;}).sort(function(a,b){return ((a.done?1:0)-(b.done?1:0))||(b.base-a.base);}); // par XP décroissant, faites en bas
   var active=dailies.filter(function(q){return dueToday(q);});
   var dd=active.filter(function(q){return q.done;}).length;
   var ordered=dailies.slice().sort(function(a,b){return (dueToday(b)?1:0)-(dueToday(a)?1:0);});
@@ -914,8 +934,8 @@ function vQuetes(){
 
 function vDonjons(){
   var s='<div class="win"><div class="win-h"><span class="t">Donjons · Missions</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Tes projets. Touche un donjon '+iBtn("dungeon")+' pour l\'ouvrir, voir et cocher ses quêtes.</div><div class="missions">';
-  S.missions.forEach(function(m){
+  s+='<div class="subhead">Tes projets, du rang S au rang E. Touche un donjon '+iBtn("dungeon")+' pour l\'ouvrir, voir et cocher ses quêtes.</div><div class="missions">';
+  S.missions.slice().sort(byRankDesc).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
@@ -957,7 +977,7 @@ function vJournal(){
 function vFocus(){
   if(!FT.started&&FT.remaining<=0)FT.remaining=FT.focusMin*60;
   var s='<div class="win"><div class="win-h"><span class="t">Mode Focus</span><span class="ln"></span><span class="r">Chasse en solo</span></div>';
-  s+='<div style="text-align:center;padding:8px 0"><div id="ft-phase" class="ftphase" style="color:'+(FT.phase==="focus"?"var(--cyan-b)":"var(--gold)")+'">'+(FT.phase==="focus"?"CONCENTRATION":"PAUSE")+'</div><div id="ft-clock" class="ftclock">'+ftFmt(FT.remaining)+'</div><div id="ft-cycle" class="ftcycle">Cycle '+FT.cycleNow+' / '+FT.cycles+'</div>';
+  s+='<div style="text-align:center;padding:8px 0"><div id="ft-phase" class="ftphase" style="color:'+(FT.phase==="focus"?"var(--cyan-b)":"var(--gold)")+'">'+(FT.phase==="focus"?"CONCENTRATION":"PAUSE")+'</div><div id="ft-clock" class="ftclock">'+ftFmt(ftRemaining())+'</div><div id="ft-cycle" class="ftcycle">Cycle '+FT.cycleNow+' / '+FT.cycles+'</div>';
   s+='<div style="display:flex;gap:10px;justify-content:center;margin-top:18px">';
   s+=FT.running?'<button class="btn" id="ft-pause">Pause</button>':'<button class="btn" id="ft-start">▶ '+(FT.started?"Reprendre":"Démarrer")+'</button>';
   s+='<button class="btn ghost" id="ft-reset">Reset</button></div></div>';
@@ -985,8 +1005,8 @@ function vEvolution(){
   s+=(S.artifacts&&S.artifacts.length)?'<div class="artifacts">'+S.artifacts.map(function(a){return '<div class="artcard" title="'+esc(a.from)+' · '+a.date+'"><div class="arti">'+a.icon+'</div><div class="artn">'+esc(a.name)+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun artefact. Vaincs des boss, gagne des rangs et tiens ta série pour en obtenir.</div>';
   s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Ennemis</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">La tête des boss qui gardent tes donjons.</div>';
-  s+=S.missions.length?'<div class="enemies">'+S.missions.map(function(m){ensureBoss(m);var c=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]).c;var dead=m.boss.dead;return '<div class="enemy'+(dead?" slain":"")+'"><div class="eface">'+bossSvg(m.rank,58)+'</div><div class="ename">'+esc(m.boss.name)+'</div><div class="einfo" style="color:'+c+'">Rang '+m.rank+'</div><div class="estat">'+(dead?'⚔ vaincu':m.boss.hp+' / '+m.boss.max+' PV')+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun ennemi. Crée un donjon pour invoquer son gardien.</div>';
+  s+='<div class="subhead">La tête des boss qui gardent tes donjons, du rang S au rang E.</div>';
+  s+=S.missions.length?'<div class="enemies">'+S.missions.slice().sort(byRankDesc).map(function(m){ensureBoss(m);var c=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]).c;var dead=m.boss.dead;return '<div class="enemy'+(dead?" slain":"")+'"><div class="eface">'+bossSvg(m.rank,58)+'</div><div class="ename">'+esc(m.boss.name)+'</div><div class="einfo" style="color:'+c+'">Rang '+m.rank+'</div><div class="estat">'+(dead?'⚔ vaincu':m.boss.hp+' / '+m.boss.max+' PV')+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun ennemi. Crée un donjon pour invoquer son gardien.</div>';
   s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Journal du Système</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
   s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
@@ -1081,9 +1101,17 @@ function showBoot(){
   }
 }
 
+// Restaure le minuteur Focus s'il tournait (même si l'app a été fermée) et rattrape le temps écoulé.
+if(S.ft){Object.assign(FT,S.ft);if(FT.running)ftCatchUp();}
+// Économie de batterie : on n'anime le compte à rebours que quand l'app est visible.
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){if(ftInt){clearInterval(ftInt);ftInt=null;}}
+  else if(FT.running){ftCatchUp();if(ftInt)clearInterval(ftInt);ftInt=setInterval(ftTick,1000);if(view==="focus")render();}
+});
 var ro=rollover();
 maybeSpawnUrgent();
 render();
+if(FT.running&&!ftInt)ftInt=setInterval(ftTick,1000);
 showBoot();
 if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
 else if(ro&&ro.k==="done")sysNotify("Système","Journalières accomplies hier",["Série x"+ro.streak]);
