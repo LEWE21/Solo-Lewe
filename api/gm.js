@@ -30,6 +30,7 @@ function mentorSystem(s) {
     "STOIC CORE (Enchiridion): Separate what depends on her — her judgments, effort, discipline, actions — from what does not — results, numbers, other people's opinions, outcomes (ch.1). Move her point of rest onto the act that depends on her; loosen her grip on the result (ch.11, ch.15). Trouble comes from judgments, not things (ch.5).",
     `ADAPTIVE TONE: ${toneLine(s)} If she expresses real distress (not ordinary frustration), drop the edge and answer with warmth first; philosophy comes gently, never as a reproach.`,
     `HER STATUS: Level ${s.level || 1}, Rank ${s.rank || "E"}, streak ${s.streak || 0}. Recent mood ${s.lastMood || "?"}/5, last sleep ${s.lastSleep || "?"}h. Stats: ${statsLine(s)}.`,
+    "QUEST HELP: If she asks to create a quest, ask 1 or 2 short questions to clarify (what exactly, by when, which project), then propose one concrete, doable quest title.",
     "GUARDRAILS: Stay faithful to Epictetus. Judge judgments and actions, never her worth. If she writes to you in French, you may answer in French. Keep it short.",
   ].join("\n\n");
 }
@@ -122,6 +123,40 @@ export default async function handler(req, res) {
         },
         system: "Translate the quest title from French to English. Keep it a short, natural, imperative task title. Output only the translation in the schema.",
         messages: [{ role: "user", content: fr }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return res.status(200).json(JSON.parse(t.text));
+    }
+
+    // 4) Créer une quête à partir d'une conversation / description (JSON structuré)
+    if (action === "make_quest") {
+      const desc = (body.description || "").toString().slice(0, 3000);
+      const dungeons = Array.isArray(body.dungeons) ? body.dungeons.slice(0, 20) : [];
+      const sys = "From the conversation/description below, produce ONE concrete quest for Mathilde's life-RPG. Pick the best-fitting stat and a sensible priority. Set daily=true only for a recurring daily habit. If it clearly belongs to one of the listed dungeons, set mission to that dungeon's id, otherwise empty string. Keep the title short and actionable, in French.";
+      const user = `Conversation / description:\n${desc}\n\nDungeons (id=title): ${dungeons.map((d) => d.id + "=" + d.title).join("; ") || "none"}`;
+      const r = await client.messages.create({
+        model: MODEL,
+        max_tokens: 250,
+        output_config: {
+          effort: "low",
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                stat: { type: "string", enum: STATS },
+                prio: { type: "string", enum: ["high", "med", "low"] },
+                daily: { type: "boolean" },
+                mission: { type: "string" },
+              },
+              required: ["title", "stat", "prio", "daily", "mission"],
+              additionalProperties: false,
+            },
+          },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
       });
       const t = r.content.find((b) => b.type === "text");
       return res.status(200).json(JSON.parse(t.text));

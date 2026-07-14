@@ -100,6 +100,13 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font-body)
 .q .xpv{font-family:var(--font-sys);font-size:10px;color:var(--cyan);letter-spacing:.08em;white-space:nowrap}
 .q .del{color:var(--dim2);cursor:pointer;font-size:16px;padding:2px 6px;flex:none}
 .q .del:hover{color:var(--red)}
+.q.off{opacity:.48}
+.q .check.off{cursor:default;border-color:var(--line-soft);color:var(--dim2)}
+.q .check.off:hover{border-color:var(--line-soft);box-shadow:none}
+.q .gear{color:var(--dim2);cursor:pointer;font-size:15px;padding:2px 6px;flex:none}
+.q .gear:hover{color:var(--cyan)}
+.mbanner{font-family:var(--font-sys);font-size:11px;letter-spacing:.04em;color:var(--gold);border:1px solid var(--line);background:rgba(255,207,77,.08);padding:9px 11px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mbanner a{color:var(--dim);cursor:pointer;font-size:10px;text-decoration:underline}
 .addrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 .addrow input[type=text]{flex:1;min-width:150px;background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px 12px;font-family:var(--font-body);font-size:14px;outline:none}
 .addrow input[type=number]{background:rgba(8,19,36,.8);border:1px solid var(--line-soft);color:var(--txt);padding:11px 12px;font-family:var(--font-body);font-size:14px;outline:none}
@@ -176,6 +183,21 @@ nav button:hover{color:var(--txt)}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:40;font-family:var(--font-sys);font-size:12px;letter-spacing:.1em;color:var(--cyan-b);background:rgba(8,19,36,.95);border:1px solid var(--line);padding:9px 16px;box-shadow:var(--glow);opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1;bottom:104px}
 .empty{font-family:var(--font-sys);font-size:11px;letter-spacing:.06em;color:var(--dim2);text-align:center;padding:22px}
+.ibtn{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);color:var(--cyan);font-family:var(--font-sys);font-size:9px;font-style:italic;cursor:pointer;vertical-align:middle;line-height:1}
+.ibtn:hover{background:var(--cyan);color:#04070e;box-shadow:var(--glow)}
+#modal{position:fixed;inset:0;z-index:62;display:none;place-items:center;background:rgba(2,5,11,.82);backdrop-filter:blur(4px);padding:18px}
+#modal.show{display:grid}
+.modalwin{position:relative;width:min(460px,94vw);max-height:86vh;overflow-y:auto;padding:22px;background:linear-gradient(180deg,rgba(12,28,52,.98),rgba(8,17,34,.98));border:1px solid var(--cyan);clip-path:polygon(var(--ch) 0,100% 0,100% calc(100% - var(--ch)),calc(100% - var(--ch)) 100%,0 100%,0 var(--ch));box-shadow:0 0 44px rgba(58,194,255,.4);animation:flashIn .3s ease both}
+.mclose{position:absolute;top:12px;right:14px;cursor:pointer;color:var(--dim);font-size:16px}
+.mclose:hover{color:var(--red)}
+.mtag{font-family:var(--font-sys);font-size:10px;letter-spacing:.3em;color:var(--cyan);text-transform:uppercase}
+.mtitle{font-family:var(--font-sys);font-size:17px;color:#fff;margin:10px 0 10px;text-shadow:0 0 12px rgba(58,194,255,.4);line-height:1.4}
+.mbody{font-size:13.5px;color:var(--txt);line-height:1.7}
+.chatbox{height:min(46vh,400px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px}
+.bub{max-width:86%;padding:9px 12px;font-size:13.5px;line-height:1.5;border:1px solid var(--line-soft)}
+.bub.me{align-self:flex-end;background:linear-gradient(180deg,rgba(58,194,255,.18),rgba(58,194,255,.06));color:var(--cyan-b);border-color:var(--line);clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)}
+.bub.gm{align-self:flex-start;background:rgba(8,19,36,.8);color:var(--txt);clip-path:polygon(0 0,100% 0,100% 100%,8px 100%,0 calc(100% - 8px))}
+.bub.typing{color:var(--dim);letter-spacing:.3em}
 </style>
 
 <div id="bg"></div><div id="grid"></div><div id="scan"></div>
@@ -198,12 +220,14 @@ nav button:hover{color:var(--txt)}
   <button data-v="donjons"><span class="ni">▲</span>Donjons</button>
   <button data-v="journal"><span class="ni">✎</span>Journal</button>
   <button data-v="focus"><span class="ni">◎</span>Focus</button>
+  <button data-v="maitre"><span class="ni">🗨</span>Maître</button>
   <button data-v="evolution"><span class="ni">📈</span>Évolution</button>
 </nav>
 
 <div id="nstack"></div>
 <div id="flash"></div>
 <div id="ask"></div>
+<div id="modal"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -299,7 +323,7 @@ function seed(){
       {id:"q_ip",title:"Trouver un logiciel d'analyse vidéo (IP)",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"},
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
-    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0}
+    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[]
   };
 }
 var S=load();
@@ -310,7 +334,7 @@ function load(){
     else{
       if(!r.stats)r.stats={};Object.keys(STATS).forEach(function(k){if(!r.stats[k])r.stats[k]={level:1,xp:0};});
       if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];
-      if(typeof r.combo!=="number")r.combo=0;
+      if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     }
     ensureProposals(r);
     return r;
@@ -424,11 +448,111 @@ function uid(){return "x"+Math.random().toString(36).slice(2,9);}
 function kpi(v,k){return '<div class="kpi"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>';}
 function dailyInfo(){var d=S.quests.filter(function(q){return q.daily;});return {tot:d.length,done:d.filter(function(q){return q.done;}).length};}
 
+/* ---- API serveur (Vercel) ---- */
+function gm(action,extra){
+  return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();});
+}
+function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats};}
+
+/* ---- Explications (i) ---- */
+var INFO={
+  hp:{t:"HP — Points de vie",d:"Ta puissance vitale. Elle grandit avec ton Niveau : plus tu montes, plus ton HP max est élevé. C'est l'image de la force que tu accumules."},
+  stamina:{t:"Stamina — Énergie du jour",d:"Ton énergie du jour. Elle monte à mesure que tu coches tes quêtes journalières (0 le matin, 100 quand tout est fait). Basse = ⚠ énergie faible, il te reste des journalières à finir."},
+  xp:{t:"XP — Expérience",d:"Chaque quête te donne de l'XP. Elle remplit ta barre ; pleine, tu montes de Niveau. L'XP nourrit aussi la stat liée à la quête."},
+  level:{t:"Niveau",d:"Ton niveau global. Chaque palier coûte de plus en plus d'XP. Il détermine ton Rang."},
+  rank:{t:"Rang de Chasseur",d:"De E à S selon ton Niveau (E → D → C → B → A → S). Tu montes de rang à certains paliers, avec une notification de promotion."},
+  combo:{t:"Combo",d:"Le nombre de quêtes enchaînées. Il grimpe à chaque quête terminée et retombe à zéro si tu prends une pénalité."},
+  streak:{t:"Série",d:"Le nombre de jours d'affilée où tu as terminé TOUTES tes quêtes journalières. Elle se casse si tu en rates une."},
+  daily:{t:"Quêtes journalières",d:"Des quêtes à refaire chaque jour (tes habitudes). Elles se remettent à zéro chaque matin et font partie de la pénalité si non faites."},
+  penalty:{t:"Pénalité",d:"Si tu ne finis pas toutes tes journalières avant minuit : -40 XP, et ta série + ton combo repartent à zéro."},
+  dungeon:{t:"Donjon (Mission)",d:"Un de tes grands projets. Chaque quête rattachée le fait progresser. Son rang (E → S) reflète sa difficulté. Touche-le pour l'ouvrir."},
+  physique:{t:"💪 Physique",d:"Sport, santé, sommeil, énergie. Monte quand tu prends soin de ton corps."},
+  mental:{t:"🧠 Mental",d:"Focus, apprentissage, lecture, discipline mentale, stoïcisme."},
+  creativite:{t:"🎨 Créativité",d:"BD, YouTube, création de contenu, idées artistiques."},
+  business:{t:"💰 Business",d:"Crypto, revenus, monétisation, projets business."},
+  social:{t:"🤝 Social",d:"Réseau, relations, communication, entourage."},
+  discipline:{t:"🎯 Discipline",d:"Habitudes, régularité, réveil, constance. Le cœur du leveling."}
+};
+function iBtn(key){return '<span class="ibtn" data-info="'+key+'" title="Explication">i</span>';}
+
+/* ---- Fenêtre modale ---- */
+function openModal(html,color){
+  var el=document.getElementById("modal");if(!el)return;
+  el.innerHTML='<div class="modalwin" style="'+(color?"border-color:"+color+";box-shadow:0 0 44px "+color+"66":"")+'"><span class="mclose" id="m-close">✕</span>'+html+'</div>';
+  el.className="show";
+  var c=document.getElementById("m-close");if(c)c.onclick=closeModal;
+  el.onclick=function(ev){if(ev.target===el)closeModal();};
+}
+function closeModal(){var el=document.getElementById("modal");if(el)el.className="";}
+function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ Système</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
+
+/* ---- Donjon : fenêtre détaillée ---- */
+function openDungeon(mId){
+  var m=find(S.missions,mId);if(!m)return;
+  var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
+  var qs=S.quests.filter(function(q){return q.mission===m.id;});
+  var done=qs.filter(function(q){return q.done;}).length;
+  var h='<div class="mtag" style="color:'+rk.c+'">▸ Donjon · Rang '+m.rank+'</div><div class="mtitle" style="color:'+rk.c+'">'+esc(m.title)+'</div>';
+  if(m.note)h+='<div class="mbody" style="margin-bottom:12px">'+esc(m.note)+'</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
+  h+='<div class="subhead" style="margin:16px 0 4px">Quêtes du donjon</div>';
+  h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune quête. Ajoutes-en une ci-dessous.</div>';
+  h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle quête pour ce donjon..."><button class="btn" id="dq-add">Ajouter</button></div>';
+  openModal(h,rk.c);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","Le Système ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
+  var a=document.getElementById("dq-add");
+  if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
+}
+
+/* ---- Maître du jeu (chat) ---- */
+var chatBusy=false;
+function pushChat(role,content){S.chat=S.chat||[];S.chat.push({role:role,content:content});if(S.chat.length>60)S.chat.shift();save();}
+function renderChat(){
+  var box=document.getElementById("chatbox");if(!box)return;
+  var msgs=S.chat||[];
+  var html=msgs.length?msgs.map(function(mm){return '<div class="bub '+(mm.role==="user"?"me":"gm")+'">'+esc(mm.content).replace(/\n/g,"<br>")+'</div>';}).join(""):'<div class="empty">Parle au maître du jeu. Il te met à l\'épreuve et t\'aide à créer tes quêtes.</div>';
+  if(chatBusy)html+='<div class="bub gm typing">…</div>';
+  box.innerHTML=html;box.scrollTop=box.scrollHeight;
+}
+function sendChat(message){
+  if(chatBusy||!message)return;
+  pushChat("user",message);chatBusy=true;renderChat();
+  gm("chat",{message:message,history:(S.chat||[]).slice(0,-1).slice(-16),state:apiState()}).then(function(r){
+    chatBusy=false;pushChat("assistant",(r&&r.reply)?r.reply:"(Le Système est silencieux. Réessaie.)");if(view==="maitre")renderChat();
+  }).catch(function(){chatBusy=false;pushChat("assistant","(Connexion au Système impossible. Réessaie.)");if(view==="maitre")renderChat();});
+}
+function makeQuestFromChat(){
+  if(chatBusy)return;
+  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  if(!recent){toast("Parle d'abord de ce que tu veux faire");return;}
+  var dungeons=S.missions.map(function(m){return {id:m.id,title:m.title};});
+  toast("Le Système forge la quête...");
+  gm("make_quest",{description:recent,dungeons:dungeons}).then(function(q){
+    if(!q||!q.title){toast("Impossible de créer la quête");return;}
+    var stat=STATS[q.stat]?q.stat:"mental";
+    var prio=["high","med","low"].indexOf(q.prio)>=0?q.prio:"med";
+    var daily=!!q.daily;
+    var mission=(q.mission&&find(S.missions,q.mission))?q.mission:null;
+    S.quests.push({id:uid(),title:q.title,stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission});save();
+    pushChat("assistant","✔ Quête créée : « "+q.title+" » ("+STATS[stat].name+", "+(daily?"journalière":"priorité "+prio)+").");if(view==="maitre")renderChat();
+    sysNotify("Quête créée",q.title,[STATS[stat].name]);
+  }).catch(function(){toast("Erreur réseau");});
+}
+function vMaitre(){
+  var s='<div class="win"><div class="win-h"><span class="t">Maître du Jeu</span><span class="ln"></span><span class="r">Mentor stoïcien</span></div>';
+  s+='<div id="chatbox" class="chatbox"></div>';
+  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn ghost" id="c-epreuve">⚡ Épreuve d\'Épictète</button><button class="btn ghost" id="c-guide">🗨 M\'aider à créer</button><button class="btn ghost" id="c-valider">✔ Créer la quête</button></div>';
+  s+='<div class="addrow"><input type="text" id="c-input" placeholder="Écris au maître du jeu..."><button class="btn" id="c-send">Envoyer</button></div></div>';
+  return s;
+}
+
 function render(){
   var v=document.getElementById("view");
   if(view==="statut")v.innerHTML=vStatut();
   else if(view==="quetes")v.innerHTML=vQuetes();
   else if(view==="donjons")v.innerHTML=vDonjons();
+  else if(view==="maitre")v.innerHTML=vMaitre();
   else if(view==="journal")v.innerHTML=vJournal();
   else if(view==="focus")v.innerHTML=vFocus();
   else v.innerHTML=vEvolution();
@@ -442,15 +566,15 @@ function vStatut(){
   var di=dailyInfo(),stamina=di.tot?Math.round(di.done/di.tot*100):100;
   var s='<div class="win"><div class="win-h"><span class="t">Statut</span><span class="ln"></span><span class="r">'+today()+'</span></div>';
   s+='<div class="status"><div class="avatar"><div class="ring" style="--p:'+pct(h.xp,need)+'"><div class="rankbadge"><span style="color:'+rk.c+';text-shadow:0 0 12px '+rk.c+'">'+rk.r+'</span></div><div class="lvlwrap"><div class="lk">Niveau</div><div class="lv">'+h.level+'</div><div class="cls">Chasseuse</div></div></div></div>';
-  s+='<div class="who"><div class="name">'+esc(h.name)+'</div><div class="sub">Rang '+rk.r+' · Classe : Créatrice</div>';
+  s+='<div class="who"><div class="name">'+esc(h.name)+'</div><div class="sub">Rang '+rk.r+' '+iBtn("rank")+' · Niv '+h.level+' '+iBtn("level")+' · Créatrice</div>';
   if(stamina<50&&di.tot)s+='<div class="alert">⚠ ÉNERGIE FAIBLE — il te reste '+(di.tot-di.done)+' quête(s) journalière(s)</div>';
-  s+='<div class="vitals"><div><div class="vlab"><span>HP</span><span>'+maxHP+' / '+maxHP+'</span></div><div class="vbar hp"><i style="transform:scaleX(1)"></i></div></div>';
-  s+='<div><div class="vlab"><span>STAMINA</span><span>'+stamina+' / 100</span></div><div class="vbar st"><i style="transform:scaleX('+(stamina/100)+')"></i></div></div></div>';
-  s+='<div class="xprow"><div class="lab"><span>XP</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
-  s+='<div class="chips"><div class="chip">Combo <b>x'+S.combo+'</b></div><div class="chip">Série <b>'+S.streak+'🔥</b></div><div class="chip">Quêtes <b>'+S.doneCount+'</b></div><div class="chip">Record <b>'+S.best+'</b></div></div></div></div></div>';
+  s+='<div class="vitals"><div><div class="vlab"><span>HP '+iBtn("hp")+'</span><span>'+maxHP+' / '+maxHP+'</span></div><div class="vbar hp"><i style="transform:scaleX(1)"></i></div></div>';
+  s+='<div><div class="vlab"><span>STAMINA '+iBtn("stamina")+'</span><span>'+stamina+' / 100</span></div><div class="vbar st"><i style="transform:scaleX('+(stamina/100)+')"></i></div></div></div>';
+  s+='<div class="xprow"><div class="lab"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
+  s+='<div class="chips"><div class="chip">Combo '+iBtn("combo")+' <b>x'+S.combo+'</b></div><div class="chip">Série '+iBtn("streak")+' <b>'+S.streak+'🔥</b></div><div class="chip">Quêtes <b>'+S.doneCount+'</b></div><div class="chip">Record <b>'+S.best+'</b></div></div></div></div></div>';
   s+='<div class="win"><div class="win-h"><span class="t">Caractéristiques</span><span class="ln"></span><span class="r">0'+Object.keys(STATS).length+'</span></div><div class="stats">';
   Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k],nd=statNeed(st.level);
-    s+='<div class="stat"><div class="top"><span class="ic" style="color:'+m.col+'">'+m.ic+'</span><span class="sv">'+st.level+'</span></div><div class="nm">'+m.name+'</div>'+bar(st.xp,nd)+'<div class="xp">'+st.xp+' / '+nd+' XP</div></div>';});
+    s+='<div class="stat"><div class="top"><span class="ic" style="color:'+m.col+'">'+m.ic+'</span><span class="sv">'+st.level+'</span></div><div class="nm">'+m.name+' '+iBtn(k)+'</div>'+bar(st.xp,nd)+'<div class="xp">'+st.xp+' / '+nd+' XP</div></div>';});
   s+='</div></div>';
   return s;
 }
@@ -462,8 +586,8 @@ function questRow(q){
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;}),reg=S.quests.filter(function(q){return !q.daily;});
   var dd=dailies.filter(function(q){return q.done;}).length;
-  var s='<div class="win"><div class="win-h"><span class="t">Quêtes Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+dailies.length+'</span></div>';
-  s+='<div class="warn">⚠ Termine toutes les quêtes journalières avant minuit, sous peine de pénalité (-40 XP · série et combo perdus).</div>';
+  var s='<div class="win"><div class="win-h"><span class="t">Quêtes Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+dailies.length+' '+iBtn("daily")+'</span></div>';
+  s+='<div class="warn">⚠ Termine toutes les quêtes journalières avant minuit, sous peine de pénalité '+iBtn("penalty")+' (-40 XP · série et combo perdus).</div>';
   s+=dailies.length?dailies.map(questRow).join(""):'<div class="empty">Aucune quête journalière.</div>';
   s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Quêtes</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
@@ -474,15 +598,15 @@ function vQuetes(){
 
 function vDonjons(){
   var s='<div class="win"><div class="win-h"><span class="t">Donjons · Missions</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Tes projets, organisés par le Système. Chaque quête liée les fait progresser.</div><div class="missions">';
+  s+='<div class="subhead">Tes projets. Touche un donjon '+iBtn("dungeon")+' pour l\'ouvrir, voir et cocher ses quêtes.</div><div class="missions">';
   S.missions.forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
     var clear=qs.length>0&&done===qs.length;
-    s+='<div class="mission'+(clear?" clear":"")+'"><div class="mrank" style="color:'+rk.c+'">'+m.rank+'</div><div class="mt">'+esc(m.title)+'</div><div class="mn">'+esc(m.note||"")+'</div><div class="mp"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length))+'</div>';
+    s+='<div class="mission'+(clear?" clear":"")+'" data-dungeon="'+m.id+'" style="cursor:pointer"><div class="mrank" style="color:'+rk.c+'">'+m.rank+'</div><div class="mt">'+esc(m.title)+'</div><div class="mn">'+esc(m.note||"")+'</div><div class="mp"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length))+'</div>';
   });
-  s+='</div><div class="addrow"><input type="text" id="m-title" placeholder="Nouveau donjon (projet)..."><input type="text" id="m-note" placeholder="Objectif (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">Le Système attribue le rang. Pour le remplir de quêtes, parle-m\'en dans Claude Code.</div></div>';
+  s+='</div><div class="addrow"><input type="text" id="m-title" placeholder="Nouveau donjon (projet)..."><input type="text" id="m-note" placeholder="Objectif (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">Le Système attribue le rang. Touche un donjon pour l\'ouvrir et y ajouter des quêtes.</div></div>';
   return s;
 }
 
@@ -534,8 +658,10 @@ function vEvolution(){
 }
 
 function bind(){
-  Array.prototype.forEach.call(document.querySelectorAll("[data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. Le Système ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
-  Array.prototype.forEach.call(document.querySelectorAll("[data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. Le Système ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun donjon"):"Aucun donjon";sysNotify("Quête classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Donjon : "+mn]);render();};
   var ma=document.getElementById("m-add");
@@ -547,6 +673,14 @@ function bind(){
   var fs=document.getElementById("ft-start");if(fs)fs.onclick=ftStart;
   var fp=document.getElementById("ft-pause");if(fp)fp.onclick=ftPause;
   var fr=document.getElementById("ft-reset");if(fr)fr.onclick=ftReset;
+  var ci=document.getElementById("c-input"),cs=document.getElementById("c-send");
+  function doSend(){if(!ci)return;var t=ci.value.trim();if(!t)return;ci.value="";sendChat(t);}
+  if(cs)cs.onclick=doSend;
+  if(ci)ci.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();doSend();}};
+  var ce=document.getElementById("c-epreuve");if(ce)ce.onclick=function(){sendChat("Maître, mets-moi à l'épreuve aujourd'hui. Donne-moi un défi stoïcien concret, inspiré d'Épictète, adapté à ma journée. Reste moderne, pas radical. Réponds-moi en français.");};
+  var cg=document.getElementById("c-guide");if(cg)cg.onclick=function(){sendChat("Aide-moi à créer une quête. Pose-moi 1 ou 2 questions courtes pour préciser ce que je dois faire, puis propose un titre concret. Réponds en français.");};
+  var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
+  if(document.getElementById("chatbox"))renderChat();
 }
 
 Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.onclick=function(){view=b.dataset.v;render();};});
