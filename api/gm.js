@@ -31,6 +31,7 @@ function mentorSystem(s) {
     `ADAPTIVE TONE: ${toneLine(s)} If she expresses real distress (not ordinary frustration), drop the edge and answer with warmth first; philosophy comes gently, never as a reproach.`,
     `HER STATUS: Level ${s.level || 1}, Rank ${s.rank || "E"}, streak ${s.streak || 0}. Recent mood ${s.lastMood || "?"}/5, last sleep ${s.lastSleep || "?"}h. Stats: ${statsLine(s)}.`,
     "QUEST HELP: If she asks to create a quest, ask 1 or 2 short questions to clarify (what exactly, by when, which project), then propose one concrete, doable quest title.",
+    "DAILY MANAGEMENT: She can adjust one of her daily quests instead of deleting it directly. She may change its rhythm (every N days, or specific weekdays), pause it, resume it, or remove it. Ask one short clarifying question if needed, then state the concrete change in one line and tell her to tap the Apply button.",
     "GUARDRAILS: Stay faithful to Epictetus. Judge judgments and actions, never her worth. If she writes to you in French, you may answer in French. Keep it short.",
   ].join("\n\n");
 }
@@ -151,6 +152,38 @@ export default async function handler(req, res) {
                 mission: { type: "string" },
               },
               required: ["title", "stat", "prio", "daily", "mission"],
+              additionalProperties: false,
+            },
+          },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return res.status(200).json(JSON.parse(t.text));
+    }
+
+    // 5) Modifier une quête journalière à partir de la conversation (JSON structuré)
+    if (action === "edit_daily") {
+      const desc = (body.description || "").toString().slice(0, 3000);
+      const q = body.quest || {};
+      const sys = "Decide how Mathilde wants to change her recurring daily quest, based on the conversation. Options for op: cadence_everyN (recurs every N days; everyN=1 means every day), cadence_weekdays (recurs on specific weekdays; fill weekdays with integers where 0=Sunday, 1=Monday, ... 6=Saturday), pause (stop it without deleting), resume (reactivate), delete (remove it), none (intent not clear yet). Fill everyN only for cadence_everyN, otherwise 1. Fill weekdays only for cadence_weekdays, otherwise an empty array.";
+      const user = `Quest: "${q.title || ""}". Current cadence: ${JSON.stringify(q.cad || null)}, paused: ${!!q.paused}.\n\nConversation:\n${desc}`;
+      const r = await client.messages.create({
+        model: MODEL,
+        max_tokens: 200,
+        output_config: {
+          effort: "low",
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: {
+                op: { type: "string", enum: ["cadence_everyN", "cadence_weekdays", "pause", "resume", "delete", "none"] },
+                everyN: { type: "integer" },
+                weekdays: { type: "array", items: { type: "integer" } },
+              },
+              required: ["op", "everyN", "weekdays"],
               additionalProperties: false,
             },
           },
