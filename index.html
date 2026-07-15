@@ -9,6 +9,8 @@
   --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
   --iri:conic-gradient(from 120deg,#ff6fb5,#7b5cff,#3b6bff,#22c9ee,#2fd39b,#ffd08a,#ff6fb5);
   --blur:blur(22px) saturate(1.5);
+  --line:var(--brd); --line-soft:var(--brd2); --panel:var(--glass2); --panel2:var(--glass);
+  --cyan-b:#bfeaff; --cyan-d:#1f7fbf; --gold-b:#ffe0a3; --red:#ff7385; --green:#2fd39b; --orange:#ff9d6b;
 }
 html[data-theme="day"]{
   --bg1:#eef1f8; --bg2:#e6e9f4;
@@ -75,7 +77,7 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .core-info .who{font-size:19px;font-weight:700;color:var(--txt)}
 .core-info .rank{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--dim);margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .core-info .rank b{color:var(--amber);font-weight:600}
-.brief{margin-top:15px;border-left:2px solid var(--violet);padding:2px 0 2px 13px}
+.brief{margin-top:15px;background:var(--glass3);border:1px solid var(--brd2);border-left:3px solid var(--violet);border-radius:var(--r-md);padding:12px 14px}
 .brief .jarvis{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.26em;color:var(--violet);text-transform:uppercase;margin-bottom:6px}
 .minigauges{display:flex;gap:18px;margin-top:15px;flex-wrap:wrap;align-items:center}
 .mg{display:flex;align-items:center;gap:9px}
@@ -273,7 +275,7 @@ nav button.on:hover{color:#fff}
 .mbody{font-size:13.5px;color:var(--dim);line-height:1.7}
 
 /* ---- boot ---- */
-#boot{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:22px;cursor:pointer}
+#boot{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:22px;cursor:pointer;background:radial-gradient(900px 700px at 50% 42%,rgba(123,92,255,.2),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2))}
 #boot.show{display:grid;animation:bootFade .4s ease both}
 #boot .bootwin{width:min(440px,94vw);text-align:center;position:relative}
 #boot .bmk{width:94px;height:94px;margin:0 auto 18px;position:relative;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--glass2);box-shadow:0 0 60px -8px var(--violet)}
@@ -286,7 +288,7 @@ nav button.on:hover{color:#fff}
 .bbar{width:200px;height:5px;margin:16px auto 0;border-radius:99px;background:var(--track);overflow:hidden}
 .bbar i{display:block;height:100%;width:0;border-radius:99px;background:var(--iri);animation:bfill 1.5s cubic-bezier(.4,.1,.2,1) .5s forwards}
 @keyframes bfill{to{width:100%}}
-.bgreet{font-size:14px;line-height:1.6;color:var(--txt);margin:18px 6px 0;min-height:22px;opacity:0;animation:bl .6s ease 1.3s both}
+.bgreet{font-size:14px;line-height:1.6;color:var(--txt);margin:18px auto 0;max-width:360px;background:var(--glass);border:1px solid var(--brd);border-radius:var(--r-md);box-shadow:var(--shadow);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:14px 16px;min-height:22px;opacity:0;animation:bl .6s ease 1.3s both}
 .bgreet .who{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--violet);text-transform:uppercase;margin-bottom:7px}
 .benter{font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;margin-top:22px;opacity:0;animation:bl .5s ease 2s both,pulseDim 1.6s ease 2.3s infinite}
 @keyframes bootFade{from{opacity:0}to{opacity:1}}
@@ -300,6 +302,21 @@ nav button.on:hover{color:#fff}
 .rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rip .6s ease-out forwards;pointer-events:none}
 @keyframes rip{to{transform:scale(2.4);opacity:0}}
 .aura{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.q .lock{color:var(--dim2);cursor:pointer;font-size:14px;padding:2px 5px;flex:none}
+.q .lock.on{color:var(--amber)}
+.deptag{color:var(--amber)!important;border-color:rgba(255,180,87,.45)!important}
+.q.blkrow{opacity:.62}
+.epr{font-size:13.5px;line-height:1.55;color:var(--txt);background:var(--glass3);border:1px solid var(--brd2);border-left:3px solid var(--amber);border-radius:var(--r-md);padding:12px 14px}
+.epr.done{opacity:.85}
+.spinload{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid transparent;background:var(--iri) border-box;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 0);animation:spin 1s linear infinite;vertical-align:middle}
+.wheelblock{margin-top:16px;border-top:1px solid var(--track);padding-top:14px}
+.wheelwrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.wheel{position:relative;width:min(200px,64vw);aspect-ratio:1}
+.wheel .disc{width:100%;height:100%;transition:transform 3.6s cubic-bezier(.15,.85,.2,1)}
+.wheel .ptr{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:18px solid var(--amber);filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));z-index:2}
+.wheel .hub{position:absolute;inset:0;margin:auto;width:44px;height:44px;border-radius:50%;background:var(--glass);border:1px solid var(--brd);display:grid;place-items:center;font-size:18px;box-shadow:var(--shadow)}
+.wheelres{width:100%;text-align:center;font-size:14px;color:var(--txt);min-height:20px}
+.wheelres .tsk{display:block;font-size:15px;font-weight:600;margin:6px 0 10px;color:var(--amber)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 </style>
@@ -679,6 +696,79 @@ function warriorLadder(){
   }).join("")+'</div>';
 }
 
+/* ---- Roue de la chance : une tâche libre au hasard ---- */
+function isBlocked(q){
+  if(q.dependsOn){
+    var dep=find(S.quests,q.dependsOn);if(dep)return !dep.done;
+    var mis=find(S.missions,q.dependsOn);if(mis){var qs=S.quests.filter(function(x){return x.mission===mis.id&&x.id!==q.id;});return !(qs.length>0&&qs.every(function(x){return x.done;}));}
+    return false;
+  }
+  return !!q.blocked;
+}
+function depName(q){
+  if(!q.dependsOn)return "";
+  var dep=find(S.quests,q.dependsOn);if(dep)return dep.title;
+  var mis=find(S.missions,q.dependsOn);if(mis)return mis.title+" (objectif)";
+  return "";
+}
+function openDepend(qId){
+  var q=find(S.quests,qId);if(!q)return;
+  var h='<div class="mtag">▸ Dépendance</div><div class="mtitle">'+esc(q.title)+'</div><div class="subhead" style="margin:6px 0 12px">De quoi dépend cette tâche ? Elle restera hors de la roue et du cockpit tant que ce n\'est pas terminé.</div><div style="display:grid;gap:8px">';
+  h+='<button class="btn ghost" data-dep="" style="text-align:left">🔓 Aucune, tâche libre'+((!q.dependsOn&&!q.blocked)?" ✓":"")+'</button>';
+  S.missions.forEach(function(m){h+='<button class="btn ghost" data-dep="'+m.id+'" style="text-align:left">🎯 Objectif terminé : '+esc(m.title)+(q.dependsOn===m.id?" ✓":"")+'</button>';});
+  S.quests.filter(function(x){return x.id!==q.id&&!x.daily;}).forEach(function(x){h+='<button class="btn ghost" data-dep="'+x.id+'" style="text-align:left">✓ Après la tâche : '+esc(x.title)+(x.done?" (faite)":"")+(q.dependsOn===x.id?" ✓":"")+'</button>';});
+  h+='</div>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dep]"),function(el){el.onclick=function(){q.dependsOn=el.dataset.dep||null;q.blocked=false;save();closeModal();render();};});
+}
+function wheelEligible(){return S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);});}
+function statCol(k){return (STATS[k]&&STATS[k].col)||"#7b5cff";}
+function wheelCard(){
+  var elig=wheelEligible(),n=Math.min(8,elig.length);
+  if(n===0)return '<div class="wheelblock"><div class="plab">Roue de la chance</div><div class="empty">Aucune tâche libre pour l\'instant. Ajoute-en une, ou ouvre le cadenas d\'une tâche.</div></div>';
+  var svg;
+  if(n===1){svg='<circle cx="100" cy="100" r="92" fill="'+statCol(elig[0].stat)+'" opacity=".85"/>';}
+  else{var seg=360/n,p="";for(var i=0;i<n;i++){var a0=(-90+i*seg)*Math.PI/180,a1=(-90+(i+1)*seg)*Math.PI/180;var x0=100+92*Math.cos(a0),y0=100+92*Math.sin(a0),x1=100+92*Math.cos(a1),y1=100+92*Math.sin(a1);var lg=seg>180?1:0;p+='<path d="M100 100 L'+x0.toFixed(1)+' '+y0.toFixed(1)+' A92 92 0 '+lg+' 1 '+x1.toFixed(1)+' '+y1.toFixed(1)+' Z" fill="'+statCol(elig[i].stat)+'" opacity=".85" stroke="rgba(255,255,255,.18)" stroke-width="1"/>';}svg=p;}
+  return '<div class="wheelblock"><div class="plab">Roue de la chance</div><div class="subhead" style="margin:0 0 10px">Pas d\'inspiration ? Tire une tâche libre au hasard. Les tâches avec un cadenas fermé (qui dépendent d\'une autre) sont exclues.</div><div class="wheelwrap"><div class="wheel"><div class="ptr"></div><svg class="disc" id="wheel-disc" viewBox="0 0 200 200">'+svg+'</svg><div class="hub">🎯</div></div><button class="btn" id="wheel-spin">Tourner la roue</button><div class="wheelres" id="wheel-res"></div></div></div>';
+}
+function cockpitEpreuve(){
+  if(chatBusy)return;
+  if(S.lastEpreuve&&S.lastEpreuve>=today()){toast("Épreuve déjà relevée aujourd'hui.");return;}
+  S.epreuveOn=today();save();
+  var prompt="Donne-moi une épreuve stoïcienne concrète pour aujourd'hui, inspirée d'Épictète et de son Manuel. Une seule épreuve, courte, actionnable, moderne et pas radicale, adaptée à ma journée. Réponds en français, en 3 phrases maximum.";
+  pushChat("user","Mets-moi à l'épreuve, façon Épictète.");
+  chatBusy=true;render();
+  gm("chat",{message:prompt,history:(S.chat||[]).slice(0,-1).slice(-10),state:Object.assign({},apiState(),{coachStyle:"epictete"})}).then(function(r){
+    chatBusy=false;var reply=(r&&r.reply)?r.reply:"(ROBI est silencieux, réessaie.)";
+    pushChat("assistant",reply);S.epreuveText=reply;S.epreuveDate=today();save();render();
+  }).catch(function(){chatBusy=false;pushChat("assistant","(Connexion impossible, réessaie.)");save();render();});
+}
+function epreuveSection(){
+  var done=(S.lastEpreuve&&S.lastEpreuve>=today());
+  var started=(S.epreuveOn&&S.epreuveOn>=today());
+  var txt=(S.epreuveDate===today()&&S.epreuveText)?S.epreuveText:"";
+  var s='<div class="wheelblock"><div class="plab">Défi d\'Épictète</div>';
+  if(chatBusy&&started&&!txt){s+='<div class="subhead" style="margin:0">ROBI prépare ton épreuve <span class="spinload"></span></div>';}
+  else if(done){s+='<div class="epr done">'+(txt?esc(txt).replace(/\n/g,"<br>"):"Épreuve du jour relevée.")+'</div><div class="mdone" style="margin-top:8px">✔ +25 XP Mental. À demain.</div>';}
+  else if(started&&txt){s+='<div class="epr">'+esc(txt).replace(/\n/g,"<br>")+'</div><button class="btn" id="cock-epr-claim" style="margin-top:10px;width:100%">✔ J\'ai relevé le défi (+25 XP)</button>';}
+  else{s+='<div class="subhead" style="margin:0 0 10px">Une épreuve stoïcienne du jour, inspirée d\'Épictète, pour forger ton caractère.</div><button class="btn ghost" id="cock-epr-start" style="width:100%">⚡ Tirer mon épreuve du jour</button>';}
+  s+='</div>';return s;
+}
+function wireWheel(){
+  var btn=document.getElementById("wheel-spin");if(!btn)return;
+  btn.onclick=function(){
+    var elig=wheelEligible(),n=Math.min(8,elig.length);if(!n)return;
+    var disc=document.getElementById("wheel-disc"),res=document.getElementById("wheel-res");
+    var idx=Math.floor(Math.random()*n),seg=360/n;
+    var base=disc._rot||0,target=base+360*5+(360-(idx*seg+seg/2));
+    disc._rot=target;disc.style.transform="rotate("+target+"deg)";
+    if(res)res.innerHTML='<span class="nm">La roue tourne...</span>';
+    setTimeout(function(){var q=elig[idx];if(!q||!res)return;
+      res.innerHTML='ROBI a choisi <span class="tsk">« '+esc(q.title)+' »</span><button class="btn" id="wheel-do">Je m\'y mets</button>';
+      var d=document.getElementById("wheel-do");if(d)d.onclick=function(){sysConfirm("Tu as accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};
+    },3700);
+  };
+}
 /* ---- Effets tactiles : onde au clic, caresse du compagnon ---- */
 function ripple(e,el){try{var r=document.createElement("span");r.className="rip";var b=el.getBoundingClientRect();var d=Math.max(b.width,b.height);r.style.width=r.style.height=d+"px";var cx=(e&&e.clientX!=null)?e.clientX:(b.left+b.width/2);var cy=(e&&e.clientY!=null)?e.clientY:(b.top+b.height/2);r.style.left=(cx-b.left-d/2)+"px";r.style.top=(cy-b.top-d/2)+"px";el.appendChild(r);setTimeout(function(){if(r.parentNode)r.parentNode.removeChild(r);},600);}catch(_){}}
 function initEffects(){
@@ -941,6 +1031,7 @@ function render(){
   else html=vEvolution();
   v.innerHTML='<div class="view-anim">'+html+'</div>';
   bind();
+  wireWheel();
   setClock();
   Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.classList.toggle("on",b.dataset.v===view);});
 }
@@ -984,10 +1075,12 @@ function vStatut(){
     todc+='<div class="subhead">La journée touche à sa fin. Prends un moment pour ton journal du soir.</div><button class="btn" data-go="journal" style="width:100%">Ouvrir mon journal</button>';
   }else{
     var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-    var prio=S.quests.filter(function(q){return !q.daily&&!q.done;}).sort(function(a,b){return b.base-a.base;}).slice(0,3);
+    var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);}).sort(function(a,b){return b.base-a.base;}).slice(0,3);
     var list=dueList.concat(prio);
     todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
+    todc+=wheelCard();
   }
+  todc+=epreuveSection();
   todc+='</div>';
   var objc='<div class="win a-obj"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r" data-go="donjons" style="cursor:pointer;color:var(--violet)">Tout voir</span></div>';
   S.missions.slice().sort(byRankDesc).slice(0,4).forEach(function(m){
@@ -1002,7 +1095,9 @@ function vStatut(){
 }
 function questRow(q){
   var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  return '<div class="q'+(q.done?" done":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  var blk=isBlocked(q),dn=depName(q);
+  var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':'<span class="lock'+(blk?" on":"")+'" data-lock="'+q.id+'" title="Définir la dépendance">'+(blk?"🔒":"🔓")+'</span><span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function dailyRow(q){
   var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
@@ -1167,6 +1262,9 @@ function bind(){
   var csg=document.getElementById("c-suggest");if(csg)csg.onclick=suggestTool;
   var cra=document.getElementById("c-review-apply");if(cra)cra.onclick=applyReview;
   var crc=document.getElementById("c-review-cancel");if(crc)crc.onclick=function(){reviewMode=false;pushChat("assistant","Bilan interrompu. On le reprendra quand tu voudras.");render();};
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-lock]"),function(el){el.onclick=function(){openDepend(el.dataset.lock);};});
+  var ces=document.getElementById("cock-epr-start");if(ces)ces.onclick=cockpitEpreuve;
+  var cec=document.getElementById("cock-epr-claim");if(cec)cec.onclick=claimEpreuve;
   if(document.getElementById("chatbox"))renderChat();
 }
 
