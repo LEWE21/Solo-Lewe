@@ -425,7 +425,7 @@ function seed(){
   };
 }
 var S=load();
-save(); // persiste immédiatement l'état chargé (migrations + sauvegarde miroir anti-reset)
+writeLocal(); // persiste l'état chargé (migrations + miroir anti-reset) SANS toucher au timestamp de synchro
 function readState(k){try{var r=JSON.parse(localStorage.getItem(k));return (r&&r.hunter)?r:null;}catch(e){return null;}}
 function load(){
   var r=readState(KEY)||readState(BKEY);
@@ -910,7 +910,7 @@ function vJournal(){
   s+='<div class="subhead">Relie ROBI à ton Claude et à tes autres appareils. Ton code de liaison est personnel, garde-le pour toi.</div>';
   if(linked){
     s+='<div class="absrow" style="font-family:var(--font-sys);font-size:11px;letter-spacing:.06em"><span style="color:var(--cyan-b);word-break:break-all">CODE : '+getLink()+'</span><span class="absx" id="ln-copy" title="Copier">⧉</span></div>';
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn'+(son?'':' ghost')+'" id="ln-sync">'+(son?'Synchro active, désactiver':'Activer la synchro')+'</button><button class="btn ghost" id="ln-forget">Oublier ce code</button></div>';
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(son?'<button class="btn" id="ln-now">⟳ Synchroniser</button>':'')+'<button class="btn ghost" id="ln-sync">'+(son?'Désactiver la synchro':'Activer la synchro')+'</button><button class="btn ghost" id="ln-forget">Oublier ce code</button></div>';
   }else{
     s+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ln-gen">Générer mon code</button></div>';
     s+='<div class="subhead" style="margin:12px 0 6px">Ou récupérer mes données avec un code existant</div><div class="addrow"><input type="text" id="ln-in" placeholder="Colle ton code de liaison..." style="text-transform:uppercase"><button class="btn ghost" id="ln-use">Relier</button></div>';
@@ -978,6 +978,16 @@ function bind(){
   var lsy=document.getElementById("ln-sync");if(lsy)lsy.onclick=function(){setSyncOn(!syncOn());if(syncOn())robiStore("push",{state:S}).catch(function(){});toast(syncOn()?"Synchro activée":"Synchro en pause");render();};
   var lf=document.getElementById("ln-forget");if(lf)lf.onclick=function(){setLink("");setSyncOn(false);ROBI_FEED=[];toast("Code oublié sur cet appareil");render();};
   var lc=document.getElementById("ln-copy");if(lc)lc.onclick=function(){try{navigator.clipboard.writeText(getLink());toast("Code copié");}catch(e){toast("Note le code manuellement");}};
+  var lnow=document.getElementById("ln-now");if(lnow)lnow.onclick=function(){
+    toast("Synchronisation...");
+    robiStore("pull").then(function(r){
+      if(r&&r.error){toast("⚠ "+r.error);return;}
+      var rem=r&&r.state;
+      if(rem&&rem.hunter&&(rem.syncedAt||0)>(S.syncedAt||0)){S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];writeLocal();}
+      else{robiStore("push",{state:S}).catch(function(){});}
+      loadFeed();render();toast("Synchronisé ✔");
+    }).catch(function(){toast("⚠ Synchro impossible (réseau ou base non configurée)");});
+  };
   var ci=document.getElementById("c-input"),cs=document.getElementById("c-send");
   function doSend(){if(!ci)return;var t=ci.value.trim();if(!t)return;ci.value="";sendChat(t);}
   if(cs)cs.onclick=doSend;
@@ -1033,13 +1043,21 @@ function showBoot(){
   }
 }
 
-var ro=rollover();
-render();
-showBoot();
-if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
-else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
-// Liaison : récupérer la sauvegarde partagée puis les rapports du Claude perso.
-if(getLink()){(syncOn()?syncPull(false):Promise.resolve()).then(function(){loadFeed();});}
+function afterSync(){
+  var ro=rollover();
+  render();
+  showBoot();
+  if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
+  else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
+  loadFeed();
+}
+// D'abord on récupère la sauvegarde partagée (avec le timestamp d'origine), PUIS on traite la journée.
+if(getLink()&&syncOn())syncPull(false).then(afterSync);
+else afterSync();
+// Au retour sur l'app (changement d'onglet, réveil de l'iPad), on récupère les derniers changements des autres appareils.
+document.addEventListener("visibilitychange",function(){
+  if(!document.hidden&&syncOn())syncPull(false).then(function(){loadFeed();});
+});
 })();
 </script>
 </body></html>
