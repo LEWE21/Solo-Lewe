@@ -911,6 +911,7 @@ function vJournal(){
   if(linked){
     s+='<div class="absrow" style="font-family:var(--font-sys);font-size:11px;letter-spacing:.06em"><span style="color:var(--cyan-b);word-break:break-all">CODE : '+getLink()+'</span><span class="absx" id="ln-copy" title="Copier">⧉</span></div>';
     s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(son?'<button class="btn" id="ln-now">⟳ Synchroniser</button>':'')+'<button class="btn ghost" id="ln-sync">'+(son?'Désactiver la synchro':'Activer la synchro')+'</button><button class="btn ghost" id="ln-forget">Oublier ce code</button></div>';
+    s+='<div class="subhead" style="margin:16px 0 6px">Note à ton Claude (il la lira pour mettre à jour tes données de vie)</div><div class="addrow"><input type="text" id="ln-note" placeholder="Ex : nouvel objectif, changement important..."><button class="btn ghost" id="ln-notesend">Envoyer à mon Claude</button></div>';
   }else{
     s+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ln-gen">Générer mon code</button></div>';
     s+='<div class="subhead" style="margin:12px 0 6px">Ou récupérer mes données avec un code existant</div><div class="addrow"><input type="text" id="ln-in" placeholder="Colle ton code de liaison..." style="text-transform:uppercase"><button class="btn ghost" id="ln-use">Relier</button></div>';
@@ -978,6 +979,7 @@ function bind(){
   var lsy=document.getElementById("ln-sync");if(lsy)lsy.onclick=function(){setSyncOn(!syncOn());if(syncOn())robiStore("push",{state:S}).catch(function(){});toast(syncOn()?"Synchro activée":"Synchro en pause");render();};
   var lf=document.getElementById("ln-forget");if(lf)lf.onclick=function(){setLink("");setSyncOn(false);ROBI_FEED=[];toast("Code oublié sur cet appareil");render();};
   var lc=document.getElementById("ln-copy");if(lc)lc.onclick=function(){try{navigator.clipboard.writeText(getLink());toast("Code copié");}catch(e){toast("Note le code manuellement");}};
+  var lns=document.getElementById("ln-notesend");if(lns)lns.onclick=function(){var el=document.getElementById("ln-note");var t=el?el.value.trim():"";if(!t){toast("Écris ta note");return;}robiStore("note",{text:t}).then(function(r){if(r&&r.error){toast("⚠ "+r.error);return;}if(el)el.value="";toast("Note envoyée à ton Claude ✔");}).catch(function(){toast("⚠ Envoi impossible (base non configurée ?)");});};
   var lnow=document.getElementById("ln-now");if(lnow)lnow.onclick=function(){
     toast("Synchronisation...");
     robiStore("pull").then(function(r){

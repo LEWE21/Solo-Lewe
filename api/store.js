@@ -74,6 +74,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ feed });
     }
 
+    // Boîte app -> Claude : la personne dépose une note pour son Claude Code (ex : "mets à jour mon contexte")
+    if (action === "note") {
+      const text = (body.text || "").toString().slice(0, 1500);
+      if (!text) return res.status(400).json({ error: "text requis" });
+      await redis(["LPUSH", "inbox:" + id, JSON.stringify({ text, at: new Date().toISOString() })]);
+      await redis(["LTRIM", "inbox:" + id, 0, 99]);
+      return res.status(200).json({ ok: true });
+    }
+
+    // Boîte app -> Claude : le Claude Code lit les notes en attente
+    if (action === "notes") {
+      const arr = (await redis(["LRANGE", "inbox:" + id, 0, 99])) || [];
+      const notes = arr.map((s) => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+      return res.status(200).json({ notes });
+    }
+
+    // Boîte app -> Claude : le Claude Code vide les notes une fois traitées
+    if (action === "notes_clear") {
+      await redis(["DEL", "inbox:" + id]);
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ error: "action inconnue" });
   } catch (e) {
     return res.status(500).json({ error: e && e.message ? e.message : String(e) });
