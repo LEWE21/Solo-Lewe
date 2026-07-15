@@ -468,6 +468,23 @@ function syncPull(force){
   }).catch(function(){return false;});
 }
 function loadFeed(){if(!getLink())return Promise.resolve();return robiStore("feed").then(function(r){ROBI_FEED=(r&&r.feed)||[];if(view==="statut"||view==="evolution")render();}).catch(function(){});}
+// Tâches poussées par ton Claude perso (à partir de CONTEXT.md) : on les crée dans ROBI, rattachées au bon objectif.
+function ingestTasks(){
+  if(!getLink())return Promise.resolve();
+  return robiStore("tasks_get").then(function(r){
+    var arr=(r&&r.tasks)||[];if(!arr.length)return;
+    var added=0;
+    arr.forEach(function(x){
+      if(!x||!x.title)return;
+      var stat=STATS[x.stat]?x.stat:"discipline";
+      var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
+      var daily=!!x.daily,mission=null;
+      if(x.objective){var mm=S.missions.filter(function(m){return m.title.toLowerCase()===String(x.objective).toLowerCase()||m.id===x.objective;})[0];if(mm)mission=mm.id;}
+      S.quests.push({id:uid(),title:String(x.title).slice(0,160),stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission});added++;
+    });
+    if(added){save();robiStore("tasks_clear").catch(function(){});sysNotify("ROBI",added+" tâche"+(added>1?"s":"")+" ajoutée"+(added>1?"s":"")+" par ton Claude",["Selon tes objectifs"]);render();}
+  }).catch(function(){});
+}
 
 function rollover(){
   if(!S.lastDate){S.lastDate=today();save();return null;}
@@ -975,7 +992,7 @@ function bind(){
   if(abs)abs.onclick=function(){var f=document.getElementById("ab-from").value,t=document.getElementById("ab-to").value;if(!f&&!t){toast("Choisis au moins une date");return;}if(!f)f=t;if(!t)t=f;addAbsence(f,t);};
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-abs]"),function(el){el.onclick=function(){var p=el.dataset.abs.split("|");S.absences=(S.absences||[]).filter(function(a){return !(a.from===p[0]&&a.to===p[1]);});save();toast("Absence retirée");render();};});
   var lg=document.getElementById("ln-gen");if(lg)lg.onclick=function(){var id=genLink();setLink(id);setSyncOn(true);robiStore("push",{state:S}).catch(function(){});toast("Code généré, synchro activée");render();};
-  var lu=document.getElementById("ln-use");if(lu)lu.onclick=function(){var el=document.getElementById("ln-in");var v=el?el.value.trim().toUpperCase():"";if(!/^[A-Z0-9_-]{16,64}$/.test(v)){toast("Code invalide");return;}setLink(v);setSyncOn(true);toast("Liaison en cours...");syncPull(true).then(function(ok){loadFeed();toast(ok?"Données récupérées":"Lié");render();});};
+  var lu=document.getElementById("ln-use");if(lu)lu.onclick=function(){var el=document.getElementById("ln-in");var v=el?el.value.trim().toUpperCase():"";if(!/^[A-Z0-9_-]{16,64}$/.test(v)){toast("Code invalide");return;}setLink(v);setSyncOn(true);toast("Liaison en cours...");syncPull(true).then(function(ok){loadFeed();ingestTasks();toast(ok?"Données récupérées":"Lié");render();});};
   var lsy=document.getElementById("ln-sync");if(lsy)lsy.onclick=function(){setSyncOn(!syncOn());if(syncOn())robiStore("push",{state:S}).catch(function(){});toast(syncOn()?"Synchro activée":"Synchro en pause");render();};
   var lf=document.getElementById("ln-forget");if(lf)lf.onclick=function(){setLink("");setSyncOn(false);ROBI_FEED=[];toast("Code oublié sur cet appareil");render();};
   var lc=document.getElementById("ln-copy");if(lc)lc.onclick=function(){try{navigator.clipboard.writeText(getLink());toast("Code copié");}catch(e){toast("Note le code manuellement");}};
@@ -987,7 +1004,7 @@ function bind(){
       var rem=r&&r.state;
       if(rem&&rem.hunter&&(rem.syncedAt||0)>(S.syncedAt||0)){S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];writeLocal();}
       else{robiStore("push",{state:S}).catch(function(){});}
-      loadFeed();render();toast("Synchronisé ✔");
+      loadFeed();ingestTasks();render();toast("Synchronisé ✔");
     }).catch(function(){toast("⚠ Synchro impossible (réseau ou base non configurée)");});
   };
   var ci=document.getElementById("c-input"),cs=document.getElementById("c-send");
@@ -1051,14 +1068,14 @@ function afterSync(){
   showBoot();
   if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
   else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
-  loadFeed();
+  loadFeed();ingestTasks();
 }
 // D'abord on récupère la sauvegarde partagée (avec le timestamp d'origine), PUIS on traite la journée.
 if(getLink()&&syncOn())syncPull(false).then(afterSync);
 else afterSync();
 // Au retour sur l'app (changement d'onglet, réveil de l'iPad), on récupère les derniers changements des autres appareils.
 document.addEventListener("visibilitychange",function(){
-  if(!document.hidden&&syncOn())syncPull(false).then(function(){loadFeed();});
+  if(!document.hidden&&syncOn())syncPull(false).then(function(){loadFeed();ingestTasks();});
 });
 })();
 </script>

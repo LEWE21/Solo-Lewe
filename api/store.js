@@ -96,6 +96,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    // File de tâches Claude -> app : le Claude Code (qui connaît CONTEXT.md) dépose des tâches à créer dans ROBI
+    if (action === "tasks_post") {
+      const tasks = Array.isArray(body.tasks) ? body.tasks.slice(0, 50) : [];
+      if (!tasks.length) return res.status(400).json({ error: "tasks requis" });
+      for (const t of tasks) { await redis(["RPUSH", "taskq:" + id, JSON.stringify(t)]); }
+      await redis(["LTRIM", "taskq:" + id, -200, -1]);
+      return res.status(200).json({ ok: true, count: tasks.length });
+    }
+
+    // File de tâches : l'app lit les tâches en attente
+    if (action === "tasks_get") {
+      const arr = (await redis(["LRANGE", "taskq:" + id, 0, -1])) || [];
+      const tasks = arr.map((s) => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+      return res.status(200).json({ tasks });
+    }
+
+    // File de tâches : l'app vide la file une fois les tâches créées
+    if (action === "tasks_clear") {
+      await redis(["DEL", "taskq:" + id]);
+      return res.status(200).json({ ok: true });
+    }
+
     return res.status(400).json({ error: "action inconnue" });
   } catch (e) {
     return res.status(500).json({ error: e && e.message ? e.message : String(e) });
