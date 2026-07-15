@@ -23,7 +23,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font-body)
 @keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
 #scan{position:fixed;left:0;right:0;height:150px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(58,194,255,.05),transparent);animation:scan 7s linear infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 22px rgba(58,194,255,.22)}50%{box-shadow:0 0 42px rgba(58,194,255,.42)}}
-@media (prefers-reduced-motion:reduce){#scan{display:none}.ring{animation:none!important}}
+@media (prefers-reduced-motion:reduce){#scan{display:none}.ring,.ring-rot,.hud-status .dot{animation:none!important}}
 
 #app{max-width:720px;margin:0 auto;padding:18px 16px 130px;min-height:100vh}
 @media (max-width:400px){#app{padding:14px 11px 128px}}
@@ -207,21 +207,52 @@ nav button:hover{color:var(--txt)}
 .bub.me{align-self:flex-end;background:linear-gradient(180deg,rgba(58,194,255,.18),rgba(58,194,255,.06));color:var(--cyan-b);border-color:var(--line);clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)}
 .bub.gm{align-self:flex-start;background:rgba(8,19,36,.8);color:var(--txt);clip-path:polygon(0 0,100% 0,100% 100%,8px 100%,0 calc(100% - 8px))}
 .bub.typing{color:var(--dim);letter-spacing:.3em}
-.bossline{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-sys);font-size:10px;letter-spacing:.06em;color:var(--gold);margin-top:12px}
-.bossline.dead{color:var(--green);justify-content:flex-start}
-.bar.boss>i{background:linear-gradient(90deg,#7a1020,#ff4f6d,#ffcf4d);box-shadow:0 0 12px rgba(255,79,109,.7)}
-.urgentwin{border-color:var(--red)!important;box-shadow:0 0 26px rgba(255,79,109,.25)}
-.artifacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
-.artcard{text-align:center;padding:12px 6px;border:1px solid var(--line-soft);background:rgba(8,19,36,.6);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
-.arti{font-size:26px;line-height:1}
-.artn{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.04em;color:var(--dim);margin-top:6px;text-transform:uppercase}
-.enemies{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
-.enemy{text-align:center;padding:12px 6px 10px;border:1px solid var(--line-soft);background:radial-gradient(120px 80px at 50% 20%,rgba(58,194,255,.06),transparent 70%),rgba(8,19,36,.6);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
-.enemy.slain{opacity:.5}
-.eface{line-height:0;margin-bottom:6px}
-.ename{font-size:11px;color:var(--txt);line-height:1.25}
-.einfo{font-family:var(--font-sys);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
-.estat{font-family:var(--font-sys);font-size:9px;letter-spacing:.06em;color:var(--dim);margin-top:2px}
+/* ---- HUD Iron Man : réacteur, cadrans, systèmes, objectifs ---- */
+.corner{position:fixed;width:30px;height:30px;border:2px solid var(--cyan);opacity:.6;z-index:30;pointer-events:none;filter:drop-shadow(0 0 5px rgba(58,194,255,.5))}
+.corner.tl{top:12px;left:12px;border-right:0;border-bottom:0}
+.corner.tr{top:12px;right:12px;border-left:0;border-bottom:0}
+.corner.bl{bottom:80px;left:12px;border-right:0;border-top:0}
+.corner.br{bottom:80px;right:12px;border-left:0;border-top:0}
+.plab{font-family:var(--font-sys);font-size:9.5px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.plab::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.core{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.reactor{flex:none;width:min(210px,46vw);aspect-ratio:1;position:relative;display:grid;place-items:center}
+.reactor svg{position:absolute;inset:0;width:100%;height:100%}
+.ring-rot{transform-origin:50% 50%;animation:spin 26s linear infinite}
+.ring-rot.rev{animation-duration:38s;animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.core-num{position:relative;text-align:center;text-shadow:0 0 18px rgba(58,194,255,.7)}
+.core-num .big{font-size:clamp(30px,8vw,46px);font-weight:800;color:#fff;line-height:1}
+.core-num .cap{font-size:9px;letter-spacing:.32em;color:var(--cyan-b);margin-top:6px}
+.core-info{flex:1;min-width:210px}
+.core-info .who{font-size:21px;letter-spacing:.24em;color:#fff;text-shadow:0 0 14px rgba(58,194,255,.4)}
+.core-info .rank{font-family:var(--font-sys);font-size:10px;letter-spacing:.16em;color:var(--gold);margin-top:6px}
+.brief{margin-top:14px;font-family:var(--font-body);font-size:13.5px;line-height:1.6;color:var(--txt);border-left:2px solid var(--gold);padding:2px 0 2px 12px}
+.brief .jarvis{display:block;font-family:var(--font-sys);font-size:8.5px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:6px}
+.minigauges{display:flex;gap:22px;margin-top:16px;flex-wrap:wrap}
+.mg{display:flex;align-items:center;gap:10px}
+.mg .gv{position:relative;width:56px;height:56px;display:grid;place-items:center}
+.mg .gv svg{position:absolute;inset:0;width:100%;height:100%}
+.nm{font-family:var(--font-sys);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.mg .gv b{font-size:15px;color:#fff}
+.mg .gt{font-family:var(--font-sys);font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;line-height:1.5}
+.mg .gt b{display:block;color:var(--cyan-b);font-size:11px;letter-spacing:.04em}
+.sys{display:flex;flex-direction:column;gap:12px}
+.sysrow{display:grid;grid-template-columns:118px 1fr 40px;align-items:center;gap:10px}
+.sysrow .n{font-size:12px;letter-spacing:.02em;color:var(--txt)}
+.sysrow .track{height:7px;background:rgba(58,194,255,.08);border:1px solid var(--line-soft);position:relative;overflow:hidden}
+.sysrow .track i{position:absolute;inset:0;transform-origin:left;box-shadow:0 0 10px rgba(58,194,255,.5)}
+.sysrow .p{font-size:10px;color:var(--cyan-b);text-align:right}
+.objrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line-soft);cursor:pointer}
+.objrow:last-child{border-bottom:0}
+.objrow .otag{font-family:var(--font-sys);font-weight:700;font-size:13px;width:22px;text-align:center}
+.objrow .oname{flex:1;font-size:13.5px}
+.objrow .obar{flex:1.4;height:6px;background:rgba(58,194,255,.08);border:1px solid var(--line-soft);position:relative;overflow:hidden}
+.objrow .obar i{position:absolute;inset:0;transform-origin:left}
+.objrow .op{width:42px;text-align:right;font-size:10px;color:var(--cyan-b)}
+.hud-status{display:flex;align-items:center;gap:7px;font-family:var(--font-sys);font-size:9px;letter-spacing:.2em;color:var(--cyan-b);text-transform:uppercase}
+.hud-status .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);animation:blinkdot 2s steps(1) infinite}
+@keyframes blinkdot{50%{opacity:.3}}
 .absrow{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 11px;border:1px solid var(--line-soft);background:rgba(8,19,36,.5)}
 .absrow .absst{margin-left:auto;font-family:var(--font-sys);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .absrow .absx{cursor:pointer;color:var(--dim2);font-size:15px;padding:0 2px}
@@ -258,10 +289,12 @@ nav button:hover{color:var(--txt)}
 </style>
 
 <div id="bg"></div><div id="grid"></div><div id="scan"></div>
+<span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
 
 <div id="app">
   <div class="topbar">
     <div class="brand"><div class="mark">◉</div><div><h1>ROBI</h1><small>Ton tableau de bord</small></div></div>
+    <div class="hud-status"><span class="dot"></span>EN LIGNE<span id="hud-clock" style="margin-left:8px;color:var(--txt);letter-spacing:.08em"></span></div>
     <div class="tools">
       <div class="icobtn" id="btn-export" title="Exporter">⇩</div>
       <div class="icobtn" id="btn-import" title="Importer">⇧</div>
@@ -273,7 +306,7 @@ nav button:hover{color:var(--txt)}
 
 <nav id="nav">
   <button data-v="statut" class="on"><span class="ni">◈</span>Statut</button>
-  <button data-v="quetes"><span class="ni">⚔</span>Quêtes</button>
+  <button data-v="quetes"><span class="ni">▸</span>Tâches</button>
   <button data-v="donjons"><span class="ni">▲</span>Objectifs</button>
   <button data-v="journal"><span class="ni">✎</span>Journal</button>
   <button data-v="maitre"><span class="ni">☰</span>ROBI</button>
@@ -361,7 +394,7 @@ function ensureProposals(state){
 function seed(){
   return {
     hunter:{name:"MATHILDE",level:1,xp:0},
-    lastEpreuve:null,epreuveOn:null,artifacts:[],costUsd:0,lastUrgent:null,
+    lastEpreuve:null,epreuveOn:null,costUsd:0,
     stats:{physique:{level:1,xp:0},mental:{level:1,xp:0},creativite:{level:1,xp:0},business:{level:1,xp:0},social:{level:1,xp:0},discipline:{level:1,xp:0}},
     missions:[
       {id:"m_vatican",title:"Vatican — YouTube",rank:"B",note:"Monétiser la chaîne (US) : 1000 abonnés, 4000h"},
@@ -402,7 +435,7 @@ function load(){
     if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
-    if(!r.artifacts)r.artifacts=[];if(typeof r.costUsd!=="number")r.costUsd=0;if(!("lastUrgent" in r))r.lastUrgent=null;
+    if(typeof r.costUsd!=="number")r.costUsd=0;
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -425,12 +458,11 @@ function rollover(){
     out={k:"absent"};
   }else if(dailies.length){
     var allDone=dailies.every(function(q){return q.done;});
-    if(allDone){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Quêtes journalières accomplies (série "+S.streak+")");if(S.streak===7)grantArtifact("Flamme de Constance","🔥","Série de 7 jours");if(S.streak===30)grantArtifact("Braise Éternelle","🔆","Série de 30 jours");out={k:"done",streak:S.streak};}
+    if(allDone){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Tâches journalières accomplies (série "+S.streak+")");out={k:"done",streak:S.streak};}
     else{S.hunter.xp=Math.max(0,S.hunter.xp-40);S.streak=0;S.combo=0;log("PÉNALITÉ : journalières non terminées (-40 XP)");out={k:"pen"};}
   }
   S.history.push({date:S.lastDate,level:S.hunter.level});if(S.history.length>120)S.history.shift();
-  S.quests=S.quests.filter(function(q){return !q.urgent;});
-  // Les quêtes normales validées la veille sont retirées (déjà comptées et tracées dans le Journal de ROBI),
+  // Les tâches normales validées la veille sont retirées (déjà comptées et tracées dans le Journal de ROBI),
   // pour que la liste reste vivante et alignée sur ta progression. Les journalières, elles, se réinitialisent.
   S.quests=S.quests.filter(function(q){return q.daily||!q.done;});
   S.quests.forEach(function(q){if(q.daily)q.done=false;});
@@ -448,123 +480,23 @@ function gainXP(statKey,gain,label){
   return {gain:gain,statKey:statKey,statLeveled:su>0,statLevel:st.level,leveled:lu>0,level:h.level,rankChanged:rankOf(h.level).r!==beforeRank,rank:rankOf(h.level).r};
 }
 function afterGain(r){
-  if(r.rankChanged){flash("rank","RANG "+r.rank,"Membre promu");grantArtifact("Marque du Rang "+r.rank,"🎖","Promotion au rang "+r.rank);sysNotify("Artefact obtenu","🎖 Marque du Rang "+r.rank,["Promotion"]);}
+  if(r.rankChanged){flash("rank","PALIER "+r.rank,"Membre promu");}
   else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ ROBI ⟫","Niveau "+r.level+" atteint",["ROBI reconnaît ta croissance, Membre."]);}
 }
 function award(q){
   S.doneCount++;S.combo++;
   var mult=comboMult();
   var gain=Math.max(1,Math.round(q.base*mult));
-  var r=gainXP(q.stat,gain,"Quête : "+q.title);
+  var r=gainXP(q.stat,gain,"Tâche : "+q.title);
   var m=STATS[q.stat];
   var lines=["+"+r.gain+" XP · "+m.name.toUpperCase(),"COMBO x"+S.combo+(mult>1?" (×"+mult.toFixed(2)+" XP)":"")];
   if(r.statLeveled)lines.push(m.name+" niv "+r.statLevel);
-  sysNotify(q.urgent?"Quête urgente accomplie":"Quête accomplie",esc(q.title),lines);
+  sysNotify("Tâche accomplie",esc(q.title),lines);
   afterGain(r);
-  bossHit(q);
   save();
 }
-/* ---- Mécaniques RPG : combo, boss, artefacts, quêtes urgentes ---- */
+/* ---- Mécanique : combo (progression) ---- */
 function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
-var BOSS_ARCH={E:{n:"Gobelin des Ombres",i:"👺"},D:{n:"Orc de Garde",i:"👹"},C:{n:"Chevalier Déchu",i:"🗡"},B:{n:"Golem de Pierre",i:"🗿"},A:{n:"Démon Supérieur",i:"😈"},S:{n:"Monarque Suprême",i:"👑"}};
-function bossMax(rank){return ({E:8,D:12,C:18,B:26,A:36,S:50})[rank]||12;}
-function ensureBoss(m){if(!m)return;if(!m.boss){var a=BOSS_ARCH[m.rank]||BOSS_ARCH.D;m.boss={name:a.n,icon:a.i,max:bossMax(m.rank),hp:bossMax(m.rank),dead:false};}}
-// Portraits d'ennemis en SVG holographique (une tête par rang), dans le style de l'app.
-var BOSS_SHAPES={
-  E:function(c){return '<path d="M22 24 L10 12 L24 26"/><path d="M42 24 L54 12 L40 26"/><path d="M20 24 Q32 18 44 24 L42 42 Q32 52 22 42 Z"/><path d="M24 32 l7 3 M40 32 l-7 3"/><circle cx="27" cy="35" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="35" r="2.2" fill="'+c+'" stroke="none"/><path d="M26 44 l3 -3 l3 3 l3 -3 l-1 5 l-8 0 z"/>';},
-  D:function(c){return '<path d="M16 26 Q32 14 48 26 L46 40 Q32 50 18 40 Z"/><path d="M12 24 l6 4 M52 24 l-6 4"/><path d="M27 42 q-1 8 -5 10 M37 42 q1 8 5 10"/><path d="M24 30 l8 2 M40 30 l-8 2"/><circle cx="27" cy="33" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="33" r="2.2" fill="'+c+'" stroke="none"/>';},
-  C:function(c){return '<path d="M18 28 Q18 14 32 12 Q46 14 46 28 L46 44 L18 44 Z"/><path d="M32 16 L32 44"/><path d="M22 30 L42 30"/><rect x="24" y="27" width="6" height="4" fill="'+c+'" stroke="none"/><rect x="34" y="27" width="6" height="4" fill="'+c+'" stroke="none"/><path d="M28 12 L32 6 L36 12"/>';},
-  B:function(c){return '<path d="M16 24 L24 16 L40 16 L48 24 L46 42 L36 48 L28 48 L18 42 Z"/><rect x="22" y="22" width="8" height="6" fill="'+c+'" stroke="none"/><rect x="34" y="22" width="8" height="6" fill="'+c+'" stroke="none"/><path d="M24 38 L40 38"/><path d="M20 30 L18 34 M44 30 L46 34"/>';},
-  A:function(c){return '<path d="M14 16 Q20 26 24 24 M50 16 Q44 26 40 24"/><path d="M22 24 L42 24 L32 50 Z"/><path d="M25 30 l5 2 M39 30 l-5 2"/><circle cx="28" cy="32" r="2" fill="'+c+'" stroke="none"/><circle cx="36" cy="32" r="2" fill="'+c+'" stroke="none"/><path d="M27 40 l3 3 l2 -3 l2 3 l3 -3"/>';},
-  S:function(c){return '<path d="M18 22 L18 14 L24 20 L32 10 L40 20 L46 14 L46 22 Z"/><path d="M20 22 L44 22 L42 40 Q32 50 22 40 Z"/><path d="M24 30 l7 2 M40 30 l-7 2"/><circle cx="27" cy="32" r="2.2" fill="'+c+'" stroke="none"/><circle cx="37" cy="32" r="2.2" fill="'+c+'" stroke="none"/><circle cx="21" cy="15" r="1.6" fill="'+c+'" stroke="none"/><circle cx="43" cy="15" r="1.6" fill="'+c+'" stroke="none"/><path d="M28 43 L36 43"/>';}
-};
-function bossSvg(rank,size){
-  var c=(RANKS.filter(function(r){return r.r===rank;})[0]||RANKS[0]).c;
-  var shp=(BOSS_SHAPES[rank]||BOSS_SHAPES.E)(c);
-  return '<svg viewBox="0 0 64 64" width="'+size+'" height="'+size+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="vertical-align:middle;filter:drop-shadow(0 0 5px '+c+'88)">'+shp+'</svg>';
-}
-function bossHtml(m){
-  ensureBoss(m);if(!m.boss)return"";
-  if(m.boss.dead)return '<div class="bossline dead">'+bossSvg(m.rank,18)+' '+esc(m.boss.name)+' · vaincu ✔</div>';
-  return '<div class="bossline"><span>'+bossSvg(m.rank,18)+' '+esc(m.boss.name)+'</span><span>'+m.boss.hp+' / '+m.boss.max+' PV</span></div><div class="bar boss"><i style="transform:scaleX('+(m.boss.hp/m.boss.max)+')"></i></div>';
-}
-function bossHit(q){
-  if(!q||!q.mission)return;
-  var m=find(S.missions,q.mission);if(!m)return;ensureBoss(m);if(m.boss.dead)return;
-  var dmg=1+((q.prio==="high")?1:0);
-  m.boss.hp=Math.max(0,m.boss.hp-dmg);
-  if(m.boss.hp<=0){m.boss.dead=true;defeatBoss(m);}
-}
-var pendingDungeon=null;
-function defeatBoss(m){
-  var bonus=({E:60,D:100,C:160,B:240,A:340,S:500})[m.rank]||100;
-  grantArtifact(m.boss.name,m.boss.icon,"Boss vaincu : "+m.title);
-  var r=gainXP("discipline",bonus,"BOSS VAINCU : "+m.boss.name+" ("+m.title+")");
-  sysNotify("BOSS VAINCU",m.boss.icon+" "+m.boss.name,["+"+bonus+" XP","Artefact obtenu : "+m.boss.name]);
-  flash("rank","BOSS VAINCU",m.boss.icon+" "+m.boss.name);
-  afterGain(r);
-  // Objectif franchi : on invite Mathilde à définir la suite (nouvelles tâches + montée de rang).
-  pendingDungeon=m.id;
-  setTimeout(function(){
-    if(!pendingDungeon)return;
-    closeModal();view="maitre";
-    pushChat("assistant","⚔ Tu as vaincu "+m.boss.icon+" "+m.boss.name+" de l'objectif « "+m.title+" ». Cet objectif peut monter en rang. Dis-moi quelles nouvelles tâches tu veux y accomplir, puis touche « Générer la suite ».");
-    render();
-  },1100);
-}
-function nextRank(r){var o=["E","D","C","B","A","S"];var i=o.indexOf(r);return i<0?"D":o[Math.min(o.length-1,i+1)];}
-function expandDungeon(){
-  if(chatBusy||!pendingDungeon)return;
-  var m=find(S.missions,pendingDungeon);if(!m){pendingDungeon=null;render();return;}
-  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
-  toast("ROBI forge la suite de l'objectif...");
-  gm("expand_dungeon",{dungeon:{title:m.title,note:m.note||"",rank:m.rank},description:recent}).then(function(res){
-    var qs=(res&&res.quests)||[];
-    if(!qs.length){pushChat("assistant","Dis-moi au moins une tâche à ajouter à cet objectif avant de générer la suite.");renderChat();return;}
-    qs.slice(0,5).forEach(function(x){
-      var stat=STATS[x.stat]?x.stat:"discipline";
-      var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
-      S.quests.push({id:uid(),title:x.title,stat:stat,daily:false,prio:prio,base:baseFor(prio,false),done:false,mission:m.id});
-    });
-    var old=m.rank;m.rank=nextRank(m.rank);
-    var a=BOSS_ARCH[m.rank]||BOSS_ARCH.D;
-    m.boss={name:a.n,icon:a.i,max:bossMax(m.rank),hp:bossMax(m.rank),dead:false};
-    pendingDungeon=null;log("Objectif « "+m.title+" » : rang "+old+" -> "+m.rank+" ("+qs.length+" nouvelles quêtes)");save();
-    sysNotify("Objectif renforcé",m.title,["Rang "+old+" -> "+m.rank,qs.length+" nouvelles quêtes","Nouveau boss : "+a.n]);
-    flash("rank","RANG "+m.rank,m.title+" · renforcé");
-    pushChat("assistant","✔ "+qs.length+" quêtes ajoutées à « "+m.title+" ». L'objectif passe au rang "+m.rank+" et un nouveau boss t'attend : "+a.i+" "+a.n+".");
-    render();
-  }).catch(function(){toast("Erreur réseau");});
-}
-function grantArtifact(name,icon,from){
-  S.artifacts=S.artifacts||[];
-  S.artifacts.unshift({id:uid(),name:name,icon:icon,from:from,date:today()});
-  if(S.artifacts.length>60)S.artifacts.pop();
-  log("Artefact obtenu : "+name);
-}
-var URGENT_POOL=[
-  {title:"Publier 1 short ou story pour la chaîne Vatican",stat:"creativite",mission:"m_vatican"},
-  {title:"15 min de sport, maintenant",stat:"physique",mission:"m_orga"},
-  {title:"Écrire 200 mots sur la BD",stat:"creativite",mission:"m_bd"},
-  {title:"Décortiquer 1 vidéo concurrente (Vatican US)",stat:"business",mission:"m_vatican"},
-  {title:"20 min d'anglais tout de suite",stat:"mental",mission:"m_english"},
-  {title:"Ranger un espace pendant 10 min",stat:"discipline",mission:"m_orga"},
-  {title:"Noter 3 idées de contenu",stat:"creativite",mission:"m_vatican"},
-  {title:"Vérifier ton portefeuille et noter 1 observation",stat:"business",mission:"m_invest"}
-];
-function maybeSpawnUrgent(){
-  if(S.lastUrgent&&S.lastUrgent>=today())return;
-  if(S.quests.some(function(q){return q.urgent;}))return;
-  S.lastUrgent=today();
-  if(Math.random()<0.5){
-    var t=URGENT_POOL[Math.floor(Math.random()*URGENT_POOL.length)];
-    var mi=find(S.missions,t.mission)?t.mission:null;
-    S.quests.push({id:uid(),title:t.title,stat:t.stat,daily:false,prio:"high",base:baseFor("high",false)*2,done:false,mission:mi,urgent:true,day:today()});
-    save();
-    sysNotify("⚠ QUÊTE URGENTE",esc(t.title),["Bonus XP ×2","Expire à minuit"]);
-    flash("","⚠ QUÊTE URGENTE","Bonus ×2 · expire à minuit");
-  }
-}
 
 /* notifications */
 function sysNotify(tag,title,lines){
@@ -622,16 +554,15 @@ function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0]
 
 /* ---- Explications (i) ---- */
 var INFO={
-  hp:{t:"HP — Points de vie",d:"Ta puissance vitale. Elle grandit avec ton Niveau : plus tu montes, plus ton HP max est élevé. C'est l'image de la force que tu accumules."},
-  stamina:{t:"Stamina — Énergie du jour",d:"Ton énergie du jour. Elle monte à mesure que tu coches tes quêtes journalières (0 le matin, 100 quand tout est fait). Basse = ⚠ énergie faible, il te reste des journalières à finir."},
-  xp:{t:"XP — Expérience",d:"Chaque quête te donne de l'XP. Elle remplit ta barre ; pleine, tu montes de Niveau. L'XP nourrit aussi la stat liée à la quête."},
+  stamina:{t:"Énergie du jour",d:"Ton énergie du jour. Elle monte à mesure que tu coches tes tâches journalières (0 le matin, 100 quand tout est fait)."},
+  xp:{t:"XP — Expérience",d:"Chaque tâche te donne de l'XP. Elle remplit ta barre ; pleine, tu montes de Niveau. L'XP nourrit aussi la stat liée à la tâche."},
   level:{t:"Niveau",d:"Ton niveau global. Chaque palier coûte de plus en plus d'XP. Il détermine ton Rang."},
   rank:{t:"Rang de Membre",d:"De E à S selon ton Niveau (E → D → C → B → A → S). Tu montes de rang à certains paliers, avec une notification de promotion."},
-  combo:{t:"Combo",d:"Le nombre de quêtes enchaînées. Il grimpe à chaque quête terminée et retombe à zéro si tu prends une pénalité."},
-  streak:{t:"Série",d:"Le nombre de jours d'affilée où tu as terminé TOUTES tes quêtes journalières. Elle se casse si tu en rates une."},
-  daily:{t:"Quêtes journalières",d:"Des quêtes à refaire chaque jour (tes habitudes). Elles se remettent à zéro chaque matin et font partie de la pénalité si non faites."},
+  combo:{t:"Combo",d:"Le nombre de tâches enchaînées. Il grimpe à chaque tâche terminée et retombe à zéro si tu prends une pénalité."},
+  streak:{t:"Série",d:"Le nombre de jours d'affilée où tu as terminé TOUTES tes tâches journalières. Elle se casse si tu en rates une."},
+  daily:{t:"Tâches journalières",d:"Des tâches à refaire chaque jour (tes habitudes). Elles se remettent à zéro chaque matin et font partie de la pénalité si non faites."},
   penalty:{t:"Pénalité",d:"Si tu ne finis pas toutes tes journalières avant minuit : -40 XP, et ta série + ton combo repartent à zéro."},
-  dungeon:{t:"Objectif",d:"Un de tes grands projets. Chaque quête rattachée le fait progresser. Son rang (E → S) reflète sa difficulté. Touche-le pour l'ouvrir."},
+  dungeon:{t:"Objectif",d:"Un de tes grands projets. Chaque tâche rattachée le fait progresser. Son rang (E → S) reflète sa difficulté. Touche-le pour l'ouvrir."},
   physique:{t:"💪 Physique",d:"Sport, santé, sommeil, énergie. Monte quand tu prends soin de ton corps."},
   mental:{t:"🧠 Mental",d:"Focus, apprentissage, lecture, discipline mentale, stoïcisme."},
   creativite:{t:"🎨 Créativité",d:"BD, YouTube, création de contenu, idées artistiques."},
@@ -658,10 +589,10 @@ function openMoveQuest(qId){
   S.missions.forEach(function(m){var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);h+='<button class="btn ghost" data-dest="'+m.id+'" style="text-align:left;border-color:'+rk.c+'55">'+esc(m.title)+' · rang '+m.rank+(q.mission===m.id?' ✓':'')+'</button>';});
   h+='</div>';
   openModal(h);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){el.onclick=function(){var dest=el.dataset.dest||null;q.mission=dest;save();closeModal();sysNotify("Quête déplacée",esc(q.title),[dest?("→ "+((find(S.missions,dest)||{}).title||"")):"→ Aucun objectif"]);render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){el.onclick=function(){var dest=el.dataset.dest||null;q.mission=dest;save();closeModal();sysNotify("Tâche déplacée",esc(q.title),[dest?("→ "+((find(S.missions,dest)||{}).title||"")):"→ Aucun objectif"]);render();};});
 }
 
-/* ---- Donjon : fenêtre détaillée ---- */
+/* ---- Objectif : fenêtre détaillée ---- */
 function openDungeon(mId){
   var m=find(S.missions,mId);if(!m)return;
   var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
@@ -670,31 +601,27 @@ function openDungeon(mId){
   var h='<div class="mtag" style="color:'+rk.c+'">▸ Objectif · Rang '+m.rank+'</div><div class="mtitle" style="color:'+rk.c+'">'+esc(m.title)+'</div>';
   if(m.note)h+='<div class="mbody" style="margin-bottom:12px">'+esc(m.note)+'</div>';
   h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
-  h+='<div style="margin-top:12px">'+bossHtml(m)+'</div>';
-  if(m.boss&&m.boss.dead&&m.rank!=="S")h+='<button class="btn" id="dg-expand" style="margin-top:10px;width:100%">⚔ Renforcer l\'objectif (monter en rang)</button>';
-  h+='<div class="subhead" style="margin:16px 0 4px">Quêtes de l\'objectif</div>';
-  h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune quête. Ajoutes-en une ci-dessous.</div>';
-  h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle quête pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
+  h+='<div class="subhead" style="margin:16px 0 4px">Tâches de l\'objectif</div>';
+  h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune tâche. Ajoutes-en une ci-dessous.</div>';
+  h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle tâche pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
   openModal(h,rk.c);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var a=document.getElementById("dq-add");
   if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
-  var ex=document.getElementById("dg-expand");
-  if(ex)ex.onclick=function(){pendingDungeon=m.id;closeModal();view="maitre";pushChat("assistant","⚔ Renforçons « "+m.title+" ». Dis-moi les nouvelles tâches à y accomplir, puis touche « Générer la suite ».");render();};
 }
 
 /* ---- ROBI (chat) ---- */
 var chatBusy=false;
 var manageId=null;
 function openManage(id){var q=find(S.quests,id);if(!q)return;closeModal();manageId=id;view="maitre";render();
-  sendChat("Je veux gérer ma quête journalière « "+q.title+" » (actuellement "+cadLabel(q)+"). Aide-moi à changer sa fréquence (tous les N jours, ou certains jours de la semaine), la mettre en pause, la réactiver, ou la retirer. Pose-moi une question courte, puis j'appliquerai.");}
+  sendChat("Je veux gérer ma tâche journalière « "+q.title+" » (actuellement "+cadLabel(q)+"). Aide-moi à changer sa fréquence (tous les N jours, ou certains jours de la semaine), la mettre en pause, la réactiver, ou la retirer. Pose-moi une question courte, puis j'appliquerai.");}
 function applyDailyEdit(){
   if(chatBusy||!manageId)return;
   var q=find(S.quests,manageId);if(!q){manageId=null;render();return;}
-  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"ROBI: ")+mm.content;}).join("\n");
   toast("ROBI ajuste...");
   gm("edit_daily",{description:recent,quest:{id:q.id,title:q.title,cad:q.cad||null,paused:!!q.paused}}).then(function(r){
     if(!r||!r.op||r.op==="none"){pushChat("assistant","Je n'ai pas saisi le changement. Précise (ex : « tous les 2 jours », « lundi mercredi vendredi », « pause », « retire-la »).");renderChat();return;}
@@ -712,7 +639,7 @@ function pushChat(role,content){S.chat=S.chat||[];S.chat.push({role:role,content
 function renderChat(){
   var box=document.getElementById("chatbox");if(!box)return;
   var msgs=S.chat||[];
-  var html=msgs.length?msgs.map(function(mm){return '<div class="bub '+(mm.role==="user"?"me":"gm")+'">'+esc(mm.content).replace(/\n/g,"<br>")+'</div>';}).join(""):'<div class="empty">Parle à ROBI. Il te met à l\'épreuve et t\'aide à créer tes quêtes.</div>';
+  var html=msgs.length?msgs.map(function(mm){return '<div class="bub '+(mm.role==="user"?"me":"gm")+'">'+esc(mm.content).replace(/\n/g,"<br>")+'</div>';}).join(""):'<div class="empty">Parle à ROBI. Il te met à l\'épreuve et t\'aide à créer tes tâches.</div>';
   if(chatBusy)html+='<div class="bub gm typing">…</div>';
   box.innerHTML=html;box.scrollTop=box.scrollHeight;
 }
@@ -727,19 +654,19 @@ function makeQuestFromChat(){
   if(chatBusy)return;
   var el=document.getElementById("c-input");var pending=el?el.value.trim():"";if(el)el.value="";
   if(pending){pushChat("user",pending);renderChat();}
-  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  var recent=(S.chat||[]).slice(-8).map(function(mm){return (mm.role==="user"?"Moi: ":"ROBI: ")+mm.content;}).join("\n");
   if(!recent){toast("Écris d'abord ce que tu veux faire");return;}
   var dungeons=S.missions.map(function(m){return {id:m.id,title:m.title};});
-  toast("ROBI forge la quête...");
+  toast("ROBI prépare la tâche...");
   gm("make_quest",{description:recent,dungeons:dungeons}).then(function(q){
-    if(!q||!q.title){toast("Impossible de créer la quête");return;}
+    if(!q||!q.title){toast("Impossible de créer la tâche");return;}
     var stat=STATS[q.stat]?q.stat:"mental";
     var prio=["high","med","low"].indexOf(q.prio)>=0?q.prio:"med";
     var daily=!!q.daily;
     var mission=(q.mission&&find(S.missions,q.mission))?q.mission:null;
     S.quests.push({id:uid(),title:q.title,stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission});save();
-    pushChat("assistant","✔ Quête créée : « "+q.title+" » ("+STATS[stat].name+", "+(daily?"journalière":"priorité "+prio)+").");if(view==="maitre")renderChat();
-    sysNotify("Quête créée",q.title,[STATS[stat].name]);
+    pushChat("assistant","✔ Tâche créée : « "+q.title+" » ("+STATS[stat].name+", "+(daily?"journalière":"priorité "+prio)+").");if(view==="maitre")renderChat();
+    sysNotify("Tâche créée",q.title,[STATS[stat].name]);
   }).catch(function(){toast("Erreur réseau");});
 }
 function claimEpreuve(){
@@ -756,7 +683,7 @@ function debriefLearning(){
   var el=document.getElementById("c-input");var t=el?el.value.trim():"";
   if(!t){toast("Écris d'abord ce que tu as appris aujourd'hui");return;}
   el.value="";
-  if(!S.lastLearning||S.lastLearning<today()){S.lastLearning=today();var r=gainXP("mental",15,"Débrief : ce que j'ai appris");sysNotify("Débrief du jour","+15 XP · MENTAL",["Quête mentale validée"]);afterGain(r);save();}
+  if(!S.lastLearning||S.lastLearning<today()){S.lastLearning=today();var r=gainXP("mental",15,"Débrief : ce que j'ai appris");sysNotify("Débrief du jour","+15 XP · MENTAL",["Tâche mentale validée"]);afterGain(r);save();}
   else toast("Débrief déjà récompensé aujourd'hui, mais raconte quand même");
   sendChat("Voici ce que j'ai appris aujourd'hui. Aide-moi à en tirer une leçon utile à la manière d'Épictète (moderne, en français) :\n\n"+t);
 }
@@ -780,7 +707,7 @@ function startReview(){
   reviewMode=true;view="maitre";
   var projs=S.missions.map(function(m){return "• "+m.title+" (rang "+m.rank+")";}).join("\n");
   var daily=reviewInterval()===1;
-  pushChat("assistant","📋 "+(daily?"Point du jour":"Bilan hebdomadaire")+". Faisons le point projet par projet, sans détour. Pour chacun de tes objectifs, dis-moi où tu en es et la prochaine étape :\n\n"+projs+"\n\nÉcris ton point ci-dessous (un seul message suffit), puis touche « Réaligner mes quêtes ».");
+  pushChat("assistant","📋 "+(daily?"Point du jour":"Bilan hebdomadaire")+". Faisons le point projet par projet, sans détour. Pour chacun de tes objectifs, dis-moi où tu en es et la prochaine étape :\n\n"+projs+"\n\nÉcris ton point ci-dessous (un seul message suffit), puis touche « Réaligner mes tâches ».");
   render();
 }
 function applyReview(){
@@ -788,10 +715,10 @@ function applyReview(){
   // On lit ce que tu as écrit dans le champ SANS l'envoyer au mentor : ça évite un appel coûteux, seul le réalignement (modèle économique) tourne.
   var el=document.getElementById("c-input");var pending=el?el.value.trim():"";if(el)el.value="";
   if(pending)pushChat("user",pending);
-  var recent=(S.chat||[]).slice(-14).map(function(mm){return (mm.role==="user"?"Moi: ":"MJ: ")+mm.content;}).join("\n");
+  var recent=(S.chat||[]).slice(-14).map(function(mm){return (mm.role==="user"?"Moi: ":"ROBI: ")+mm.content;}).join("\n");
   if(!recent){toast("Écris d'abord ton point du jour");renderChat();return;}
   var dungeons=S.missions.map(function(m){return {id:m.id,title:m.title,note:m.note||"",rank:m.rank};});
-  toast("ROBI réaligne tes quêtes...");renderChat();
+  toast("ROBI réaligne tes tâches...");renderChat();
   gm("weekly_review",{dungeons:dungeons,description:recent}).then(function(res){
     var qs=(res&&res.quests)||[];
     if(!qs.length){pushChat("assistant","Je n'ai pas assez d'éléments. Dis-m'en un peu plus sur chaque projet, puis retouche « Réaligner ».");renderChat();return;}
@@ -802,28 +729,25 @@ function applyReview(){
       var mission=(x.mission&&find(S.missions,x.mission))?x.mission:null;
       S.quests.push({id:uid(),title:x.title,stat:stat,daily:false,prio:prio,base:baseFor(prio,false),done:false,mission:mission});added++;
     });
-    S.lastReview=today();S.reviewCount=(S.reviewCount||0)+1;reviewMode=false;log("Bilan : "+added+" quêtes réalignées");save();
-    sysNotify("Bilan validé",added+" quêtes réalignées",["Ta liste suit ta progression"]);
-    pushChat("assistant","✔ J'ai réaligné ta liste : "+added+" nouvelles quêtes ajoutées, en phase avec où tu en es. À l'attaque.");
+    S.lastReview=today();S.reviewCount=(S.reviewCount||0)+1;reviewMode=false;log("Bilan : "+added+" tâches réalignées");save();
+    sysNotify("Bilan validé",added+" tâches réalignées",["Ta liste suit ta progression"]);
+    pushChat("assistant","✔ J'ai réaligné ta liste : "+added+" nouvelles tâches ajoutées, en phase avec où vous en êtes. C'est parti.");
     render();
   }).catch(function(){toast("Erreur réseau");});
 }
 function vMaitre(){
   var mng=manageId?find(S.quests,manageId):null;
-  var pend=pendingDungeon?find(S.missions,pendingDungeon):null;
   var curAbs=(S.absences||[]).filter(function(a){return a.from<=today()&&today()<=a.to;})[0];
   var absent=!!curAbs;
   var coach=S.coachStyle||"robi";
   var s='<div class="win"><div class="win-h"><span class="t">ROBI</span><span class="ln"></span><span class="r">'+(coach==="epictete"?"Coach stoïcien":"Ton assistant")+'</span></div>';
   var due=reviewDue();
   if(mng)s+='<div class="mbanner"><span>⚙ Gestion de la journalière : « '+esc(mng.title)+' »</span><a id="c-cancel">annuler</a></div>';
-  else if(pend)s+='<div class="mbanner"><span>⚔ Objectif franchi : « '+esc(pend.title)+' » (rang '+pend.rank+' → '+nextRank(pend.rank)+')</span><a id="c-pend-cancel">plus tard</a></div>';
   else if(reviewMode)s+='<div class="mbanner"><span>📋 '+reviewLabel()+' en cours · fais ton point projet par projet</span><a id="c-review-cancel">annuler</a></div>';
-  else if(absent)s+='<div class="mbanner"><span>🌙 Absence jusqu\'au '+fmtD(curAbs.to)+' · fais ton débrief pour une quête mentale</span></div>';
+  else if(absent)s+='<div class="mbanner"><span>🌙 Absence jusqu\'au '+fmtD(curAbs.to)+' · fais ton débrief pour une tâche mentale</span></div>';
   s+='<div id="chatbox" class="chatbox"></div>';
   if(mng)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-apply">✔ Appliquer le changement</button></div>';
-  else if(pend)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-expand">⚔ Générer la suite (+ monter le rang)</button></div>';
-  else if(reviewMode)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-review-apply">✔ Réaligner mes quêtes</button></div>';
+  else if(reviewMode)s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px"><button class="btn" id="c-review-apply">✔ Réaligner mes tâches</button></div>';
   else{
     var doneEp=(S.lastEpreuve&&S.lastEpreuve>=today());var startedEp=(S.epreuveOn&&S.epreuveOn>=today());
     var canClaim=startedEp&&!doneEp;var canStartEp=!startedEp&&!doneEp;
@@ -833,10 +757,10 @@ function vMaitre(){
     if(canClaim)s+='<button class="btn" id="c-claim">✔ Défi relevé (+25 XP)</button>';
     if(doneEp)s+='<span class="mdone">✔ Défi du jour fait</span>';
     s+='<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button></div>';
-    s+='<div class="mgrouplab">Tes projets</div><div class="mgroup"><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-valider">✔ Créer une quête</button></div>';
+    s+='<div class="mgrouplab">Tes projets</div><div class="mgroup"><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-valider">✔ Créer une tâche</button></div>';
     s+='<div class="coachsel">Ton coach : <button class="cbtn'+(coach==="robi"?" on":"")+'" id="coach-robi">ROBI</button><button class="cbtn'+(coach==="epictete"?" on":"")+'" id="coach-epictete">Épictète</button></div>';
   }
-  s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(pend?"Dis les nouvelles tâches de l'objectif...":(reviewMode?"Réponds projet par projet...":"Écris à ROBI..."))+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
+  s+='<div class="addrow"><input type="text" id="c-input" placeholder="'+(reviewMode?"Réponds projet par projet...":"Écris à ROBI...")+'"><button class="btn" id="c-send">Envoyer</button></div></div>';
   return s;
 }
 
@@ -849,24 +773,45 @@ function render(){
   else if(view==="journal")v.innerHTML=vJournal();
   else v.innerHTML=vEvolution();
   bind();
+  setClock();
   Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.classList.toggle("on",b.dataset.v===view);});
 }
+function setClock(){var el=document.getElementById("hud-clock");if(!el)return;var d=new Date();el.textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
-  var maxHP=800+h.level*120;
-  var di=dailyInfo(),stamina=di.tot?Math.round(di.done/di.tot*100):100;
+  var di=dailyInfo();
+  var dayfrac=di.tot?di.done/di.tot:1,DAYPCT=Math.round(dayfrac*100),dayoff=Math.round(502*(1-dayfrac));
+  var stamina=DAYPCT,energyoff=Math.round(113*(1-stamina/100));
+  var regoff=Math.round(113*(1-Math.min(1,S.streak/7)));
+  var todo=S.quests.filter(function(q){return q.daily?(dueToday(q)&&!q.done):!q.done;}).length;
+  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:("Bonjour. Vous avez "+todo+" tâche"+(todo>1?"s":"")+" à accomplir aujourd'hui.");
   var s='<div class="win"><div class="win-h"><span class="t">Statut</span><span class="ln"></span><span class="r">'+today()+'</span></div>';
-  s+='<div class="status"><div class="avatar"><div class="ring" style="--p:'+pct(h.xp,need)+'"><div class="rankbadge"><span style="color:'+rk.c+';text-shadow:0 0 12px '+rk.c+'">'+rk.r+'</span></div><div class="lvlwrap"><div class="lk">Niveau</div><div class="lv">'+h.level+'</div><div class="cls">Membre</div></div></div></div>';
-  s+='<div class="who"><div class="name">'+esc(h.name)+'</div><div class="sub">Rang '+rk.r+' '+iBtn("rank")+' · Niv '+h.level+' '+iBtn("level")+' · Créatrice</div>';
-  if(stamina<50&&di.tot)s+='<div class="alert">⚠ ÉNERGIE FAIBLE — il te reste '+(di.tot-di.done)+' quête(s) journalière(s)</div>';
-  s+='<div class="vitals"><div><div class="vlab"><span>HP '+iBtn("hp")+'</span><span>'+maxHP+' / '+maxHP+'</span></div><div class="vbar hp"><i style="transform:scaleX(1)"></i></div></div>';
-  s+='<div><div class="vlab"><span>STAMINA '+iBtn("stamina")+'</span><span>'+stamina+' / 100</span></div><div class="vbar st"><i style="transform:scaleX('+(stamina/100)+')"></i></div></div></div>';
-  s+='<div class="xprow"><div class="lab"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
-  s+='<div class="chips"><div class="chip">Combo '+iBtn("combo")+' <b>x'+S.combo+'</b>'+(comboMult()>1?' <span style="color:var(--dim2)">+'+Math.round((comboMult()-1)*100)+'% XP</span>':'')+'</div><div class="chip">Série '+iBtn("streak")+' <b>'+S.streak+'🔥</b></div><div class="chip">Record <b>'+S.best+'</b></div></div></div></div></div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Caractéristiques</span><span class="ln"></span><span class="r">0'+Object.keys(STATS).length+'</span></div><div class="stats">';
-  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k],nd=statNeed(st.level);
-    s+='<div class="stat"><div class="top"><span class="ic" style="color:'+m.col+'">'+m.ic+'</span><span class="sv">'+st.level+'</span></div><div class="nm">'+m.name+' '+iBtn(k)+'</div>'+bar(st.xp,nd)+'<div class="xp">'+st.xp+' / '+nd+' XP</div></div>';});
+  s+='<div class="core"><div class="reactor"><svg viewBox="0 0 200 200">'+
+    '<defs><radialGradient id="rglow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a9e9ff" stop-opacity=".5"/><stop offset="55%" stop-color="#3ac2ff" stop-opacity=".16"/><stop offset="100%" stop-color="#3ac2ff" stop-opacity="0"/></radialGradient></defs>'+
+    '<circle cx="100" cy="100" r="92" fill="url(#rglow)"/>'+
+    '<g class="ring-rot" fill="none" stroke="#3ac2ff" stroke-width="2"><circle cx="100" cy="100" r="88" opacity=".35" stroke-dasharray="2 8"/></g>'+
+    '<circle cx="100" cy="100" r="80" fill="none" stroke="#173a5c" stroke-width="8"/>'+
+    '<circle cx="100" cy="100" r="80" fill="none" stroke="#3ac2ff" stroke-width="8" stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="'+dayoff+'" transform="rotate(-90 100 100)" style="filter:drop-shadow(0 0 6px rgba(58,194,255,.8))"/>'+
+    '<g class="ring-rot rev" fill="none" stroke="#ffbf49" stroke-width="1.4" opacity=".7"><circle cx="100" cy="100" r="64" stroke-dasharray="1 14"/></g>'+
+    '<circle cx="100" cy="100" r="52" fill="none" stroke="#1f6fa8" stroke-width="1.2"/>'+
+    '<g stroke="#a9e9ff" stroke-width="2" opacity=".8"><line x1="100" y1="60" x2="100" y2="76"/><line x1="100" y1="124" x2="100" y2="140"/><line x1="60" y1="100" x2="76" y2="100"/><line x1="124" y1="100" x2="140" y2="100"/></g>'+
+    '<circle cx="100" cy="100" r="34" fill="rgba(58,194,255,.12)" stroke="#3ac2ff" stroke-width="1.5"/>'+
+    '<circle cx="100" cy="100" r="15" fill="#a9e9ff" opacity=".9" style="filter:drop-shadow(0 0 12px #3ac2ff)"/>'+
+    '</svg><div class="core-num"><div class="big">'+DAYPCT+'%</div><div class="cap">JOURNÉE</div></div></div>';
+  s+='<div class="core-info"><div class="who">'+esc(h.name)+'</div>';
+  s+='<div class="rank">NIVEAU '+h.level+' '+iBtn("level")+' · PALIER '+rk.r+' '+iBtn("rank")+' · SÉRIE '+S.streak+' J</div>';
+  s+='<div class="brief"><span class="jarvis">◉ ROBI · Briefing</span>'+esc(briefLine)+'</div>';
+  s+='<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:5px"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
+  s+='<div class="minigauges">'+
+    '<div class="mg"><div class="gv"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#173a5c" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#3ac2ff" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="'+energyoff+'" transform="rotate(-90 22 22)"/></svg><b>'+stamina+'</b></div><div class="gt">Énergie '+iBtn("stamina")+'<b>du jour</b></div></div>'+
+    '<div class="mg"><div class="gv"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#173a5c" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#ffbf49" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="'+regoff+'" transform="rotate(-90 22 22)"/></svg><b>'+S.streak+'</b></div><div class="gt">Régularité '+iBtn("streak")+'<b>jours</b></div></div>'+
+    '</div>';
+  s+='<div class="chips" style="margin-top:14px"><div class="chip">Combo '+iBtn("combo")+' <b>x'+S.combo+'</b>'+(comboMult()>1?' <span style="color:var(--dim2)">+'+Math.round((comboMult()-1)*100)+'% XP</span>':'')+'</div><div class="chip">Record <b>'+S.best+'</b></div></div>';
+  s+='</div></div></div>';
+  s+='<div class="win"><div class="plab">Systèmes</div><div class="sys">';
+  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;
+    s+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+' '+iBtn(k)+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">'+Math.round(p*100)+'%</span></div>';});
   s+='</div></div>';
   return s;
 }
@@ -885,34 +830,33 @@ function dailyRow(q){
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
   var nd=S.quests.filter(function(q){return !q.daily;});
-  var urgent=nd.filter(function(q){return q.urgent&&!q.done;});
-  var reg=nd.filter(function(q){return !q.urgent;}).sort(function(a,b){return ((a.done?1:0)-(b.done?1:0))||(b.base-a.base);}); // par XP décroissant, faites en bas
+  var reg=nd.slice().sort(function(a,b){return ((a.done?1:0)-(b.done?1:0))||(b.base-a.base);}); // par XP décroissant, faites en bas
   var active=dailies.filter(function(q){return dueToday(q);});
   var dd=active.filter(function(q){return q.done;}).length;
   var ordered=dailies.slice().sort(function(a,b){return (dueToday(b)?1:0)-(dueToday(a)?1:0);});
   var s='';
-  if(urgent.length)s+='<div class="win urgentwin"><div class="win-h"><span class="t" style="color:var(--red)">⚠ Quête Urgente</span><span class="ln"></span><span class="r">expire à minuit · ×2 XP</span></div>'+urgent.map(questRow).join("")+'</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Quêtes Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+active.length+' '+iBtn("daily")+'</span></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Tâches Journalières</span><span class="ln"></span><span class="r">'+dd+' / '+active.length+' '+iBtn("daily")+'</span></div>';
   s+='<div class="warn">⚠ Termine tes journalières du jour avant minuit, sous peine de pénalité '+iBtn("penalty")+' (-40 XP · série et combo perdus). Pour changer une journalière (fréquence, pause, retrait), touche ⚙ et parles-en à ROBI.</div>';
-  s+=dailies.length?ordered.map(dailyRow).join(""):'<div class="empty">Aucune quête journalière.</div>';
+  s+=dailies.length?ordered.map(dailyRow).join(""):'<div class="empty">Aucune tâche journalière.</div>';
   s+='</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Quêtes</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
-  s+=reg.length?reg.map(questRow).join(""):'<div class="empty">Aucune quête.</div>';
-  s+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta quête, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Tâches</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
+  s+=reg.length?reg.map(questRow).join(""):'<div class="empty">Aucune tâche.</div>';
+  s+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
   return s;
 }
 
 function vObjectifs(){
   var s='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Tes projets, du rang S au rang E. Touche un objectif '+iBtn("dungeon")+' pour l\'ouvrir, voir et cocher ses quêtes.</div><div class="missions">';
+  s+='<div class="subhead">Tes projets, du palier S au palier E. Touche un objectif '+iBtn("dungeon")+' pour l\'ouvrir et cocher ses tâches.</div>';
   S.missions.slice().sort(byRankDesc).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
+    var frac=done/Math.max(1,qs.length);
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
-    var clear=qs.length>0&&done===qs.length;
-    s+='<div class="mission'+(clear?" clear":"")+'" data-dungeon="'+m.id+'" style="cursor:pointer"><div class="mrank" style="color:'+rk.c+'">'+m.rank+'</div><div class="mt">'+esc(m.title)+'</div><div class="mn">'+esc(m.note||"")+'</div><div class="mp"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length))+bossHtml(m)+'</div>';
+    var opTxt=qs.length?(Math.round(frac*100)+'%'):'—';
+    s+='<div class="objrow" data-dungeon="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+(m.note?' <span style="color:var(--dim);font-size:11px">· '+esc(m.note)+'</span>':'')+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rk.c+'55,'+rk.c+')"></i></span><span class="op">'+opTxt+'</span></div>';
   });
-  s+='</div><div class="addrow"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="Objectif (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI attribue le rang. Touche un objectif pour l\'ouvrir et y ajouter des quêtes.</div></div>';
+  s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI attribue le palier. Touche un objectif pour l\'ouvrir et y ajouter des tâches.</div></div>';
   return s;
 }
 
@@ -931,7 +875,7 @@ function vJournal(){
   var absences=(S.absences||[]).slice().sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});
   var absentNow=isAbsent(today());
   s+='<div class="win"><div class="win-h"><span class="t">Absences</span><span class="ln"></span><span class="r">'+(absentNow?"active":(absences.length?absences.length+" planifiée(s)":"aucune"))+'</span></div>';
-  s+='<div class="subhead">Planifie une ou plusieurs absences (voyage, service, coupure). Pendant une absence : pas de pénalité de journalières, série préservée. Chaque jour, débriefe à ROBI ce que tu as appris pour valider une quête mentale.</div>';
+  s+='<div class="subhead">Planifie une ou plusieurs absences (voyage, service, coupure). Pendant une absence : pas de pénalité de journalières, série préservée. Chaque jour, débriefe à ROBI ce que tu as appris pour valider une tâche mentale.</div>';
   s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn ghost" id="ab-day">Aujourd\'hui</button><button class="btn ghost" id="ab-week">Cette semaine</button></div>';
   s+='<div class="subhead" style="margin:0 0 6px">Ou une période précise</div><div class="addrow"><input type="date" id="ab-from" style="max-width:150px"><input type="date" id="ab-to" style="max-width:150px"><button class="btn" id="ab-set">Planifier</button></div>';
   if(absences.length)s+='<div style="margin-top:12px;display:grid;gap:8px">'+absences.map(function(a){var status=(today()<a.from)?"à venir":(today()>a.to?"passée":"en cours");var col=status==="en cours"?"var(--gold)":(status==="à venir"?"var(--cyan-b)":"var(--dim2)");return '<div class="absrow"><span style="color:'+col+'">🌙 '+fmtAbs(a)+'</span><span class="absst">'+status+'</span><span class="absx" data-abs="'+a.from+'|'+a.to+'">✕</span></div>';}).join("")+'</div>';
@@ -948,19 +892,12 @@ function vJournal(){
 function vEvolution(){
   var h=S.hunter,rk=rankOf(h.level);
   var s='<div class="win"><div class="win-h"><span class="t">Évolution</span><span class="ln"></span><span class="r">Progression</span></div>';
-  s+='<div class="evgrid">'+kpi(h.level,"Niveau")+kpi(rk.r,"Rang")+kpi(S.doneCount,"Quêtes")+kpi(S.best,"Record série")+'</div>';
+  s+='<div class="evgrid">'+kpi(h.level,"Niveau")+kpi(rk.r,"Palier")+kpi(S.doneCount,"Tâches")+kpi(S.best,"Record série")+'</div>';
   s+='<div class="subhead" style="margin-top:6px">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
-  s+='<div class="subhead">Caractéristiques</div><div style="display:grid;gap:10px">';
-  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];
-    s+='<div><div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:5px"><span>'+m.ic+' '+m.name+'</span><span>Niv '+st.level+'</span></div><div class="bar" style="height:8px"><i style="transform:scaleX('+Math.min(1,st.level/Math.max(10,st.level+2))+');background:linear-gradient(90deg,'+m.col+'44,'+m.col+')"></i></div></div>';});
+  s+='<div class="plab" style="margin-top:14px">Systèmes</div><div class="sys">';
+  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;
+    s+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">'+Math.round(p*100)+'%</span></div>';});
   s+='</div></div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Artefacts</span><span class="ln"></span><span class="r">'+(S.artifacts?S.artifacts.length:0)+'</span></div>';
-  s+=(S.artifacts&&S.artifacts.length)?'<div class="artifacts">'+S.artifacts.map(function(a){return '<div class="artcard" title="'+esc(a.from)+' · '+a.date+'"><div class="arti">'+a.icon+'</div><div class="artn">'+esc(a.name)+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun artefact. Vaincs des boss, gagne des rangs et tiens ta série pour en obtenir.</div>';
-  s+='</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Ennemis</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">La tête des boss qui gardent tes objectifs, du rang S au rang E.</div>';
-  s+=S.missions.length?'<div class="enemies">'+S.missions.slice().sort(byRankDesc).map(function(m){ensureBoss(m);var c=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]).c;var dead=m.boss.dead;return '<div class="enemy'+(dead?" slain":"")+'"><div class="eface">'+bossSvg(m.rank,58)+'</div><div class="ename">'+esc(m.boss.name)+'</div><div class="einfo" style="color:'+c+'">Rang '+m.rank+'</div><div class="estat">'+(dead?'⚔ vaincu':m.boss.hp+' / '+m.boss.max+' PV')+'</div></div>';}).join("")+'</div>':'<div class="empty">Aucun ennemi. Crée un objectif pour invoquer son gardien.</div>';
-  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Journal de ROBI</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
   s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
   s+='</div>';
@@ -968,16 +905,16 @@ function vEvolution(){
 }
 
 function bind(){
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette quête ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var qa=document.getElementById("q-add");
-  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Quête classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
+  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
-  if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);S.missions.push({id:uid(),title:t,rank:rk,note:nt});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses quêtes dans Claude Code"]);render();};
+  if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);S.missions.push({id:uid(),title:t,rank:rk,note:nt});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
   var jbs=document.querySelectorAll(".jm");
   Array.prototype.forEach.call(jbs,function(b){b.onclick=function(){jMood=parseInt(b.dataset.m,10);Array.prototype.forEach.call(jbs,function(x){x.classList.toggle("sel",x===b);});};});
   var ja=document.getElementById("j-add");
@@ -1005,12 +942,9 @@ function bind(){
   var cro=document.getElementById("coach-robi");if(cro)cro.onclick=function(){S.coachStyle="robi";save();toast("Coach : ROBI");render();};
   var cep=document.getElementById("coach-epictete");if(cep)cep.onclick=function(){S.coachStyle="epictete";save();toast("Coach : Épictète");render();};
   var ccm=document.getElementById("c-claim");if(ccm)ccm.onclick=claimEpreuve;
-  var cg=document.getElementById("c-guide");if(cg)cg.onclick=function(){sendChat("Aide-moi à créer une quête. Pose-moi 1 ou 2 questions courtes pour préciser ce que je dois faire, puis propose un titre concret. Réponds en français.");};
   var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
   var cap=document.getElementById("c-apply");if(cap)cap.onclick=applyDailyEdit;
   var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
-  var cex=document.getElementById("c-expand");if(cex)cex.onclick=expandDungeon;
-  var cpc=document.getElementById("c-pend-cancel");if(cpc)cpc.onclick=function(){pendingDungeon=null;pushChat("assistant","D'accord, on renforcera cet objectif plus tard. Touche le boss vaincu quand tu voudras la suite.");render();};
   var cdb=document.getElementById("c-debrief");if(cdb)cdb.onclick=debriefLearning;
   var crs=document.getElementById("c-review-start");if(crs)crs.onclick=startReview;
   var csg=document.getElementById("c-suggest");if(csg)csg.onclick=suggestTool;
@@ -1033,7 +967,7 @@ function showBoot(){
   var h=S.hunter,rk=rankOf(h.level);
   var cached=(S.greetDate===today()&&S.greetLine);
   var todo=S.quests.filter(function(q){return q.daily?(dueToday(q)&&!q.done):!q.done;}).length;
-  var brief=todo>0?("Bonjour. Vous avez "+todo+" quête"+(todo>1?"s":"")+" à accomplir aujourd'hui."):"Bonjour. Vous êtes à jour, rien à accomplir pour l'instant.";
+  var brief=todo>0?("Bonjour. Vous avez "+todo+" tâche"+(todo>1?"s":"")+" à accomplir aujourd'hui."):"Bonjour. Vous êtes à jour, rien à accomplir pour l'instant.";
   var greet=cached?S.greetLine:(brief+" "+BOOT_GREETS[Math.floor(Math.random()*BOOT_GREETS.length)]);
   el.innerHTML='<div class="bootwin">'+
     '<div class="bsys">◉ ROBI ◉</div>'+
@@ -1056,7 +990,6 @@ function showBoot(){
 }
 
 var ro=rollover();
-maybeSpawnUrgent();
 render();
 showBoot();
 if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");

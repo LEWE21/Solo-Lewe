@@ -50,7 +50,7 @@ function mentorSystem(s) {
       "STOIC CORE (Enchiridion): Separate what depends on her — her judgments, effort, discipline, actions — from what does not — results, numbers, other people's opinions, outcomes (ch.1). Move her point of rest onto the act that depends on her; loosen her grip on the result (ch.11, ch.15). Trouble comes from judgments, not things (ch.5).",
       `ADAPTIVE TONE: ${toneLine(s)} If she expresses real distress (not ordinary frustration), drop the edge and answer with warmth first; philosophy comes gently, never as a reproach.`,
       `HER STATUS: Level ${s.level || 1}, Rank ${s.rank || "E"}, streak ${s.streak || 0}. Recent mood ${s.lastMood || "?"}/5. Stats: ${statsLine(s)}.`,
-      "QUEST HELP: If she asks to create a task, ask 1 or 2 short questions to clarify, then propose one concrete, doable task title.",
+      "TASK HELP: If she asks to create a task, ask 1 or 2 short questions to clarify, then propose one concrete, doable task title.",
       "DAILY MANAGEMENT: She can adjust a daily task instead of deleting it (change its rhythm, pause, resume, remove). Ask one short question if needed, state the concrete change in one line, tell her to tap Apply.",
       "GUARDRAILS: Stay faithful to Epictetus. Judge judgments and actions, never her worth. Keep it short, in French.",
     ].join("\n\n");
@@ -60,7 +60,7 @@ function mentorSystem(s) {
     "You are ROBI, a personal AI assistant modeled on JARVIS from the Iron Man films: a calm, courteous, quietly witty butler-style AI. You serve Mathilde and her family, and you are their interface to what their personal assistant has set up for them.",
     "VOICE: Reply in FRENCH. Always address the person with the formal 'vous', exactly as JARVIS addresses Tony Stark. Be polished, concise and anticipatory — 2 to 4 short sentences. Courteous and subtly witty, never servile nor cold. You may report and anticipate: 'Je me permets de vous signaler…', 'Si vous le souhaitez, je peux…', 'J'ai pris la liberté de…'. Keep it simple enough for the whole family, children included.",
     `STATUS: Niveau ${s.level || 1}, série de ${s.streak || 0} jour(s). Humeur récente ${s.lastMood || "?"}/5. Adaptez le ton : ${toneLine(s)}`,
-    "QUEST HELP: If they wish to create a task, ask one short question if needed, then propose one concrete, doable task.",
+    "TASK HELP: If they wish to create a task, ask one short question if needed, then propose one concrete, doable task.",
     "DAILY MANAGEMENT: They can adjust a daily task instead of deleting it (change its rhythm, pause, resume, remove). Ask one short question if needed, confirm the change in one line, and invite them to tap Apply.",
     "GUARDRAILS: Courteous and honest, never harsh. Keep it short and clear, in French, always using 'vous'. If someone is in real distress, set the wit aside and answer with warmth first.",
   ].join("\n\n");
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
       const d = body.dungeon || {};
       const done = Array.isArray(body.doneTitles) ? body.doneTitles.slice(0, 20) : [];
       const sys = "You are ROBI, helping Mathilde. Generate ONE next task (a concrete, doable step) for the objective below, based on her real goal. Do not repeat tasks already done; propose the sensible next step. Keep the title short and actionable, in French.";
-      const user = `Dungeon: "${d.title || ""}" (rank ${d.rank || "C"}). Objective: ${d.note || "n/a"}. Already done: ${done.join("; ") || "none"}.`;
+      const user = `Objective: "${d.title || ""}" (level ${d.rank || "C"}). Goal: ${d.note || "n/a"}. Already done: ${done.join("; ") || "none"}.`;
       const r = await client.messages.create({
         model: MECH_MODEL,
         max_tokens: 250,
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
             },
           },
         },
-        system: "Translate the quest title from French to English. Keep it a short, natural, imperative task title. Output only the translation in the schema.",
+        system: "Translate the task title from French to English. Keep it a short, natural, imperative task title. Output only the translation in the schema.",
         messages: [{ role: "user", content: fr }],
       });
       const t = r.content.find((b) => b.type === "text");
@@ -163,8 +163,8 @@ export default async function handler(req, res) {
     if (action === "make_quest") {
       const desc = (body.description || "").toString().slice(0, 3000);
       const dungeons = Array.isArray(body.dungeons) ? body.dungeons.slice(0, 20) : [];
-      const sys = "From the conversation/description below, produce ONE concrete quest for Mathilde's life-RPG. Pick the best-fitting stat and a sensible priority. Set daily=true only for a recurring daily habit. If it clearly belongs to one of the listed dungeons, set mission to that dungeon's id, otherwise empty string. Keep the title short and actionable, in French.";
-      const user = `Conversation / description:\n${desc}\n\nDungeons (id=title): ${dungeons.map((d) => d.id + "=" + d.title).join("; ") || "none"}`;
+      const sys = "From the conversation/description below, produce ONE concrete task for Mathilde's personal dashboard. Pick the best-fitting area and a sensible priority. Set daily=true only for a recurring daily habit. If it clearly belongs to one of the listed objectives, set mission to that objective's id, otherwise empty string. Keep the title short and actionable, in French.";
+      const user = `Conversation / description:\n${desc}\n\nObjectives (id=title): ${dungeons.map((d) => d.id + "=" + d.title).join("; ") || "none"}`;
       const r = await client.messages.create({
         model: MECH_MODEL,
         max_tokens: 250,
@@ -198,7 +198,7 @@ export default async function handler(req, res) {
       const desc = (body.description || "").toString().slice(0, 3000);
       const q = body.quest || {};
       const sys = "Decide how Mathilde wants to change her recurring daily quest, based on the conversation. Options for op: cadence_everyN (recurs every N days; everyN=1 means every day), cadence_weekdays (recurs on specific weekdays; fill weekdays with integers where 0=Sunday, 1=Monday, ... 6=Saturday), pause (stop it without deleting), resume (reactivate), delete (remove it), none (intent not clear yet). Fill everyN only for cadence_everyN, otherwise 1. Fill weekdays only for cadence_weekdays, otherwise an empty array.";
-      const user = `Quest: "${q.title || ""}". Current cadence: ${JSON.stringify(q.cad || null)}, paused: ${!!q.paused}.\n\nConversation:\n${desc}`;
+      const user = `Task: "${q.title || ""}". Current cadence: ${JSON.stringify(q.cad || null)}, paused: ${!!q.paused}.\n\nConversation:\n${desc}`;
       const r = await client.messages.create({
         model: MECH_MODEL,
         max_tokens: 200,
@@ -245,54 +245,12 @@ export default async function handler(req, res) {
       return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
     }
 
-    // 7) Étendre un donjon vaincu : générer 2 à 4 nouvelles quêtes (JSON structuré)
-    if (action === "expand_dungeon") {
-      const d = body.dungeon || {};
-      const desc = (body.description || "").toString().slice(0, 3000);
-      const sys = "Mathilde vient de vaincre le boss d'un donjon (un de ses projets). À partir de la conversation et de l'objectif du donjon, propose 2 à 4 nouvelles quêtes concrètes et actionnables pour l'étape suivante de ce projet. Titres courts, en français. Choisis pour chacune la meilleure stat et une priorité sensée.";
-      const user = `Donjon : "${d.title || ""}" (rang ${d.rank || "C"}). Objectif : ${d.note || "n/a"}.\n\nConversation :\n${desc || "(rien de précis, propose la suite logique du projet)"}`;
-      const r = await client.messages.create({
-        model: MECH_MODEL,
-        max_tokens: 400,
-        output_config: {
-          effort: "low",
-          format: {
-            type: "json_schema",
-            schema: {
-              type: "object",
-              properties: {
-                quests: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string" },
-                      stat: { type: "string", enum: STATS },
-                      prio: { type: "string", enum: ["high", "med", "low"] },
-                    },
-                    required: ["title", "stat", "prio"],
-                    additionalProperties: false,
-                  },
-                },
-              },
-              required: ["quests"],
-              additionalProperties: false,
-            },
-          },
-        },
-        system: sys,
-        messages: [{ role: "user", content: user }],
-      });
-      const t = r.content.find((b) => b.type === "text");
-      return ok(res, MECH_MODEL, r, JSON.parse(t.text));
-    }
-
-    // 8) Bilan hebdomadaire : réaligner les quêtes sur l'avancement réel des projets (JSON structuré)
+    // 8) Bilan hebdomadaire : réaligner les tâches sur l'avancement réel des projets (JSON structuré)
     if (action === "weekly_review") {
       const dungeons = Array.isArray(body.dungeons) ? body.dungeons.slice(0, 20) : [];
       const desc = (body.description || "").toString().slice(0, 4000);
-      const sys = "Voici le bilan hebdomadaire de Mathilde, projet par projet (ses donjons). À partir de ce qu'elle raconte de son avancement, propose 4 à 10 quêtes concrètes et actionnables pour la semaine à venir, réparties sur les bons projets. Titres courts, en français. Pour chaque quête : la meilleure stat, une priorité sensée, et l'id du donjon concerné (mission) si elle s'y rattache, sinon chaîne vide.";
-      const user = `Donjons (id=titre, rang, objectif) :\n${dungeons.map((d) => `${d.id}=${d.title} [${d.rank}] ${d.note || ""}`).join("\n") || "aucun"}\n\nBilan de Mathilde :\n${desc}`;
+      const sys = "Voici le bilan hebdomadaire de Mathilde, projet par projet (ses objectifs). À partir de ce qu'elle raconte de son avancement, propose 4 à 10 tâches concrètes et actionnables pour la semaine à venir, réparties sur les bons projets. Titres courts, en français. Pour chaque tâche : la meilleure stat, une priorité sensée, et l'id de l'objectif concerné (mission) si elle s'y rattache, sinon chaîne vide.";
+      const user = `Objectifs (id=titre, palier, but) :\n${dungeons.map((d) => `${d.id}=${d.title} [${d.rank}] ${d.note || ""}`).join("\n") || "aucun"}\n\nBilan de Mathilde :\n${desc}`;
       const r = await client.messages.create({
         model: MECH_MODEL,
         max_tokens: 700,
@@ -336,7 +294,7 @@ export default async function handler(req, res) {
       const projects = Array.isArray(body.projects) ? body.projects.slice(0, 12) : [];
       const recent = Array.isArray(body.recent) ? body.recent.slice(0, 12) : [];
       const sys = "You are ROBI, Mathilde's strategist assistant. Context: she runs a YouTube channel about the Vatican (US market), makes a comic book (BD) about WWII Pacific volunteers for local schools, is building an automated markets/crypto analysis site, learns English, and works daily in Claude Code. Based on what she is working on now and her projects, propose ONE concrete lever to level up her automation or workflow: name a specific tool, an Anthropic Skill, a Claude Code workflow/command/subagent/MCP, or an automation. Say in one line why it fits, then give 2-3 concrete steps to set it up. If she already built something (e.g. SEO automation in Claude Code), propose the NEXT step beyond it, not the same thing. If you are not certain a specific named tool exists, describe the capability to look for rather than inventing a precise product name. Practical and concise, in FRENCH, 4 to 7 short lines. No preamble.";
-      const user = `En ce moment : ${focus || "(non précisé, choisis selon ses projets)"}\nProjets : ${projects.join(", ") || "n/a"}\nQuêtes récentes : ${recent.join(", ") || "n/a"}`;
+      const user = `En ce moment : ${focus || "(non précisé, choisis selon ses projets)"}\nProjets : ${projects.join(", ") || "n/a"}\nTâches récentes : ${recent.join(", ") || "n/a"}`;
       const r = await client.messages.create({
         model: CHAT_MODEL,
         max_tokens: 500,
