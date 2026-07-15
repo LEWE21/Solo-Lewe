@@ -444,7 +444,30 @@ function load(){
   ensureProposals(r);
   return r;
 }
-function save(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j);localStorage.setItem(BKEY,j);}catch(e){}}
+function writeLocal(){var j=JSON.stringify(S);try{localStorage.setItem(KEY,j);localStorage.setItem(BKEY,j);}catch(e){}}
+function save(){S.syncedAt=Date.now();writeLocal();schedulePush();}
+/* ---- Liaison ROBI : synchro multi-appareils + flux d'activité de ton Claude ---- */
+var LINKKEY="robi_link",SYNCKEY="robi_sync",ROBI_FEED=[],pushTimer=null;
+function getLink(){try{return localStorage.getItem(LINKKEY)||"";}catch(e){return "";}}
+function setLink(v){try{if(v)localStorage.setItem(LINKKEY,v);else localStorage.removeItem(LINKKEY);}catch(e){}}
+function syncOn(){try{return localStorage.getItem(SYNCKEY)==="1"&&!!getLink();}catch(e){return false;}}
+function setSyncOn(v){try{localStorage.setItem(SYNCKEY,v?"1":"0");}catch(e){}}
+function genLink(){var c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",s="",a=new Uint8Array(24);if(window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(a);else for(var j=0;j<24;j++)a[j]=Math.floor(Math.random()*256);for(var i=0;i<24;i++)s+=c[a[i]%c.length];return s;}
+function robiStore(action,extra){var id=getLink();if(!id)return Promise.reject(new Error("no link"));return fetch("/api/store",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action,id:id},extra||{}))}).then(function(r){return r.json();});}
+function schedulePush(){if(!syncOn())return;clearTimeout(pushTimer);pushTimer=setTimeout(function(){robiStore("push",{state:S}).catch(function(){});},1500);}
+function syncPull(force){
+  if(!getLink())return Promise.resolve(false);
+  return robiStore("pull").then(function(r){
+    var rem=r&&r.state;
+    if(rem&&rem.hunter&&(force||(rem.syncedAt||0)>(S.syncedAt||0))){
+      S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});
+      if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];
+      writeLocal();render();return true;
+    }
+    return false;
+  }).catch(function(){return false;});
+}
+function loadFeed(){if(!getLink())return Promise.resolve();return robiStore("feed").then(function(r){ROBI_FEED=(r&&r.feed)||[];if(view==="statut"||view==="evolution")render();}).catch(function(){});}
 
 function rollover(){
   if(!S.lastDate){S.lastDate=today();save();return null;}
@@ -801,7 +824,8 @@ function vStatut(){
     '</svg><div class="core-num"><div class="big">'+DAYPCT+'%</div><div class="cap">JOURNÉE</div></div></div>';
   s+='<div class="core-info"><div class="who">'+esc(h.name)+'</div>';
   s+='<div class="rank">NIVEAU '+h.level+' '+iBtn("level")+' · PALIER '+rk.r+' '+iBtn("rank")+' · SÉRIE '+S.streak+' J</div>';
-  s+='<div class="brief"><span class="jarvis">◉ ROBI · Briefing</span>'+esc(briefLine)+'</div>';
+  var latestRep=(ROBI_FEED&&ROBI_FEED[0])?ROBI_FEED[0]:null;
+  s+='<div class="brief"><span class="jarvis">◉ ROBI · Briefing</span>'+esc(briefLine)+(latestRep?' '+esc(latestRep.text):'')+'</div>';
   s+='<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:5px"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div>';
   s+='<div class="minigauges">'+
     '<div class="mg"><div class="gv"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#173a5c" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#3ac2ff" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="'+energyoff+'" transform="rotate(-90 22 22)"/></svg><b>'+stamina+'</b></div><div class="gt">Énergie '+iBtn("stamina")+'<b>du jour</b></div></div>'+
@@ -881,6 +905,17 @@ function vJournal(){
   if(absences.length)s+='<div style="margin-top:12px;display:grid;gap:8px">'+absences.map(function(a){var status=(today()<a.from)?"à venir":(today()>a.to?"passée":"en cours");var col=status==="en cours"?"var(--gold)":(status==="à venir"?"var(--cyan-b)":"var(--dim2)");return '<div class="absrow"><span style="color:'+col+'">🌙 '+fmtAbs(a)+'</span><span class="absst">'+status+'</span><span class="absx" data-abs="'+a.from+'|'+a.to+'">✕</span></div>';}).join("")+'</div>';
   else s+='<div class="empty" style="margin-top:8px">Aucune absence planifiée.</div>';
   s+='</div>';
+  var linked=!!getLink(),son=syncOn();
+  s+='<div class="win"><div class="win-h"><span class="t">Liaison & synchro</span><span class="ln"></span><span class="r">'+(son?"active":(linked?"en pause":"non liée"))+'</span></div>';
+  s+='<div class="subhead">Relie ROBI à ton Claude et à tes autres appareils. Ton code de liaison est personnel, garde-le pour toi.</div>';
+  if(linked){
+    s+='<div class="absrow" style="font-family:var(--font-sys);font-size:11px;letter-spacing:.06em"><span style="color:var(--cyan-b);word-break:break-all">CODE : '+getLink()+'</span><span class="absx" id="ln-copy" title="Copier">⧉</span></div>';
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn'+(son?'':' ghost')+'" id="ln-sync">'+(son?'Synchro active, désactiver':'Activer la synchro')+'</button><button class="btn ghost" id="ln-forget">Oublier ce code</button></div>';
+  }else{
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ln-gen">Générer mon code</button></div>';
+    s+='<div class="subhead" style="margin:12px 0 6px">Ou récupérer mes données avec un code existant</div><div class="addrow"><input type="text" id="ln-in" placeholder="Colle ton code de liaison..." style="text-transform:uppercase"><button class="btn ghost" id="ln-use">Relier</button></div>';
+  }
+  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
   if(!S.journal.length)s+='<div class="empty">Aucune entrée. Commence ce soir.</div>';
   else s+=S.journal.slice(0,25).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
@@ -898,6 +933,10 @@ function vEvolution(){
   Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;
     s+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">'+Math.round(p*100)+'%</span></div>';});
   s+='</div></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Rapports de ROBI</span><span class="ln"></span><span class="r">'+(syncOn()?ROBI_FEED.length:"—")+'</span></div>';
+  s+='<div class="subhead">Ce que ton Claude t\'a rapporté.'+(syncOn()?'':' Active la liaison dans l\'onglet Journal pour les recevoir.')+'</div>';
+  s+=(syncOn()&&ROBI_FEED.length)?ROBI_FEED.slice(0,15).map(function(e){return '<div class="logline"><span class="tm">'+esc((e.at||"").slice(0,10))+'</span>'+esc(e.text)+'</div>';}).join(""):(syncOn()?'<div class="empty">Aucun rapport pour l\'instant.</div>':'');
+  s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Journal de ROBI</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
   s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
   s+='</div>';
@@ -934,6 +973,11 @@ function bind(){
   var abs=document.getElementById("ab-set");
   if(abs)abs.onclick=function(){var f=document.getElementById("ab-from").value,t=document.getElementById("ab-to").value;if(!f&&!t){toast("Choisis au moins une date");return;}if(!f)f=t;if(!t)t=f;addAbsence(f,t);};
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-abs]"),function(el){el.onclick=function(){var p=el.dataset.abs.split("|");S.absences=(S.absences||[]).filter(function(a){return !(a.from===p[0]&&a.to===p[1]);});save();toast("Absence retirée");render();};});
+  var lg=document.getElementById("ln-gen");if(lg)lg.onclick=function(){var id=genLink();setLink(id);setSyncOn(true);robiStore("push",{state:S}).catch(function(){});toast("Code généré, synchro activée");render();};
+  var lu=document.getElementById("ln-use");if(lu)lu.onclick=function(){var el=document.getElementById("ln-in");var v=el?el.value.trim().toUpperCase():"";if(!/^[A-Z0-9_-]{16,64}$/.test(v)){toast("Code invalide");return;}setLink(v);setSyncOn(true);toast("Liaison en cours...");syncPull(true).then(function(ok){loadFeed();toast(ok?"Données récupérées":"Lié");render();});};
+  var lsy=document.getElementById("ln-sync");if(lsy)lsy.onclick=function(){setSyncOn(!syncOn());if(syncOn())robiStore("push",{state:S}).catch(function(){});toast(syncOn()?"Synchro activée":"Synchro en pause");render();};
+  var lf=document.getElementById("ln-forget");if(lf)lf.onclick=function(){setLink("");setSyncOn(false);ROBI_FEED=[];toast("Code oublié sur cet appareil");render();};
+  var lc=document.getElementById("ln-copy");if(lc)lc.onclick=function(){try{navigator.clipboard.writeText(getLink());toast("Code copié");}catch(e){toast("Note le code manuellement");}};
   var ci=document.getElementById("c-input"),cs=document.getElementById("c-send");
   function doSend(){if(!ci)return;var t=ci.value.trim();if(!t)return;ci.value="";sendChat(t);}
   if(cs)cs.onclick=doSend;
@@ -994,6 +1038,8 @@ render();
 showBoot();
 if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
 else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
+// Liaison : récupérer la sauvegarde partagée puis les rapports du Claude perso.
+if(getLink()){(syncOn()?syncPull(false):Promise.resolve()).then(function(){loadFeed();});}
 })();
 </script>
 </body></html>
