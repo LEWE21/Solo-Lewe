@@ -713,10 +713,14 @@ function depName(q){
 }
 function openDepend(qId){
   var q=find(S.quests,qId);if(!q)return;
-  var h='<div class="mtag">▸ Dépendance</div><div class="mtitle">'+esc(q.title)+'</div><div class="subhead" style="margin:6px 0 12px">De quoi dépend cette tâche ? Elle restera hors de la roue et du cockpit tant que ce n\'est pas terminé.</div><div style="display:grid;gap:8px">';
-  h+='<button class="btn ghost" data-dep="" style="text-align:left">🔓 Aucune, tâche libre'+((!q.dependsOn&&!q.blocked)?" ✓":"")+'</button>';
-  S.missions.forEach(function(m){h+='<button class="btn ghost" data-dep="'+m.id+'" style="text-align:left">🎯 Objectif terminé : '+esc(m.title)+(q.dependsOn===m.id?" ✓":"")+'</button>';});
-  S.quests.filter(function(x){return x.id!==q.id&&!x.daily;}).forEach(function(x){h+='<button class="btn ghost" data-dep="'+x.id+'" style="text-align:left">✓ Après la tâche : '+esc(x.title)+(x.done?" (faite)":"")+(q.dependsOn===x.id?" ✓":"")+'</button>';});
+  var mis=q.mission?find(S.missions,q.mission):null;
+  var sibs=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}):[];
+  var h='<div class="mtag">▸ Dépendance</div><div class="mtitle">'+esc(q.title)+'</div>';
+  if(!mis||!sibs.length){h+='<div class="mbody">Cette tâche n\'a pas d\'autre tâche dans son objectif : elle ne peut pas dépendre d\'une autre. Les dépendances se font au sein d\'un même objectif.</div>';openModal(h);return;}
+  h+='<div class="subhead" style="margin:6px 0 12px">Dans l\'objectif « '+esc(mis.title)+' », de quoi dépend cette tâche ? Elle restera en attente tant que ce n\'est pas terminé.</div><div style="display:grid;gap:8px">';
+  h+='<button class="btn ghost" data-dep="" style="text-align:left">🔗 Aucune, tâche libre'+(!q.dependsOn?" ✓":"")+'</button>';
+  h+='<button class="btn ghost" data-dep="'+mis.id+'" style="text-align:left">🎯 Tout le reste de « '+esc(mis.title)+' » terminé'+(q.dependsOn===mis.id?" ✓":"")+'</button>';
+  sibs.forEach(function(x){h+='<button class="btn ghost" data-dep="'+x.id+'" style="text-align:left">✓ Après « '+esc(x.title)+' »'+(x.done?" (faite)":"")+(q.dependsOn===x.id?" ✓":"")+'</button>';});
   h+='</div>';
   openModal(h);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dep]"),function(el){el.onclick=function(){q.dependsOn=el.dataset.dep||null;q.blocked=false;save();closeModal();render();};});
@@ -1044,9 +1048,9 @@ function vStatut(){
   var stamina=DAYPCT,energyoff=Math.round(113*(1-stamina/100));
   var regoff=Math.round(113*(1-Math.min(1,(S.streak||0)/7)));
   var mo=momentOf(),mood=companionMood();
-  var todo=S.quests.filter(function(q){return q.daily?(dueToday(q)&&!q.done):!q.done;}).length;
+  var reste=Math.max(0,di.tot-di.done);
   var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:(hello+" "+esc(h.name)+". "+(todo>0?("Vous avez "+todo+" tâche"+(todo>1?"s":"")+" à accomplir aujourd'hui."):"Vous êtes à jour, rien d'urgent pour l'instant."));
+  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:(hello+" "+esc(h.name)+". "+(reste>0?("Il vous reste "+reste+" tâche"+(reste>1?"s":"")+" du jour à accomplir."):"Vous êtes à jour pour aujourd'hui, profitez-en."));
   var latestRep=(ROBI_FEED&&ROBI_FEED[0])?ROBI_FEED[0]:null;
   var hero='<div class="win iri a-hero"><div class="win-h"><span class="t">Cockpit</span><span class="ln"></span><span class="r">'+today()+'</span></div>';
   hero+='<div class="core"><div class="reactor"><svg viewBox="0 0 200 200">'+
@@ -1096,8 +1100,10 @@ function vStatut(){
 function questRow(q){
   var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var blk=isBlocked(q),dn=depName(q);
+  var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':'<span class="lock'+(blk?" on":"")+'" data-lock="'+q.id+'" title="Définir la dépendance">'+(blk?"🔒":"🔓")+'</span><span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function dailyRow(q){
   var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
@@ -1282,10 +1288,10 @@ function showBoot(){
   applyTheme();
   var h=S.hunter,rk=rankOf(h.level),mood=companionMood();
   var cached=(S.greetDate===today()&&S.greetLine);
-  var todo=S.quests.filter(function(q){return q.daily?(dueToday(q)&&!q.done):!q.done;}).length;
+  var di=dailyInfo();var reste=Math.max(0,di.tot-di.done);var todo=reste;
   var mo=momentOf();
   var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var brief=todo>0?(hello+". Vous avez "+todo+" tâche"+(todo>1?"s":"")+" à accomplir aujourd'hui."):(hello+". Vous êtes à jour, rien d'urgent pour l'instant.");
+  var brief=reste>0?(hello+". Il vous reste "+reste+" tâche"+(reste>1?"s":"")+" du jour à accomplir."):(hello+". Vous êtes à jour pour aujourd'hui, profitez-en.");
   var greet=cached?S.greetLine:brief;
   el.innerHTML='<div class="bootwin">'+
     '<div class="bmk">'+robiAvatar(rk.r,mood,60)+'</div>'+
