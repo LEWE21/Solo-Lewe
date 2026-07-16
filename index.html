@@ -304,6 +304,8 @@ nav button.on:hover{color:#fff}
 .aura{position:fixed;inset:0;z-index:-1;pointer-events:none}
 .q .lock{color:var(--dim2);cursor:pointer;font-size:14px;padding:2px 5px;flex:none}
 .q .lock.on{color:var(--amber)}
+.q .conv{color:var(--dim2);cursor:pointer;font-size:14px;padding:2px 5px;flex:none}
+.q .conv:hover{color:var(--violet)}
 .deptag{color:var(--amber)!important;border-color:rgba(255,180,87,.45)!important}
 .q.blkrow{opacity:.62}
 .q.sub{border-left:2px solid var(--brd2);padding-left:12px}
@@ -350,8 +352,6 @@ nav button.on:hover{color:#fff}
 <nav id="nav">
   <button data-v="statut" class="on"><span class="ni">◎</span>Cockpit</button>
   <button data-v="quetes"><span class="ni">✓</span>Tâches</button>
-  <button data-v="donjons"><span class="ni">▲</span>Objectifs</button>
-  <button data-v="maitre"><span class="ni">◉</span>ROBI</button>
   <button data-v="journal"><span class="ni">☾</span>Journal</button>
   <button data-v="evolution"><span class="ni">⚔</span>Évolution</button>
 </nav>
@@ -764,8 +764,8 @@ function chJudge(kind,answer){
   if(!answer||answer.trim().length<2){toast("Écris ta réponse d'abord");return;}
   CHBUSY[kind]=true;ch.answer=answer;S.ch[kind]=ch;render();
   gm("coach_judge",{kind:kind,prompt:ch.prompt,answer:answer,state:apiState()}).then(function(r){
-    CHBUSY[kind]=false;var okj=!!(r&&r.ok),msg=(r&&r.message)?r.message:"";ch.msg=msg;
-    if(okj&&!ch.done){var m=chMeta(kind);var g=gainXP(m.stat,m.xp,m.label);ch.done=true;sysNotify("✔ "+m.label,"+"+m.xp+" XP · "+STATS[m.stat].name,[msg.slice(0,70)]);afterGain(g);if(kind==="journal"){S.journal.unshift({date:today(),mood:jMood,sleep:null,note:answer});}}
+    CHBUSY[kind]=false;var okj=!!(r&&r.ok),msg=(r&&r.message)?r.message:"";ch.msg=msg;ch.ok=okj;ch.done=true;
+    if(okj){var m=chMeta(kind);var g=gainXP(m.stat,m.xp,m.label);sysNotify("✔ "+m.label,"+"+m.xp+" XP · "+STATS[m.stat].name,[msg.slice(0,70)]);afterGain(g);if(kind==="journal"){S.journal.unshift({date:today(),mood:jMood,sleep:null,note:answer});}}
     S.ch[kind]=ch;save();render();
   }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
 }
@@ -779,11 +779,14 @@ function defiCard(kind){
   else if(fresh){s+='<div class="subhead" style="margin:0 0 10px">'+intro[kind]+'</div><button class="btn" data-ch-start="'+kind+'" style="width:100%">'+startlbl[kind]+'</button>';}
   else{
     s+='<div class="epr">'+esc(ch.prompt).replace(/\n/g,"<br>")+'</div>';
-    if(ch.done){s+='<div class="coachmsg ok">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div><div class="mdone" style="margin-top:6px">✔ +'+chMeta(kind).xp+' XP · '+STATS[chMeta(kind).stat].name+'</div>';}
+    if(ch.done){
+      s+='<div class="coachmsg '+(ch.ok?"ok":"no")+'">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div>';
+      s+=ch.ok?('<div class="mdone" style="margin-top:6px">✔ +'+chMeta(kind).xp+' XP · '+STATS[chMeta(kind).stat].name+'</div>'):('<div class="subhead" style="margin-top:8px">Pas validé aujourd\'hui. Un nouveau défi t\'attend demain.</div>');
+    }
     else{
-      if(ch.msg)s+='<div class="coachmsg no">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div>';
       s+='<textarea class="bdtext" id="ch-ans-'+kind+'" style="min-height:68px;margin-top:10px" placeholder="Ta réponse...">'+esc(ch.answer||"")+'</textarea>';
       s+='<button class="btn" data-ch-judge="'+kind+'" style="width:100%;margin-top:8px">Valider ma réponse</button>';
+      s+='<div class="subhead" style="margin-top:8px">Attention : une seule tentative par jour, réussie ou non.</div>';
     }
   }
   s+='</div>';return s;
@@ -813,7 +816,9 @@ function initEffects(){
     var comp=e.target.closest(".companion");
     if(comp){comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet");}
     var go=e.target.closest("[data-go]");
-    if(go){view=go.getAttribute("data-go");render();}
+    if(go){view=go.getAttribute("data-go");render();return;}
+    var cv=e.target.closest("[data-convo]");
+    if(cv){openConvo("task",cv.getAttribute("data-convo"));}
   });
 }
 
@@ -890,6 +895,7 @@ function openDungeon(mId){
   var h='<div class="mtag" style="color:'+rk.c+'">▸ Objectif · Rang '+m.rank+'</div><div class="mtitle" style="color:'+rk.c+'">'+esc(m.title)+'</div>';
   if(m.note)h+='<div class="mbody" style="margin-bottom:12px">'+esc(m.note)+'</div>';
   h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
+  h+='<div style="margin:14px 0 4px"><button class="btn ghost" id="dg-convo" style="width:100%">💬 Pourquoi ces tâches, et comment avancer ? Demander à ROBI</button></div>';
   h+='<div class="subhead" style="margin:16px 0 4px">Tâches de l\'objectif</div>';
   h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune tâche. Ajoutes-en une ci-dessous.</div>';
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle tâche pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
@@ -898,6 +904,7 @@ function openDungeon(mId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
+  var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
   var a=document.getElementById("dq-add");
   if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
 }
@@ -921,7 +928,7 @@ function applyDailyEdit(){
     else if(r.op==="resume"){q.paused=false;msg="« "+q.title+" » réactivée : "+cadLabel(q)+".";}
     else if(r.op==="delete"){S.quests=S.quests.filter(function(x){return x.id!==q.id;});msg="« "+q.title+" » retirée des journalières.";}
     else{pushChat("assistant","Action inconnue.");renderChat();return;}
-    save();manageId=null;pushChat("assistant","✔ "+msg);log("Journalière ajustée : "+q.title);render();
+    save();manageId=null;view="quetes";pushChat("assistant","✔ "+msg);log("Journalière ajustée : "+q.title);render();
   }).catch(function(){toast("Erreur réseau");});
 }
 function pushChat(role,content){S.chat=S.chat||[];S.chat.push({role:role,content:content});if(S.chat.length>60)S.chat.shift();save();}
@@ -1071,6 +1078,60 @@ function render(){
 }
 function setClock(){var el=document.getElementById("hud-clock");if(!el)return;var d=new Date();el.textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 
+/* ---- Conversation ROBI contextuelle (par tâche / par objectif) ---- */
+var convoBusy=false;
+function convoEntity(kind,id){return kind==="obj"?find(S.missions,id):find(S.quests,id);}
+function convoSeed(kind,e){
+  if(kind==="obj"){
+    var qs=S.quests.filter(function(q){return q.mission===e.id;});
+    var titles=qs.map(function(q){return "- "+q.title+(q.done?" (fait)":"");}).join("\n");
+    return "Objectif : « "+e.title+" »"+(e.note?(" ("+e.note+")"):"")+". Voici mes tâches actuelles pour cet objectif :\n"+(titles||"(aucune pour l'instant)")+"\n\nExplique-moi en bref pourquoi ces tâches font avancer l'objectif et pourquoi elles valent la peine, puis propose-moi la prochaine étape concrète. Reste concis et actionnable.";
+  }
+  return "J'ai cette tâche à accomplir : « "+e.title+" »"+(e.mission?(" (objectif : "+((find(S.missions,e.mission)||{}).title||"")+")"):"")+". Explique-moi concrètement comment m'y prendre, en quelques étapes simples et faisables. Reste concret et bref.";
+}
+function openConvo(kind,id){
+  var e=convoEntity(kind,id);if(!e)return;
+  e.chat=e.chat||[];
+  renderConvo(kind,id);
+  if(!e.chat.length&&!convoBusy)convoAsk(kind,id,convoSeed(kind,e),true);
+}
+function renderConvo(kind,id){
+  var e=convoEntity(kind,id);if(!e)return;
+  var msgs=e.chat||[];
+  var h='<div class="mtag">▸ ROBI · '+(kind==="obj"?"Objectif":"Tâche")+'</div><div class="mtitle">'+esc(e.title)+'</div>';
+  h+='<div id="convobox" class="chatbox" style="height:min(42vh,360px)">'+(msgs.length?msgs.map(function(m){return '<div class="bub '+(m.role==="user"?"me":"gm")+'">'+esc(m.content).replace(/\n/g,"<br>")+'</div>';}).join(""):'<div class="empty">ROBI prépare son conseil...</div>')+(convoBusy?'<div class="bub gm typing">…</div>':'')+'</div>';
+  h+='<div class="addrow"><input type="text" id="convo-in" placeholder="Demande à ROBI..."><button class="btn" id="convo-send">Envoyer</button></div>';
+  if(kind==="obj")h+='<div style="margin-top:8px"><button class="btn ghost" id="convo-mktask" style="width:100%">＋ Créer une tâche depuis ce conseil</button></div>';
+  openModal(h);
+  var box=document.getElementById("convobox");if(box)box.scrollTop=box.scrollHeight;
+  var send=document.getElementById("convo-send"),inp=document.getElementById("convo-in");
+  function doSend(){if(!inp)return;var t=inp.value.trim();if(!t)return;inp.value="";convoAsk(kind,id,t,false);}
+  if(send)send.onclick=doSend;
+  if(inp)inp.onkeydown=function(ev){if(ev.key==="Enter"){ev.preventDefault();doSend();}};
+  var mk=document.getElementById("convo-mktask");if(mk)mk.onclick=function(){convoMakeTask(id);};
+}
+function convoAsk(kind,id,message,seed){
+  if(convoBusy)return;var e=convoEntity(kind,id);if(!e)return;e.chat=e.chat||[];
+  if(!seed)e.chat.push({role:"user",content:message});
+  convoBusy=true;save();renderConvo(kind,id);
+  var hist=(e.chat||[]).slice(-12);
+  gm("chat",{message:message,history:seed?[]:hist.slice(0,-1),state:apiState()}).then(function(r){
+    convoBusy=false;var reply=(r&&r.reply)?r.reply:"(ROBI est silencieux, réessaie.)";
+    e.chat.push({role:"assistant",content:reply});if(e.chat.length>20)e.chat=e.chat.slice(-20);save();renderConvo(kind,id);
+  }).catch(function(){convoBusy=false;e.chat.push({role:"assistant",content:"(Connexion impossible, réessaie.)"});save();renderConvo(kind,id);});
+}
+function convoMakeTask(mid){
+  if(convoBusy)return;var m=find(S.missions,mid);if(!m)return;
+  var recent=(m.chat||[]).slice(-8).map(function(x){return (x.role==="user"?"Moi: ":"ROBI: ")+x.content;}).join("\n");
+  if(!recent){toast("Parle d'abord à ROBI");return;}
+  toast("ROBI prépare la tâche...");
+  gm("make_quest",{description:recent,dungeons:[{id:m.id,title:m.title}]}).then(function(q){
+    if(!q||!q.title){toast("Impossible de créer la tâche");return;}
+    var stat=STATS[q.stat]?q.stat:"mental",prio=["high","med","low"].indexOf(q.prio)>=0?q.prio:"med";
+    S.quests.push({id:uid(),title:q.title,stat:stat,daily:!!q.daily,prio:prio,base:baseFor(prio,!!q.daily),done:false,mission:m.id});save();
+    sysNotify("Tâche créée",q.title,[m.title]);render();renderConvo("obj",mid);
+  }).catch(function(){toast("Erreur réseau");});
+}
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
   var di=dailyInfo();
@@ -1133,7 +1194,7 @@ function questRow(q,depth){
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function questTree(list){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -1151,7 +1212,7 @@ function dailyRow(q){
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span></div>';
+    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span></div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -1327,7 +1388,7 @@ function bind(){
   var ccm=document.getElementById("c-claim");if(ccm)ccm.onclick=claimEpreuve;
   var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
   var cap=document.getElementById("c-apply");if(cap)cap.onclick=applyDailyEdit;
-  var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
+  var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;view="quetes";pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
   var cdb=document.getElementById("c-debrief");if(cdb)cdb.onclick=debriefLearning;
   var crs=document.getElementById("c-review-start");if(crs)crs.onclick=startReview;
   var csg=document.getElementById("c-suggest");if(csg)csg.onclick=suggestTool;
