@@ -29,11 +29,13 @@ html[data-theme="night"]{
   --bodybg:radial-gradient(1000px 720px at 18% -4%,rgba(123,92,255,.22),transparent 58%),radial-gradient(1000px 720px at 104% 16%,rgba(59,107,255,.18),transparent 58%),radial-gradient(900px 660px at 60% 118%,rgba(34,201,238,.14),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--txt);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .7s ease,color .4s ease;min-height:100vh}
-#app{max-width:1120px;margin:0 auto;padding:16px 16px 128px}
-@media(max-width:400px){#app{padding:13px 12px 124px}}
+html{height:100%}
+body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--txt);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .7s ease,color .4s ease;height:100dvh}
+#app{max-width:1120px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:12px 16px 0}
+#view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:96px}
+@media(max-width:400px){#app{padding:10px 11px 0}}
 
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex:none}
 .brand{display:flex;align-items:center;gap:11px}
 .brand .mark{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:var(--glass2);box-shadow:0 0 18px -4px var(--violet)}
 .brand .mark::before{content:"";position:absolute;inset:0;border-radius:50%;padding:2px;background:var(--iri);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}
@@ -59,13 +61,18 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .subhead{font-family:var(--font);font-size:12.5px;letter-spacing:0;color:var(--dim);margin:4px 0 12px;line-height:1.5}
 
 /* ---- cockpit ---- */
-.cockgrid{display:flex;flex-direction:column;gap:14px}
-@media(min-width:760px){.cockgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;grid-template-areas:"hero hero" "today obj"}}
-@media(min-width:1000px){.cockgrid{grid-template-columns:1.5fr 1fr 1fr;grid-template-areas:"hero today obj";align-items:start}}
+.cocktabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.cocktab{flex:none;position:relative;overflow:hidden;font-family:var(--font);font-size:13px;font-weight:600;color:var(--dim);background:var(--glass2);border:1px solid var(--brd2);border-radius:var(--r-pill);padding:8px 15px;cursor:pointer;white-space:nowrap}
+.cocktab.on{color:#fff;border-color:transparent;background:linear-gradient(120deg,var(--violet),var(--blue));box-shadow:0 8px 20px -10px var(--blue)}
+.cockbody{display:flex;flex-direction:column;gap:14px}
+.propcard{display:flex;align-items:center;gap:12px;padding:11px 3px;border-bottom:1px solid var(--track)}
+.propcard:last-child{border-bottom:0}
+.propcard .pa{cursor:pointer;font-size:15px;padding:2px 6px}
+.propcard .pa.add{color:var(--mint)}.propcard .pa.no{color:var(--dim2)}.propcard .pa.no:hover{color:var(--pink)}
 .a-hero{grid-area:hero}.a-today{grid-area:today}.a-obj{grid-area:obj}
 
 .core{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.reactor{flex:none;width:min(150px,42vw);aspect-ratio:1;position:relative;display:grid;place-items:center}
+.reactor{flex:none;width:min(120px,36vw);aspect-ratio:1;position:relative;display:grid;place-items:center}
 .reactor svg{position:absolute;inset:0;width:100%;height:100%}
 .ring-rot{transform-origin:50% 50%;animation:spin 24s linear infinite}
 .ring-rot.rev{animation-duration:38s;animation-direction:reverse}
@@ -108,7 +115,7 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .bar>i{position:absolute;inset:0;transform-origin:left;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--violet),var(--blue),var(--cyan));transition:transform .8s cubic-bezier(.2,.7,.2,1)}
 .xprow .lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-bottom:5px;letter-spacing:.03em}
 
-.sys{display:flex;flex-direction:column;gap:11px}
+.sys{display:flex;flex-direction:column;gap:8px}
 .sysrow{display:grid;grid-template-columns:118px 1fr 42px;align-items:center;gap:10px}
 .sysrow .n{font-size:12.5px;color:var(--txt)}
 .sysrow .track{height:7px;border-radius:var(--r-pill);background:var(--track);position:relative;overflow:hidden}
@@ -740,6 +747,44 @@ function openDepend(qId){
   openModal(h);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dep]"),function(el){el.onclick=function(){q.dependsOn=el.dataset.dep||null;q.blocked=false;save();closeModal();render();};});
 }
+/* ---- Réglage direct d'une tâche journalière (sans chat) ---- */
+function openDailyEdit(qId){
+  var q=find(S.quests,qId);if(!q||!q.daily)return;
+  var c=q.cad||{};
+  var isDays=!!(c.days&&c.days.length);
+  var isEveryN=!!(c.n&&c.n>1)&&!isDays;
+  var isDaily=!isEveryN&&!isDays;
+  var order=[1,2,3,4,5,6,0],lbl={1:"L",2:"M",3:"M",4:"J",5:"V",6:"S",0:"D"};
+  var h='<div class="mtag">▸ Tâche journalière</div><div class="mtitle">'+esc(q.title)+'</div>';
+  h+='<div class="subhead" style="margin:6px 0 12px">Rythme actuel : <b style="color:var(--amber)">'+cadLabel(q)+'</b></div>';
+  h+='<div class="subhead" style="margin:0 0 6px">Fréquence</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  h+='<button class="btn'+((isDaily&&!q.paused)?"":" ghost")+'" data-cad="daily">Tous les jours</button>';
+  h+='<button class="btn'+((isEveryN&&!q.paused)?"":" ghost")+'" data-cad="everyN">Un jour sur deux</button>';
+  h+='<button class="btn'+((isDays&&!q.paused)?"":" ghost")+'" data-cad="days">Jours précis</button>';
+  h+='</div>';
+  if(isDays&&!q.paused){
+    h+='<div class="subhead" style="margin:12px 0 6px">Quels jours</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+    order.forEach(function(d){var on=(c.days||[]).indexOf(d)>=0;h+='<button class="cbtn'+(on?" on":"")+'" data-day="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
+    h+='</div>';
+  }
+  h+='<div class="subhead" style="margin:16px 0 6px">Autres</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  h+=q.paused?'<button class="btn" data-cad="resume">Réactiver</button>':'<button class="btn ghost" data-cad="pause">Mettre en pause</button>';
+  h+='<button class="btn ghost" data-cad="remove" style="color:var(--pink)">Retirer</button></div>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-cad]"),function(el){el.onclick=function(){
+    var op=el.dataset.cad;
+    if(op==="daily"){q.cad=null;q.paused=false;}
+    else if(op==="everyN"){q.cad={n:2,anchor:today()};q.paused=false;}
+    else if(op==="days"){if(!(q.cad&&q.cad.days&&q.cad.days.length))q.cad={days:[1,3,5]};q.paused=false;}
+    else if(op==="pause"){q.paused=true;}
+    else if(op==="resume"){q.paused=false;}
+    else if(op==="remove"){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();closeModal();render();toast("Journalière retirée");return;}
+    save();render();openDailyEdit(qId);
+  };});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-day]"),function(el){el.onclick=function(){
+    var d=parseInt(el.dataset.day,10);if(!(q.cad&&q.cad.days))q.cad={days:[]};var i=q.cad.days.indexOf(d);if(i>=0)q.cad.days.splice(i,1);else q.cad.days.push(d);q.paused=false;save();render();openDailyEdit(qId);
+  };});
+}
 function wheelEligible(){return S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);});}
 function statCol(k){return (STATS[k]&&STATS[k].col)||"#7b5cff";}
 function wheelCard(){
@@ -817,6 +862,18 @@ function initEffects(){
     if(comp){comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet");}
     var go=e.target.closest("[data-go]");
     if(go){view=go.getAttribute("data-go");render();return;}
+    var ct=e.target.closest("[data-cocktab]");
+    if(ct){cockTab=ct.getAttribute("data-cocktab");render();return;}
+    var gob=e.target.closest("[data-go-obj]");
+    if(gob){objSel=gob.getAttribute("data-go-obj");view="donjons";render();return;}
+    var os=e.target.closest("[data-obj-sel]");
+    if(os){objSel=os.getAttribute("data-obj-sel");render();return;}
+    var ob=e.target.closest("[data-obj-back]");
+    if(ob){objSel=null;render();return;}
+    var pad=e.target.closest("[data-prop-add]");
+    if(pad){objAcceptProp(parseInt(pad.getAttribute("data-prop-add"),10));return;}
+    var pdel=e.target.closest("[data-prop-del]");
+    if(pdel){objRefuseProp(parseInt(pdel.getAttribute("data-prop-del"),10));return;}
     var cv=e.target.closest("[data-convo]");
     if(cv){openConvo("task",cv.getAttribute("data-convo"));}
   });
@@ -902,7 +959,7 @@ function openDungeon(mId){
   openModal(h,rk.c);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
   var a=document.getElementById("dq-add");
@@ -1071,6 +1128,7 @@ function render(){
   else if(view==="journal")html=vJournal();
   else html=vEvolution();
   v.innerHTML='<div class="view-anim">'+html+'</div>';
+  v.classList.toggle("cockpit",view==="statut");
   bind();
   wireWheel();
   setClock();
@@ -1132,6 +1190,7 @@ function convoMakeTask(mid){
     sysNotify("Tâche créée",q.title,[m.title]);render();renderConvo("obj",mid);
   }).catch(function(){toast("Erreur réseau");});
 }
+var cockTab="statut",objSel=null,OBJBUSY=false;
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
   var di=dailyInfo();
@@ -1178,16 +1237,19 @@ function vStatut(){
     todc+=wheelCard();
   }
   todc+='</div>';
-  var objc='<div class="win" style="margin:0"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r" data-go="donjons" style="cursor:pointer;color:var(--violet)">Tout voir</span></div>';
-  S.missions.slice().sort(byRankDesc).slice(0,4).forEach(function(m){
+  var objc='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span></div><div class="subhead">Touche un objectif pour faire le point et choisir tes tâches avec ROBI.</div>';
+  S.missions.slice().sort(byRankDesc).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
     var frac=done/Math.max(1,qs.length);
     var rkc=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
-    objc+='<div class="objrow" data-dungeon="'+m.id+'"><span class="otag" style="color:'+rkc.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rkc.c+'99,'+rkc.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
+    objc+='<div class="objrow" data-go-obj="'+m.id+'"><span class="otag" style="color:'+rkc.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rkc.c+'99,'+rkc.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
   });
   objc+='</div>';
-  return '<div class="cockgrid">'+hero+todc+'<div class="a-obj" style="display:flex;flex-direction:column;gap:14px">'+objc+defiCard("defi")+defiCard("epictete")+'</div></div>';
+  var defis=defiCard("defi")+'<div style="height:14px"></div>'+defiCard("epictete");
+  var tabs=[["statut","Statut"],["aujourdhui","Aujourd'hui"],["defis","Défis"],["objectifs","Objectifs"]];
+  var body=cockTab==="aujourdhui"?todc:(cockTab==="defis"?defis:(cockTab==="objectifs"?objc:hero));
+  return '<div class="cocktabs">'+tabs.map(function(t){return '<button class="cocktab'+(cockTab===t[0]?" on":"")+'" data-cocktab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="cockbody">'+body+'</div>';
 }
 function questRow(q,depth){
   depth=depth||0;
@@ -1196,7 +1258,7 @@ function questRow(q,depth){
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function questTree(list){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -1214,7 +1276,7 @@ function dailyRow(q){
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span></div>';
+    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span></div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -1235,19 +1297,61 @@ function vQuetes(){
 }
 
 function vObjectifs(){
+  if(objSel){var mm=find(S.missions,objSel);if(mm)return vObjDetail(mm);objSel=null;}
   var s='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Tes projets, du palier S au palier E. Touche un objectif '+iBtn("dungeon")+' pour l\'ouvrir et cocher ses tâches.</div>';
+  s+='<div class="subhead">Touche un objectif pour faire le point, mettre ton Claude à jour et choisir tes tâches ensemble.</div>';
   S.missions.slice().sort(byRankDesc).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
     var frac=done/Math.max(1,qs.length);
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
-    var opTxt=qs.length?(Math.round(frac*100)+'%'):'—';
-    s+='<div class="objrow" data-dungeon="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+(m.note?' <span style="color:var(--dim);font-size:11px">· '+esc(m.note)+'</span>':'')+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rk.c+'55,'+rk.c+')"></i></span><span class="op">'+opTxt+'</span></div>';
+    var np=(m.proposals&&m.proposals.length)?(' <span style="color:var(--mint);font-size:11px">· '+m.proposals.length+' à valider</span>'):'';
+    s+='<div class="objrow" data-obj-sel="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+np+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rk.c+'55,'+rk.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
   });
-  s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI attribue le palier. Touche un objectif pour l\'ouvrir et y ajouter des tâches.</div></div>';
+  s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div>';
+  s+='</div>';
   return s;
 }
+function vObjDetail(m){
+  var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
+  var qs=S.quests.filter(function(q){return q.mission===m.id;});
+  var done=qs.filter(function(q){return q.done;}).length;
+  var props=m.proposals||[];
+  var s='<div class="win iri"><div class="win-h"><span class="t" data-obj-back style="cursor:pointer">‹ Objectifs</span><span class="ln"></span><span class="r" style="color:'+rk.c+'">Rang '+m.rank+'</span></div>';
+  s+='<div class="mtitle" style="color:'+rk.c+';margin:0 0 6px">'+esc(m.title)+'</div>';
+  if(m.note)s+='<div class="subhead" style="margin:0 0 8px">'+esc(m.note)+'</div>';
+  s+='<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin:6px 0 6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
+  s+='<div class="plab" style="margin-top:16px">Ton point</div><div class="subhead" style="margin:0 0 8px">Où tu en es, ce qui bloque, tes idées. ROBI te proposera des tâches, et ton Claude sera mis à jour sur cet objectif.</div>';
+  s+='<textarea class="bdtext" id="obj-point" placeholder="Où j\'en suis, ce qui coince..." style="min-height:80px">'+esc(m.point||"")+'</textarea>';
+  s+='<div class="rowbtn"><button class="btn'+(OBJBUSY?" ghost":"")+'" id="obj-send" style="width:100%">'+(OBJBUSY?'ROBI réfléchit <span class="spinload"></span>':"Envoyer mon point et recevoir des propositions")+'</button></div>';
+  if(props.length){
+    s+='<div class="plab" style="margin-top:16px">Propositions de ROBI · à toi de choisir</div>';
+    props.forEach(function(p,i){var mm=STATS[p.stat]||STATS.mental;s+='<div class="propcard"><div class="body" style="flex:1;min-width:0"><div class="ttl">'+esc(p.title)+'</div><div class="meta"><span class="tag" style="color:'+mm.col+';border-color:'+mm.col+'55">'+mm.ic+' '+mm.name+'</span></div></div><span class="pa add" data-prop-add="'+i+'" title="Ajouter cette tâche">✔</span><span class="pa no" data-prop-del="'+i+'" title="Refuser">✕</span></div>';});
+  }
+  s+='<div class="plab" style="margin-top:16px">Tâches de l\'objectif</div>';
+  s+=qs.length?questTree(qs):'<div class="empty">Aucune tâche pour l\'instant.</div>';
+  s+='<div class="addrow" style="margin-top:12px"><input type="text" id="dq-title2" placeholder="Ajouter une tâche à la main..."><button class="btn ghost" id="dq-add2">Ajouter</button></div>';
+  s+='</div>';
+  return s;
+}
+function objSendPoint(){
+  if(OBJBUSY||!objSel)return;var m=find(S.missions,objSel);if(!m)return;
+  var el=document.getElementById("obj-point");var pt=el?el.value.trim():"";
+  if(!pt){toast("Écris ton point d'abord");return;}
+  m.point=pt;OBJBUSY=true;save();render();
+  robiStore("note",{text:"[Objectif : "+m.title+"] "+pt}).catch(function(){});
+  gm("weekly_review",{dungeons:[{id:m.id,title:m.title,note:m.note||"",rank:m.rank}],description:pt}).then(function(res){
+    OBJBUSY=false;var qs=(res&&res.quests)||[];
+    m.proposals=qs.slice(0,6).map(function(x){return {title:String(x.title).slice(0,160),stat:STATS[x.stat]?x.stat:"discipline",prio:["high","med","low"].indexOf(x.prio)>=0?x.prio:"med"};});
+    save();render();if(getLink())toast("Point envoyé à ton Claude ✔");
+  }).catch(function(){OBJBUSY=false;toast("Connexion impossible");render();});
+}
+function objAcceptProp(i){
+  var m=find(S.missions,objSel);if(!m||!m.proposals||!m.proposals[i])return;var p=m.proposals[i];
+  S.quests.push({id:uid(),title:p.title,stat:p.stat,daily:false,prio:p.prio,base:baseFor(p.prio,false),done:false,mission:m.id});
+  m.proposals.splice(i,1);save();sysNotify("Tâche ajoutée",p.title,[m.title]);render();
+}
+function objRefuseProp(i){var m=find(S.missions,objSel);if(!m||!m.proposals)return;m.proposals.splice(i,1);save();render();}
 
 function vJournal(){
   var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
@@ -1339,7 +1443,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openManage(el.dataset.manage);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
@@ -1399,6 +1503,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-lock]"),function(el){el.onclick=function(){openDepend(el.dataset.lock);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-start]"),function(el){el.onclick=function(){chStart(el.getAttribute("data-ch-start"));};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-judge]"),function(el){el.onclick=function(){var k=el.getAttribute("data-ch-judge");var ta=document.getElementById("ch-ans-"+k);chJudge(k,ta?ta.value:"");};});
+  var oss=document.getElementById("obj-send");if(oss)oss.onclick=objSendPoint;
+  var dq2=document.getElementById("dq-add2");if(dq2)dq2.onclick=function(){var t=document.getElementById("dq-title2").value.trim();if(!t||!objSel)return;var m=find(S.missions,objSel);if(!m)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:m.id});save();render();};
   if(document.getElementById("chatbox"))renderChat();
 }
 
