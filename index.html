@@ -1139,9 +1139,8 @@ function vStatut(){
   var stamina=DAYPCT,energyoff=Math.round(113*(1-stamina/100));
   var regoff=Math.round(113*(1-Math.min(1,(S.streak||0)/7)));
   var mo=momentOf(),mood=companionMood();
-  var reste=Math.max(0,di.tot-di.done);
   var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:(hello+" "+esc(h.name)+". "+(reste>0?("Il vous reste "+reste+" tâche"+(reste>1?"s":"")+" du jour à accomplir."):"Vous êtes à jour pour aujourd'hui, profitez-en."));
+  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:(hello+" "+esc(h.name)+".");
   var latestRep=(ROBI_FEED&&ROBI_FEED[0])?ROBI_FEED[0]:null;
   var hero='<div class="win iri a-hero"><div class="win-h"><span class="t">Cockpit</span><span class="ln"></span><span class="r">'+today()+'</span></div>';
   hero+='<div class="core"><div class="reactor"><svg viewBox="0 0 200 200">'+
@@ -1164,6 +1163,9 @@ function vStatut(){
     '<div class="chip" style="align-self:center">Combo '+iBtn("combo")+' <b>x'+(S.combo||0)+'</b></div>'+
     '</div>';
   hero+='<div class="companion" data-pet><div class="av">'+robiAvatar(rk.r,mood,84)+'</div><div class="ct"><div class="cm">'+moodLabel(mood)+'</div><div class="cd">'+esc(companionLine(mood))+'</div></div></div>';
+  hero+='<div class="plab" style="margin-top:16px">Systèmes · ton évolution</div><div class="sys">';
+  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;hero+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+' '+iBtn(k)+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">niv '+st.level+'</span></div>';});
+  hero+='</div>';
   hero+='</div>';
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+di.done+' / '+di.tot+'</span></div>';
   if(mo==="soir"){
@@ -1414,10 +1416,10 @@ function showBoot(){
   applyTheme();
   var h=S.hunter,rk=rankOf(h.level),mood=companionMood();
   var cached=(S.greetDate===today()&&S.greetLine);
-  var di=dailyInfo();var reste=Math.max(0,di.tot-di.done);var todo=reste;
+  var todo=0;
   var mo=momentOf();
   var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var brief=reste>0?(hello+". Il vous reste "+reste+" tâche"+(reste>1?"s":"")+" du jour à accomplir."):(hello+". Vous êtes à jour pour aujourd'hui, profitez-en.");
+  var brief=hello+" "+esc(h.name)+".";
   var greet=cached?S.greetLine:brief;
   el.innerHTML='<div class="bootwin">'+
     '<div class="bmk">'+robiAvatar(rk.r,mood,60)+'</div>'+

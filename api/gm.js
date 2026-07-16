@@ -230,8 +230,8 @@ export default async function handler(req, res) {
     if (action === "greeting") {
       const st = body.state || {};
       const todo = Number(body.todo) || 0;
-      const sys = "You are ROBI, a personal AI assistant with the calm, courteous, quietly witty tone of JARVIS from Iron Man. Produce ONE short line in FRENCH (max 28 words) greeting the person as they open the app: courteous and anticipatory. Use the formal 'vous'. Address them by their first name (given below), never by a gendered honorific. The main user, Mathilde, is a woman: NEVER 'Monsieur'. Mention they have a number of tasks to accomplish today. No quotes, no preamble, output only the line.";
-      const user = `Prénom : ${st.name || "Mathilde"}. Tâches à accomplir aujourd'hui : ${todo}. Série : ${st.streak || 0} jour(s). Humeur récente : ${st.lastMood || "?"}/5.`;
+      const sys = "You are ROBI, a personal AI assistant with the calm, courteous, quietly witty tone of JARVIS from Iron Man. Produce ONE short line in FRENCH (max 24 words) greeting the person warmly as they open the app, ready to assist. Use the formal 'vous'. Address them by their first name (given below), never by a gendered honorific. The main user, Mathilde, is a woman: NEVER 'Monsieur'. Do NOT mention any task count or to-do reminder. No quotes, no preamble, output only the line.";
+      const user = `Prénom : ${st.name || "Mathilde"}. Série : ${st.streak || 0} jour(s). Humeur récente : ${st.lastMood || "?"}/5.`;
       const r = await client.messages.create({
         model: CHAT_MODEL,
         max_tokens: 120,
