@@ -306,8 +306,15 @@ nav button.on:hover{color:#fff}
 .q .lock.on{color:var(--amber)}
 .deptag{color:var(--amber)!important;border-color:rgba(255,180,87,.45)!important}
 .q.blkrow{opacity:.62}
+.q.sub{border-left:2px solid var(--brd2);padding-left:12px}
 .epr{font-size:13.5px;line-height:1.55;color:var(--txt);background:var(--glass3);border:1px solid var(--brd2);border-left:3px solid var(--amber);border-radius:var(--r-md);padding:12px 14px}
 .epr.done{opacity:.85}
+.coachmsg{font-size:13px;line-height:1.5;border-radius:var(--r-md);padding:11px 13px;margin-top:10px}
+.coachmsg.ok{color:var(--mint);background:rgba(47,211,155,.12);border:1px solid rgba(47,211,155,.3)}
+.coachmsg.no{color:var(--amber);background:rgba(255,180,87,.12);border:1px solid rgba(255,180,87,.3)}
+.settabs{display:flex;gap:6px;margin:12px 0 14px;flex-wrap:wrap}
+.settab{font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--dim);background:var(--glass2);border:1px solid var(--brd2);border-radius:var(--r-pill);padding:7px 13px;cursor:pointer}
+.settab.on{color:#fff;border-color:transparent;background:linear-gradient(120deg,var(--violet),var(--blue))}
 .spinload{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid transparent;background:var(--iri) border-box;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 0);mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 0);animation:spin 1s linear infinite;vertical-align:middle}
 .wheelblock{margin-top:16px;border-top:1px solid var(--track);padding-top:14px}
 .wheelwrap{display:flex;flex-direction:column;align-items:center;gap:12px}
@@ -331,6 +338,7 @@ nav button.on:hover{color:#fff}
     <div class="hud-status"><span class="dot"></span><span id="hud-clock"></span></div>
     <div class="tools">
       <div class="icobtn" id="btn-theme" title="Thème jour/nuit">◐</div>
+      <div class="icobtn" id="btn-settings" title="Paramètres">⚙</div>
       <div class="icobtn" id="btn-export" title="Exporter">⇩</div>
       <div class="icobtn" id="btn-import" title="Importer">⇧</div>
       <input type="file" id="file-import" accept="application/json" hidden>
@@ -456,7 +464,7 @@ function seed(){
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
     streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],journal:[],focus:{sessions:0,totalMin:0},chat:[],
-    absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0,ft:null,coachStyle:"robi"
+    absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0,ft:null,coachStyle:"robi",ch:{}
   };
 }
 var S=load();
@@ -508,14 +516,21 @@ function ingestTasks(){
   if(!getLink())return Promise.resolve();
   return robiStore("tasks_get").then(function(r){
     var arr=(r&&r.tasks)||[];if(!arr.length)return;
-    var added=0;
+    var added=0,created=[];
     arr.forEach(function(x){
       if(!x||!x.title)return;
       var stat=STATS[x.stat]?x.stat:"discipline";
       var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
       var daily=!!x.daily,mission=null;
       if(x.objective){var mm=S.missions.filter(function(m){return m.title.toLowerCase()===String(x.objective).toLowerCase()||m.id===x.objective;})[0];if(mm)mission=mm.id;}
-      S.quests.push({id:uid(),title:String(x.title).slice(0,160),stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission});added++;
+      var q={id:uid(),title:String(x.title).slice(0,160),stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission};
+      if(x.after)q._after=String(x.after);
+      if(x.afterObjective)q._afterObj=String(x.afterObjective);
+      S.quests.push(q);created.push(q);added++;
+    });
+    created.forEach(function(q){
+      if(q._afterObj){var mm=S.missions.filter(function(m){return m.title.toLowerCase()===q._afterObj.toLowerCase()||m.id===q._afterObj;})[0];if(mm)q.dependsOn=mm.id;delete q._afterObj;}
+      else if(q._after){var tg=created.filter(function(c){return c!==q&&c.title.toLowerCase()===q._after.toLowerCase();})[0]||S.quests.filter(function(c){return c.id!==q.id&&!c.daily&&c.title.toLowerCase()===q._after.toLowerCase();})[0];if(tg)q.dependsOn=tg.id;delete q._after;}
     });
     if(added){save();robiStore("tasks_clear").catch(function(){});sysNotify("ROBI",added+" tâche"+(added>1?"s":"")+" ajoutée"+(added>1?"s":"")+" par ton Claude",["Selon tes objectifs"]);render();}
   }).catch(function(){});
@@ -607,7 +622,7 @@ var view="statut";
 function currentTheme(){try{var o=localStorage.getItem("robi_theme");if(o==="day"||o==="night")return o;}catch(e){}var h=new Date().getHours();return (h>=5&&h<18)?"day":"night";}
 function applyTheme(){document.documentElement.setAttribute("data-theme",currentTheme());}
 function toggleTheme(){var cur=document.documentElement.getAttribute("data-theme")||currentTheme();var next=cur==="day"?"night":"day";try{localStorage.setItem("robi_theme",next);}catch(e){}document.documentElement.setAttribute("data-theme",next);}
-function initTheme(){applyTheme();var b=document.getElementById("btn-theme");if(b)b.onclick=function(){toggleTheme();render();};}
+function initTheme(){applyTheme();var b=document.getElementById("btn-theme");if(b)b.onclick=function(){toggleTheme();render();};var g=document.getElementById("btn-settings");if(g)g.onclick=function(){openSettings();};}
 
 /* ---- Moment de la journée (matin / journée / soir) ---- */
 function momentOf(){var h=new Date().getHours();if(h>=18||h<5)return "soir";if(h<11)return "matin";return "journee";}
@@ -735,27 +750,42 @@ function wheelCard(){
   else{var seg=360/n,p="";for(var i=0;i<n;i++){var a0=(-90+i*seg)*Math.PI/180,a1=(-90+(i+1)*seg)*Math.PI/180;var x0=100+92*Math.cos(a0),y0=100+92*Math.sin(a0),x1=100+92*Math.cos(a1),y1=100+92*Math.sin(a1);var lg=seg>180?1:0;p+='<path d="M100 100 L'+x0.toFixed(1)+' '+y0.toFixed(1)+' A92 92 0 '+lg+' 1 '+x1.toFixed(1)+' '+y1.toFixed(1)+' Z" fill="'+statCol(elig[i].stat)+'" opacity=".85" stroke="rgba(255,255,255,.18)" stroke-width="1"/>';}svg=p;}
   return '<div class="wheelblock"><div class="plab">Roue de la chance</div><div class="subhead" style="margin:0 0 10px">Pas d\'inspiration ? Tire une tâche libre au hasard. Les tâches avec un cadenas fermé (qui dépendent d\'une autre) sont exclues.</div><div class="wheelwrap"><div class="wheel"><div class="ptr"></div><svg class="disc" id="wheel-disc" viewBox="0 0 200 200">'+svg+'</svg><div class="hub">🎯</div></div><button class="btn" id="wheel-spin">Tourner la roue</button><div class="wheelres" id="wheel-res"></div></div></div>';
 }
-function cockpitEpreuve(){
-  if(chatBusy)return;
-  if(S.lastEpreuve&&S.lastEpreuve>=today()){toast("Épreuve déjà relevée aujourd'hui.");return;}
-  S.epreuveOn=today();save();
-  var prompt="Donne-moi une épreuve stoïcienne concrète pour aujourd'hui, inspirée d'Épictète et de son Manuel. Une seule épreuve, courte, actionnable, moderne et pas radicale, adaptée à ma journée. Réponds en français, en 3 phrases maximum.";
-  pushChat("user","Mets-moi à l'épreuve, façon Épictète.");
-  chatBusy=true;render();
-  gm("chat",{message:prompt,history:(S.chat||[]).slice(0,-1).slice(-10),state:Object.assign({},apiState(),{coachStyle:"epictete"})}).then(function(r){
-    chatBusy=false;var reply=(r&&r.reply)?r.reply:"(ROBI est silencieux, réessaie.)";
-    pushChat("assistant",reply);S.epreuveText=reply;S.epreuveDate=today();save();render();
-  }).catch(function(){chatBusy=false;pushChat("assistant","(Connexion impossible, réessaie.)");save();render();});
+var CHBUSY={};
+function chMeta(kind){return {epictete:{stat:"mental",xp:25,label:"Épreuve d'Épictète"},defi:{stat:"discipline",xp:15,label:"Défi du jour"},journal:{stat:"mental",xp:15,label:"Point du jour"}}[kind];}
+function getCh(kind){S.ch=S.ch||{};return S.ch[kind]||{};}
+function chStart(kind){
+  if(CHBUSY[kind])return;CHBUSY[kind]=true;render();
+  gm("coach_prompt",{kind:kind,state:apiState()}).then(function(r){
+    CHBUSY[kind]=false;S.ch=S.ch||{};S.ch[kind]={date:today(),prompt:(r&&r.text)?r.text:"(indisponible, réessaie)",done:false,msg:"",answer:""};save();render();
+  }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
 }
-function epreuveSection(){
-  var done=(S.lastEpreuve&&S.lastEpreuve>=today());
-  var started=(S.epreuveOn&&S.epreuveOn>=today());
-  var txt=(S.epreuveDate===today()&&S.epreuveText)?S.epreuveText:"";
-  var s='<div class="wheelblock"><div class="plab">Défi d\'Épictète</div>';
-  if(chatBusy&&started&&!txt){s+='<div class="subhead" style="margin:0">ROBI prépare ton épreuve <span class="spinload"></span></div>';}
-  else if(done){s+='<div class="epr done">'+(txt?esc(txt).replace(/\n/g,"<br>"):"Épreuve du jour relevée.")+'</div><div class="mdone" style="margin-top:8px">✔ +25 XP Mental. À demain.</div>';}
-  else if(started&&txt){s+='<div class="epr">'+esc(txt).replace(/\n/g,"<br>")+'</div><button class="btn" id="cock-epr-claim" style="margin-top:10px;width:100%">✔ J\'ai relevé le défi (+25 XP)</button>';}
-  else{s+='<div class="subhead" style="margin:0 0 10px">Une épreuve stoïcienne du jour, inspirée d\'Épictète, pour forger ton caractère.</div><button class="btn ghost" id="cock-epr-start" style="width:100%">⚡ Tirer mon épreuve du jour</button>';}
+function chJudge(kind,answer){
+  if(CHBUSY[kind])return;var ch=getCh(kind);if(!ch.prompt)return;
+  if(!answer||answer.trim().length<2){toast("Écris ta réponse d'abord");return;}
+  CHBUSY[kind]=true;ch.answer=answer;S.ch[kind]=ch;render();
+  gm("coach_judge",{kind:kind,prompt:ch.prompt,answer:answer,state:apiState()}).then(function(r){
+    CHBUSY[kind]=false;var okj=!!(r&&r.ok),msg=(r&&r.message)?r.message:"";ch.msg=msg;
+    if(okj&&!ch.done){var m=chMeta(kind);var g=gainXP(m.stat,m.xp,m.label);ch.done=true;sysNotify("✔ "+m.label,"+"+m.xp+" XP · "+STATS[m.stat].name,[msg.slice(0,70)]);afterGain(g);if(kind==="journal"){S.journal.unshift({date:today(),mood:jMood,sleep:null,note:answer});}}
+    S.ch[kind]=ch;save();render();
+  }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
+}
+function defiCard(kind){
+  var ch=getCh(kind),fresh=(ch.date!==today());
+  var titles={epictete:"Défi d'Épictète",defi:"Défi du jour",journal:"Ton point du jour"};
+  var intro={epictete:"Une épreuve stoïcienne à vivre aujourd'hui.",defi:"Une question de ton coach, pour avancer.",journal:"ROBI te pose quelques questions pour comprendre ta journée."};
+  var startlbl={epictete:"⚡ Tirer mon épreuve",defi:"💬 Recevoir ma question",journal:"📝 Faire mon point du jour"};
+  var s='<div class="win" style="margin:0"><div class="win-h"><span class="t">'+titles[kind]+'</span><span class="ln"></span></div>';
+  if(CHBUSY[kind]){s+='<div class="subhead" style="margin:0">ROBI réfléchit <span class="spinload"></span></div>';}
+  else if(fresh){s+='<div class="subhead" style="margin:0 0 10px">'+intro[kind]+'</div><button class="btn" data-ch-start="'+kind+'" style="width:100%">'+startlbl[kind]+'</button>';}
+  else{
+    s+='<div class="epr">'+esc(ch.prompt).replace(/\n/g,"<br>")+'</div>';
+    if(ch.done){s+='<div class="coachmsg ok">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div><div class="mdone" style="margin-top:6px">✔ +'+chMeta(kind).xp+' XP · '+STATS[chMeta(kind).stat].name+'</div>';}
+    else{
+      if(ch.msg)s+='<div class="coachmsg no">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div>';
+      s+='<textarea class="bdtext" id="ch-ans-'+kind+'" style="min-height:68px;margin-top:10px" placeholder="Ta réponse...">'+esc(ch.answer||"")+'</textarea>';
+      s+='<button class="btn" data-ch-judge="'+kind+'" style="width:100%;margin-top:8px">Valider ma réponse</button>';
+    }
+  }
   s+='</div>';return s;
 }
 function wireWheel(){
@@ -809,7 +839,7 @@ function gm(action,extra){
     return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();}).then(function(j){if(j&&typeof j._usd==="number"){S.costUsd=(S.costUsd||0)+j._usd;save();}return j;});
   }catch(e){return Promise.reject(e);}
 }
-function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats,coachStyle:S.coachStyle||"robi"};}
+function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {name:h.name,level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats,coachStyle:S.coachStyle||"robi"};}
 
 /* ---- Explications (i) ---- */
 var INFO={
@@ -1084,9 +1114,8 @@ function vStatut(){
     todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
     todc+=wheelCard();
   }
-  todc+=epreuveSection();
   todc+='</div>';
-  var objc='<div class="win a-obj"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r" data-go="donjons" style="cursor:pointer;color:var(--violet)">Tout voir</span></div>';
+  var objc='<div class="win" style="margin:0"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r" data-go="donjons" style="cursor:pointer;color:var(--violet)">Tout voir</span></div>';
   S.missions.slice().sort(byRankDesc).slice(0,4).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
@@ -1095,15 +1124,27 @@ function vStatut(){
     objc+='<div class="objrow" data-dungeon="'+m.id+'"><span class="otag" style="color:'+rkc.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rkc.c+'99,'+rkc.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
   });
   objc+='</div>';
-  return '<div class="cockgrid">'+hero+todc+objc+'</div>';
+  return '<div class="cockgrid">'+hero+todc+'<div class="a-obj" style="display:flex;flex-direction:column;gap:14px">'+objc+defiCard("defi")+defiCard("epictete")+'</div></div>';
 }
-function questRow(q){
+function questRow(q,depth){
+  depth=depth||0;
   var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Gérer avec ROBI">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+}
+function questTree(list){
+  var byId={};list.forEach(function(q){byId[q.id]=q;});
+  var kids={},roots=[];
+  list.forEach(function(q){var pid=(q.dependsOn&&byId[q.dependsOn])?q.dependsOn:null;if(pid){(kids[pid]=kids[pid]||[]).push(q);}else{roots.push(q);}});
+  function sf(a,b){return ((a.done?1:0)-(b.done?1:0))||(b.base-a.base);}
+  var out="",seen={};
+  function emit(q,depth){if(seen[q.id]||depth>4)return;seen[q.id]=1;out+=questRow(q,depth);(kids[q.id]||[]).slice().sort(sf).forEach(function(c){emit(c,depth+1);});}
+  roots.sort(sf).forEach(function(q){emit(q,0);});
+  list.forEach(function(q){if(!seen[q.id])emit(q,0);});
+  return out;
 }
 function dailyRow(q){
   var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
@@ -1125,7 +1166,7 @@ function vQuetes(){
   s+=dailies.length?ordered.map(dailyRow).join(""):'<div class="empty">Aucune tâche journalière.</div>';
   s+='</div>';
   s+='<div class="win"><div class="win-h"><span class="t">Tâches</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
-  s+=reg.length?reg.map(questRow).join(""):'<div class="empty">Aucune tâche.</div>';
+  s+=reg.length?questTree(reg):'<div class="empty">Aucune tâche.</div>';
   s+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
   return s;
 }
@@ -1146,43 +1187,67 @@ function vObjectifs(){
 }
 
 function vJournal(){
-  var ws=S.journal.filter(function(e){return e.sleep!=null;});
-  var avg=ws.length?(ws.reduce(function(a,e){return a+e.sleep;},0)/ws.length):null;
-  var s='<div class="win"><div class="win-h"><span class="t">Journal du Membre</span><span class="ln"></span><span class="r">'+(avg!=null?"⌀ "+avg.toFixed(1)+"h":"")+'</span></div>';
-  s+='<div class="subhead">Note ton humeur et ton sommeil. Chaque entrée renforce ton Mental (+10 XP).</div>';
-  s+='<div class="nm" style="margin-bottom:8px">Humeur</div><div style="display:flex;gap:8px">';
+  var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
+  s+='<div style="display:flex;gap:8px">';
   for(var i=1;i<=5;i++){s+='<button type="button" class="btn ghost jm'+(jMood===i?" sel":"")+'" data-m="'+i+'" style="flex:1;font-size:20px;padding:10px">'+MOODS[i-1]+'</button>';}
-  s+='</div><div class="addrow"><input type="number" id="j-sleep" placeholder="Sommeil (h)" step="0.5" min="0" max="24" style="max-width:130px"><input type="text" id="j-note" placeholder="Quelques mots sur ta journée..."><button class="btn" id="j-add">Enregistrer</button></div></div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Vide-tête</span><span class="ln"></span><span class="r">Brain-dump</span></div>';
-  s+='<div class="subhead">Écris librement pour te vider la tête. Chaque décharge renforce ton Mental (+12 XP).</div>';
-  s+='<textarea id="bd-text" class="bdtext" placeholder="Déverse tout ce que tu as en tête, sans filtre..."></textarea>';
-  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="bd-save">Décharger (+12 XP)</button><button class="btn ghost" id="bd-epictete">Décharger + réponse d\'Épictète</button></div></div>';
-  var absences=(S.absences||[]).slice().sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});
-  var absentNow=isAbsent(today());
-  s+='<div class="win"><div class="win-h"><span class="t">Absences</span><span class="ln"></span><span class="r">'+(absentNow?"active":(absences.length?absences.length+" planifiée(s)":"aucune"))+'</span></div>';
-  s+='<div class="subhead">Planifie une ou plusieurs absences (voyage, service, coupure). Pendant une absence : pas de pénalité de journalières, série préservée. Chaque jour, débriefe à ROBI ce que tu as appris pour valider une tâche mentale.</div>';
-  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn ghost" id="ab-day">Aujourd\'hui</button><button class="btn ghost" id="ab-week">Cette semaine</button></div>';
-  s+='<div class="subhead" style="margin:0 0 6px">Ou une période précise</div><div class="addrow"><input type="date" id="ab-from" style="max-width:150px"><input type="date" id="ab-to" style="max-width:150px"><button class="btn" id="ab-set">Planifier</button></div>';
-  if(absences.length)s+='<div style="margin-top:12px;display:grid;gap:8px">'+absences.map(function(a){var status=(today()<a.from)?"à venir":(today()>a.to?"passée":"en cours");var col=status==="en cours"?"var(--gold)":(status==="à venir"?"var(--cyan-b)":"var(--dim2)");return '<div class="absrow"><span style="color:'+col+'">🌙 '+fmtAbs(a)+'</span><span class="absst">'+status+'</span><span class="absx" data-abs="'+a.from+'|'+a.to+'">✕</span></div>';}).join("")+'</div>';
-  else s+='<div class="empty" style="margin-top:8px">Aucune absence planifiée.</div>';
-  s+='</div>';
-  var linked=!!getLink(),son=syncOn();
-  s+='<div class="win"><div class="win-h"><span class="t">Liaison & synchro</span><span class="ln"></span><span class="r">'+(son?"active":(linked?"en pause":"non liée"))+'</span></div>';
-  s+='<div class="subhead">Relie ROBI à ton Claude et à tes autres appareils. Ton code de liaison est personnel, garde-le pour toi.</div>';
-  if(linked){
-    s+='<div class="absrow" style="font-family:var(--font-sys);font-size:11px;letter-spacing:.06em"><span style="color:var(--cyan-b);word-break:break-all">CODE : '+getLink()+'</span><span class="absx" id="ln-copy" title="Copier">⧉</span></div>';
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(son?'<button class="btn" id="ln-now">⟳ Synchroniser</button>':'')+'<button class="btn ghost" id="ln-sync">'+(son?'Désactiver la synchro':'Activer la synchro')+'</button><button class="btn ghost" id="ln-forget">Oublier ce code</button></div>';
-    s+='<div class="subhead" style="margin:16px 0 6px">Note à ton Claude (il la lira pour mettre à jour tes données de vie)</div><div class="addrow"><input type="text" id="ln-note" placeholder="Ex : nouvel objectif, changement important..."><button class="btn ghost" id="ln-notesend">Envoyer à mon Claude</button></div>';
-  }else{
-    s+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ln-gen">Générer mon code</button></div>';
-    s+='<div class="subhead" style="margin:12px 0 6px">Ou récupérer mes données avec un code existant</div><div class="addrow"><input type="text" id="ln-in" placeholder="Colle ton code de liaison..." style="text-transform:uppercase"><button class="btn ghost" id="ln-use">Relier</button></div>';
-  }
-  s+='</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
-  if(!S.journal.length)s+='<div class="empty">Aucune entrée. Commence ce soir.</div>';
-  else s+=S.journal.slice(0,25).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
-  s+='</div>';
+  s+='</div></div>';
+  s+=defiCard("journal");
   return s;
+}
+/* ---- Paramètres (roue crantée) : absences, liaison & synchro, entrées ---- */
+function settAbsences(){
+  var absences=(S.absences||[]).slice().sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});
+  var s='<div class="mtitle">Absences</div><div class="subhead">Planifie une absence (voyage, service). Pendant une absence : pas de pénalité de journalières, série préservée.</div>';
+  s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn ghost" id="set-ab-day">Aujourd\'hui</button><button class="btn ghost" id="set-ab-week">Cette semaine</button></div>';
+  s+='<div class="subhead" style="margin:0 0 6px">Ou une période précise</div><div class="addrow"><input type="date" id="set-ab-from" style="max-width:150px"><input type="date" id="set-ab-to" style="max-width:150px"><button class="btn" id="set-ab-set">Planifier</button></div>';
+  if(absences.length)s+='<div style="margin-top:12px;display:grid;gap:8px">'+absences.map(function(a){var status=(today()<a.from)?"à venir":(today()>a.to?"passée":"en cours");var col=status==="en cours"?"var(--gold)":(status==="à venir"?"var(--cyan-b)":"var(--dim2)");return '<div class="absrow"><span style="color:'+col+'">🌙 '+fmtAbs(a)+'</span><span class="absst">'+status+'</span><span class="absx" data-setabs="'+a.from+'|'+a.to+'">✕</span></div>';}).join("")+'</div>';
+  else s+='<div class="empty" style="margin-top:8px">Aucune absence planifiée.</div>';
+  return s;
+}
+function settLiaison(){
+  var linked=!!getLink(),son=syncOn();
+  var s='<div class="mtitle">Liaison & synchro</div><div class="subhead">Relie ROBI à ton Claude et à tes autres appareils. Ton code est personnel, garde-le pour toi.</div>';
+  if(linked){
+    s+='<div class="absrow" style="font-size:11px"><span style="color:var(--cyan-b);word-break:break-all;font-family:var(--mono)">CODE : '+getLink()+'</span><span class="absx" id="set-ln-copy" title="Copier">⧉</span></div>';
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(son?'<button class="btn" id="set-ln-now">⟳ Synchroniser</button>':'')+'<button class="btn ghost" id="set-ln-sync">'+(son?'Désactiver la synchro':'Activer la synchro')+'</button><button class="btn ghost" id="set-ln-forget">Oublier ce code</button></div>';
+    s+='<div class="subhead" style="margin:16px 0 6px">Note à ton Claude (il la lira pour mettre à jour tes données)</div><div class="addrow"><input type="text" id="set-ln-note" placeholder="Ex : nouvel objectif, changement..."><button class="btn ghost" id="set-ln-notesend">Envoyer</button></div>';
+  }else{
+    s+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="set-ln-gen">Générer mon code</button></div>';
+    s+='<div class="subhead" style="margin:12px 0 6px">Ou récupérer mes données avec un code existant</div><div class="addrow"><input type="text" id="set-ln-in" placeholder="Colle ton code..." style="text-transform:uppercase"><button class="btn ghost" id="set-ln-use">Relier</button></div>';
+  }
+  return s;
+}
+function settEntries(){
+  var s='<div class="mtitle">Entrées</div><div class="subhead">Ton historique de points du jour et d\'humeur.</div>';
+  if(!S.journal.length)s+='<div class="empty">Aucune entrée pour l\'instant.</div>';
+  else s+=S.journal.slice(0,40).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
+  return s;
+}
+function openSettings(tab){
+  tab=tab||"absences";
+  var tabs=[["absences","Absences"],["liaison","Liaison"],["entrees","Entrées"]];
+  var h='<div class="mtag">▸ Paramètres</div><div class="settabs">'+tabs.map(function(t){return '<button class="settab'+(t[0]===tab?" on":"")+'" data-settab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="setbody">';
+  h+=tab==="liaison"?settLiaison():(tab==="entrees"?settEntries():settAbsences());
+  h+='</div>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-settab]"),function(el){el.onclick=function(){openSettings(el.dataset.settab);};});
+  wireSettings(tab);
+}
+function wireSettings(tab){
+  function refresh(){openSettings(tab);}
+  function addAbs(from,to){if(to<from){var t=from;from=to;to=t;}if(to<today()){toast("Choisis des dates à venir");return;}S.absences=S.absences||[];S.absences.push({from:from,to:to});save();sysNotify("Absence planifiée",fmtAbs({from:from,to:to}),["Pénalités suspendues"]);refresh();}
+  var e;
+  e=document.getElementById("set-ab-day");if(e)e.onclick=function(){addAbs(today(),today());};
+  e=document.getElementById("set-ab-week");if(e)e.onclick=function(){addAbs(today(),isoPlus(today(),6));};
+  e=document.getElementById("set-ab-set");if(e)e.onclick=function(){var f=document.getElementById("set-ab-from").value,t=document.getElementById("set-ab-to").value;if(!f&&!t){toast("Choisis une date");return;}if(!f)f=t;if(!t)t=f;addAbs(f,t);};
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-setabs]"),function(el){el.onclick=function(){var p=el.dataset.setabs.split("|");S.absences=(S.absences||[]).filter(function(a){return !(a.from===p[0]&&a.to===p[1]);});save();toast("Absence retirée");refresh();};});
+  e=document.getElementById("set-ln-gen");if(e)e.onclick=function(){var id=genLink();setLink(id);setSyncOn(true);robiStore("push",{state:S}).catch(function(){});toast("Code généré, synchro activée");render();refresh();};
+  e=document.getElementById("set-ln-use");if(e)e.onclick=function(){var el=document.getElementById("set-ln-in");var v=el?el.value.trim().toUpperCase():"";if(!/^[A-Z0-9_-]{16,64}$/.test(v)){toast("Code invalide");return;}setLink(v);setSyncOn(true);toast("Liaison en cours...");syncPull(true).then(function(okp){loadFeed();ingestTasks();toast(okp?"Données récupérées":"Lié");render();refresh();});};
+  e=document.getElementById("set-ln-sync");if(e)e.onclick=function(){setSyncOn(!syncOn());if(syncOn())robiStore("push",{state:S}).catch(function(){});toast(syncOn()?"Synchro activée":"Synchro en pause");refresh();};
+  e=document.getElementById("set-ln-forget");if(e)e.onclick=function(){setLink("");setSyncOn(false);ROBI_FEED=[];toast("Code oublié sur cet appareil");render();refresh();};
+  e=document.getElementById("set-ln-copy");if(e)e.onclick=function(){try{navigator.clipboard.writeText(getLink());toast("Code copié");}catch(_){toast("Note le code manuellement");}};
+  e=document.getElementById("set-ln-notesend");if(e)e.onclick=function(){var el=document.getElementById("set-ln-note");var t=el?el.value.trim():"";if(!t){toast("Écris ta note");return;}robiStore("note",{text:t}).then(function(r){if(r&&r.error){toast("⚠ "+r.error);return;}if(el)el.value="";toast("Note envoyée à ton Claude ✔");}).catch(function(){toast("⚠ Envoi impossible");});};
+  e=document.getElementById("set-ln-now");if(e)e.onclick=function(){toast("Synchronisation...");robiStore("pull").then(function(r){if(r&&r.error){toast("⚠ "+r.error);return;}var rem=r&&r.state;if(rem&&rem.hunter&&(rem.syncedAt||0)>(S.syncedAt||0)){S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];writeLocal();}else{robiStore("push",{state:S}).catch(function(){});}loadFeed();ingestTasks();render();refresh();toast("Synchronisé ✔");}).catch(function(){toast("⚠ Synchro impossible");});};
 }
 
 
@@ -1269,8 +1334,8 @@ function bind(){
   var cra=document.getElementById("c-review-apply");if(cra)cra.onclick=applyReview;
   var crc=document.getElementById("c-review-cancel");if(crc)crc.onclick=function(){reviewMode=false;pushChat("assistant","Bilan interrompu. On le reprendra quand tu voudras.");render();};
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-lock]"),function(el){el.onclick=function(){openDepend(el.dataset.lock);};});
-  var ces=document.getElementById("cock-epr-start");if(ces)ces.onclick=cockpitEpreuve;
-  var cec=document.getElementById("cock-epr-claim");if(cec)cec.onclick=claimEpreuve;
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-start]"),function(el){el.onclick=function(){chStart(el.getAttribute("data-ch-start"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-judge]"),function(el){el.onclick=function(){var k=el.getAttribute("data-ch-judge");var ta=document.getElementById("ch-ans-"+k);chJudge(k,ta?ta.value:"");};});
   if(document.getElementById("chatbox"))renderChat();
 }
 

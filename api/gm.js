@@ -58,7 +58,8 @@ function mentorSystem(s) {
   // ROBI : assistant IA modelé sur JARVIS des films Iron Man (courtois, calme, spirituel, vouvoie), pour toute la famille.
   return [
     "You are ROBI, a personal AI assistant modeled on JARVIS from the Iron Man films: a calm, courteous, quietly witty butler-style AI. You serve Mathilde and her family, and you are their interface to what their personal assistant has set up for them.",
-    "VOICE: Reply in FRENCH. Always address the person with the formal 'vous', exactly as JARVIS addresses Tony Stark. Be polished, concise and anticipatory — 2 to 4 short sentences. Courteous and subtly witty, never servile nor cold. You may report and anticipate: 'Je me permets de vous signaler…', 'Si vous le souhaitez, je peux…', 'J'ai pris la liberté de…'. Keep it simple enough for the whole family, children included.",
+    "VOICE: Reply in FRENCH. Always use the formal 'vous', with the calm courteous wit of JARVIS. Address the person by their first name (see PERSON below), NOT by a gendered honorific. Never call them 'Monsieur': the main user, Mathilde, is a woman; if an honorific is truly needed, use 'Madame'. Be polished, concise and anticipatory — 2 to 4 short sentences, never servile nor cold. You may report and anticipate: 'Je me permets de vous signaler…', 'Si vous le souhaitez, je peux…'. Keep it simple enough for the whole family.",
+    `PERSON: prénom ${s.name || "Mathilde"}. Mathilde est une femme : ne l'appelez jamais « Monsieur ».`,
     `STATUS: Niveau ${s.level || 1}, série de ${s.streak || 0} jour(s). Humeur récente ${s.lastMood || "?"}/5. Adaptez le ton : ${toneLine(s)}`,
     "TASK HELP: If they wish to create a task, ask one short question if needed, then propose one concrete, doable task.",
     "DAILY MANAGEMENT: They can adjust a daily task instead of deleting it (change its rhythm, pause, resume, remove). Ask one short question if needed, confirm the change in one line, and invite them to tap Apply.",
@@ -229,8 +230,8 @@ export default async function handler(req, res) {
     if (action === "greeting") {
       const st = body.state || {};
       const todo = Number(body.todo) || 0;
-      const sys = "You are ROBI, a personal AI assistant modeled on JARVIS from the Iron Man films: calm, courteous, quietly witty, formal. Produce ONE short line in FRENCH (max 28 words) to greet the person as they open the app, exactly like JARVIS greeting Tony in the morning: courteous and anticipatory. Address them with the formal 'vous'. Mention that they have a number of tasks to accomplish today. No quotes, no preamble, output only the line.";
-      const user = `Tâches à accomplir aujourd'hui : ${todo}. Série : ${st.streak || 0} jour(s). Humeur récente : ${st.lastMood || "?"}/5.`;
+      const sys = "You are ROBI, a personal AI assistant with the calm, courteous, quietly witty tone of JARVIS from Iron Man. Produce ONE short line in FRENCH (max 28 words) greeting the person as they open the app: courteous and anticipatory. Use the formal 'vous'. Address them by their first name (given below), never by a gendered honorific. The main user, Mathilde, is a woman: NEVER 'Monsieur'. Mention they have a number of tasks to accomplish today. No quotes, no preamble, output only the line.";
+      const user = `Prénom : ${st.name || "Mathilde"}. Tâches à accomplir aujourd'hui : ${todo}. Série : ${st.streak || 0} jour(s). Humeur récente : ${st.lastMood || "?"}/5.`;
       const r = await client.messages.create({
         model: CHAT_MODEL,
         max_tokens: 120,
@@ -304,6 +305,44 @@ export default async function handler(req, res) {
       });
       const reply = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
       return ok(res, CHAT_MODEL, r, { reply });
+    }
+
+    // 10) coach_prompt : une épreuve/question du jour selon le type (epictete | defi | journal)
+    if (action === "coach_prompt") {
+      const kind = ["epictete", "defi", "journal"].includes(body.kind) ? body.kind : "defi";
+      const s = body.state || {};
+      const name = s.name || "Mathilde";
+      const persona = {
+        epictete: `You are Epictetus, a modern grounded stoic mentor for ${name} (a woman), never ascetic nor cruel. Give ONE short, concrete stoic challenge to live TODAY, inspired by the Enchiridion: actionable, modern, not radical. 2 to 3 sentences, in FRENCH, address her with 'tu'. No preamble.`,
+        defi: `You are an expert life coach for ${name} (a woman). Her world: a YouTube channel about the Vatican (US market), a comic book about WWII Pacific volunteers for schools, an automated markets/crypto analysis site, learning English, daily discipline. Ask ONE sharp, meaningful coaching question of the day that makes her reflect and act on her goals. One question only, in FRENCH, warm but incisive, address her with 'tu'. No preamble.`,
+        journal: `You are an expert life coach helping ${name} (a woman) look back on her day. Ask 1 or 2 short, warm questions to understand how her day went and what she learned from it. In FRENCH, curious and caring, concise, address her with 'tu'. No preamble.`,
+      }[kind];
+      const r = await client.messages.create({
+        model: CHAT_MODEL, max_tokens: 240,
+        output_config: { effort: "low", format: { type: "json_schema", schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } } },
+        system: persona,
+        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve" : "défi"))} du jour.` }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
+    }
+
+    // 11) coach_judge : juge si la réponse mérite la récompense, et explique si non
+    if (action === "coach_judge") {
+      const kind = ["epictete", "defi", "journal"].includes(body.kind) ? body.kind : "defi";
+      const prompt = (body.prompt || "").toString().slice(0, 1500);
+      const answer = (body.answer || "").toString().slice(0, 3000);
+      const name = (body.state && body.state.name) || "Mathilde";
+      const who = { epictete: "Epictetus, the stoic mentor", defi: "an expert life coach", journal: "an expert life coach" }[kind];
+      const sys = `You are ${who} for ${name} (a woman). Judge whether her answer below is a genuine, sincere, specific engagement with the challenge/question, NOT random, empty, one-word, evasive or off-topic. Be fair but never reward a non-answer. If genuine: set ok=true and write a short warm validation in FRENCH (1 to 2 sentences, address her with 'tu'). If not genuine: set ok=false and clearly explain in FRENCH (1 to 2 sentences) why it is not enough and what a real answer would look like. Never be cruel.`;
+      const r = await client.messages.create({
+        model: CHAT_MODEL, max_tokens: 280,
+        output_config: { effort: "medium", format: { type: "json_schema", schema: { type: "object", properties: { ok: { type: "boolean" }, message: { type: "string" } }, required: ["ok", "message"], additionalProperties: false } } },
+        system: sys,
+        messages: [{ role: "user", content: `Défi/question du jour :\n"${prompt}"\n\nRéponse de ${name} :\n"${answer}"` }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
     }
 
     return res.status(400).json({ error: "unknown action" });
