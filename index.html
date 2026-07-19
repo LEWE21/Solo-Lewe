@@ -1560,9 +1560,7 @@ function vStatut(){
   todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
   todc+=wheelCard();
   todc+='</div>';
-  var tabs=[["statut","Statut"],["aujourdhui","Aujourd'hui"]];
-  var body=cockTab==="aujourdhui"?todc:hero;
-  return '<div class="cocktabs">'+tabs.map(function(t){return '<button class="cocktab'+(cockTab===t[0]?" on":"")+'" data-cocktab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="cockbody">'+body+'</div>';
+  return '<div class="cockbody">'+hero+todc+'</div>';
 }
 function questRow(q,depth){
   depth=depth||0;
