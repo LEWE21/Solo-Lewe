@@ -1820,7 +1820,7 @@ function vEvolution(){
 
 function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
