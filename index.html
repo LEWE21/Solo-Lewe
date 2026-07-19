@@ -178,7 +178,7 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 .nm{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 
 /* compagnon */
-.companion{display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px;border-radius:var(--r-md);background:var(--glass3);border:1px solid var(--brd2);cursor:pointer}
+.companion{display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px;border-radius:var(--r-md);background:var(--glass3);border:1px solid var(--brd2);cursor:pointer;touch-action:manipulation}
 .companion .av{flex:none;position:relative;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
 .companion.pet .av{animation:pet .5s ease}
 @keyframes pet{40%{transform:translateY(-6px) scale(1.05)}70%{transform:translateY(0) scale(.98)}}
@@ -224,8 +224,9 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 .q .meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
 .tag{display:inline-flex;align-items:center;gap:5px;font-family:var(--font);font-size:10.5px;letter-spacing:0;padding:3px 9px;border-radius:var(--r-pill);border:1px solid;background:var(--glass2)}
 .q .xpv{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.02em;white-space:nowrap}
-.q .del,.q .gear,.q .mv{color:var(--dim2);cursor:pointer;font-size:15px;padding:2px 5px;flex:none}
-.q .del:hover{color:var(--pink)}.q .gear:hover,.q .mv:hover{color:var(--violet)}
+.q .del,.q .gear,.q .mv,.q .edt{color:var(--dim2);cursor:pointer;font-size:15px;padding:2px 5px;flex:none}
+.q .edt{font-size:14px}
+.q .del:hover{color:var(--pink)}.q .gear:hover,.q .mv:hover,.q .edt:hover{color:var(--violet)}
 .q.off{opacity:.5}
 .q .check.off{cursor:default;border-color:var(--brd2);color:var(--dim2)}
 .q .check.off:hover{border-color:var(--brd2);box-shadow:none}
@@ -1078,7 +1079,13 @@ function initEffects(){
     var t=e.target.closest(".btn,.cbtn,.check,.icobtn,.mclose,nav button");
     if(t)ripple(e,t);
     var comp=e.target.closest(".companion");
-    if(comp){comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet");}
+    if(comp){
+      comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet"); // caresse
+      // Entrée secrète : 3 tapes d'affilée sur le lapin (fenêtre de 800 ms entre chaque)
+      secretTaps++;clearTimeout(secretTimer);
+      if(secretTaps>=3){secretTaps=0;if(view!=="solo"){view="solo";render();}return;}
+      secretTimer=setTimeout(function(){secretTaps=0;},800);
+    }
     var go=e.target.closest("[data-go]");
     if(go){view=go.getAttribute("data-go");render();return;}
     var sx=e.target.closest("[data-solo-exit]");
@@ -1182,6 +1189,14 @@ function openModal(html,color){
 }
 function closeModal(){var el=document.getElementById("modal");if(el)el.className="";}
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ ROBI</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
+function openRenameTask(qId){
+  var q=find(S.quests,qId);if(!q)return;
+  openModal('<div class="mtag">▸ Renommer la tâche</div><div class="addrow" style="margin-top:12px"><input type="text" id="rn-title" maxlength="160" placeholder="Nouveau nom de la tâche..."><button class="btn" id="rn-save">Renommer</button></div>');
+  var inp=document.getElementById("rn-title");if(inp){inp.value=q.title;try{inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}catch(_){}}
+  function commit(){var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);save();closeModal();render();toast("Tâche renommée");}
+  var sv=document.getElementById("rn-save");if(sv)sv.onclick=commit;
+  if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
+}
 function openMoveQuest(qId){
   var q=find(S.quests,qId);if(!q)return;
   var h='<div class="mtag">▸ Changer d\'objectif</div><div class="mtitle">'+esc(q.title)+'</div><div class="subhead" style="margin:6px 0 12px">Choisis son objectif :</div><div style="display:grid;gap:8px">';
@@ -1515,17 +1530,7 @@ function armSecret(){
   if(core)core.onclick=function(){secretTaps++;drawSecretDots();clearTimeout(secretTimer);secretTimer=setTimeout(closeSecret,3000);if(secretTaps>=secretSeqLen()){clearTimeout(secretTimer);setTimeout(function(){closeSecret();view="solo";render();},220);}};
   el.onclick=function(ev){if(ev.target===el)closeSecret();};
 }
-function initSecret(){
-  var logo=document.querySelector(".brand");if(!logo)return;
-  logo.style.cursor="pointer";logo.style.touchAction="manipulation"; // évite le zoom double-tap et le délai mobile
-  secretTaps=0;
-  // Entrée secrète : 3 tapes d'affilée sur le logo (fenêtre de 800 ms entre chaque)
-  logo.addEventListener("click",function(){
-    secretTaps++;clearTimeout(secretTimer);
-    if(secretTaps>=3){secretTaps=0;if(view!=="solo"){view="solo";render();}return;}
-    secretTimer=setTimeout(function(){secretTaps=0;},800);
-  });
-}
+function initSecret(){secretTaps=0;} // l'entrée secrète est gérée sur le lapin du cockpit (voir initEffects)
 var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
@@ -1569,7 +1574,7 @@ function questRow(q,depth){
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function questTree(list){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -1587,7 +1592,7 @@ function dailyRow(q){
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span></div>';
+    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span></div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -1652,10 +1657,13 @@ function objSendPoint(){
   m.point=pt;OBJBUSY=true;save();render();
   robiStore("note",{text:"[Objectif : "+m.title+"] "+pt}).catch(function(){});
   gm("weekly_review",{dungeons:[{id:m.id,title:m.title,note:m.note||"",rank:m.rank}],description:pt}).then(function(res){
-    OBJBUSY=false;var qs=(res&&res.quests)||[];
-    m.proposals=qs.slice(0,6).map(function(x){return {title:String(x.title).slice(0,160),stat:STATS[x.stat]?x.stat:"discipline",prio:["high","med","low"].indexOf(x.prio)>=0?x.prio:"med"};});
-    save();render();if(getLink())toast("Point envoyé à ton Claude ✔");
-  }).catch(function(){OBJBUSY=false;toast("Connexion impossible");render();});
+    OBJBUSY=false;
+    if(res&&res.error){render();toast("⚠ ROBI : "+res.error);return;} // on montre la vraie erreur au lieu de la masquer
+    var qs=(res&&res.quests)||[];
+    m.proposals=qs.slice(0,6).map(function(x){return {title:String(x.title||"").slice(0,160),stat:STATS[x.stat]?x.stat:"discipline",prio:["high","med","low"].indexOf(x.prio)>=0?x.prio:"med"};}).filter(function(p){return p.title;});
+    save();render();
+    toast(m.proposals.length?(m.proposals.length+" proposition(s) de ROBI ✔"):"ROBI n'a pas de proposition cette fois, reformule ton point.");
+  }).catch(function(){OBJBUSY=false;render();toast("Connexion à ROBI impossible (réseau ou API).");});
 }
 function objAcceptProp(i){
   var m=find(S.missions,objSel);if(!m||!m.proposals||!m.proposals[i])return;var p=m.proposals[i];
@@ -1756,6 +1764,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
