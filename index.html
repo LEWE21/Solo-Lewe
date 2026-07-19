@@ -675,7 +675,7 @@ function afterGain(r){
   else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ ROBI ⟫","Niveau "+r.level+" atteint",["ROBI reconnaît ta croissance, Membre."]);}
 }
 function award(q){
-  if(q.pub){var pm=find(S.missions,q.mission);if(pm&&pm.pubDates)pm.pubDates=pm.pubDates.filter(function(d){return d!==q.pubDate;});log("Vidéo publiée : "+q.title);}
+  if(q.pub){var pm=find(S.missions,q.mission);if(pm&&pm.pubDates)pm.pubDates=pm.pubDates.filter(function(d){return d!==q.pubDate;});S.quests=S.quests.filter(function(x){return x.id!==q.id;});log("Vidéo publiée : "+q.title);}
   S.doneCount++;S.combo++;
   var mult=comboMult();
   var gain=Math.max(1,Math.round(q.base*mult));
