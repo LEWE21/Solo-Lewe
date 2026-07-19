@@ -1021,13 +1021,14 @@ function wheelCard(){
 var CHBUSY={};
 function chMeta(kind){return {epictete:{stat:"mental",xp:25,label:"Épreuve d'Épictète"},defi:{stat:"discipline",xp:15,label:"Défi du jour"},journal:{stat:"mental",xp:15,label:"Point du jour"}}[kind];}
 function getCh(kind){S.ch=S.ch||{};return S.ch[kind]||{};}
+var HISTKEY={epictete:"epHist",defi:"defiHist"}; // historique des thèmes tirés, par type, pour ne pas répéter
 function chStart(kind){
   if(CHBUSY[kind])return;CHBUSY[kind]=true;render();
-  var extra={kind:kind,state:apiState()};
-  if(kind==="epictete")extra.avoid=(S.epHist||[]); // thèmes récents à ne pas répéter
+  var extra={kind:kind,state:apiState()},hk=HISTKEY[kind];
+  if(hk)extra.avoid=(S[hk]||[]); // thèmes récents à ne pas répéter
   gm("coach_prompt",extra).then(function(r){
     CHBUSY[kind]=false;S.ch=S.ch||{};S.ch[kind]={date:today(),prompt:(r&&r.text)?r.text:"(indisponible, réessaie)",done:false,msg:"",answer:""};
-    if(kind==="epictete"&&r&&r.theme!=null&&r.theme!==""){S.epHist=(S.epHist||[]).concat([Number(r.theme)]);if(S.epHist.length>8)S.epHist=S.epHist.slice(-8);}
+    if(hk&&r&&r.theme!=null&&r.theme!==""){S[hk]=(S[hk]||[]).concat([Number(r.theme)]);if(S[hk].length>8)S[hk]=S[hk].slice(-8);}
     save();render();
   }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
 }

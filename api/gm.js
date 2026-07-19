@@ -29,6 +29,26 @@ const THEMES_EP = [
   "ch.51 — maintenant : traiter la chose sans cesse remise comme le moment décisif d'agir en adulte",
 ];
 
+// Angles variés pour le défi du jour du coach de vie, un thème différent à chaque fois.
+const THEMES_DEFI = [
+  "sa chaîne YouTube Vatican : la prochaine vidéo, l'idée ou l'angle à oser",
+  "sa régularité de publication : ce qui l'empêche de tenir un rythme constant",
+  "la monétisation YouTube (1000 abonnés, 4000 h) : le levier concret à actionner cette semaine",
+  "une de ses vidéos : ce qui a marché ou raté, et la leçon à en tirer",
+  "sa BD sur les volontaires du Pacifique : l'étape qui la rapproche de la finalisation",
+  "la distribution de sa BD aux écoles : le premier contact ou la démarche à lancer",
+  "son site d'analyse des marchés et cryptos : la première brique concrète à poser",
+  "sa discipline d'apprentissage (finance, anglais) : l'habitude quotidienne à ancrer",
+  "la tâche qu'elle repousse depuis trop longtemps : pourquoi, et comment l'entamer aujourd'hui",
+  "sa gestion de l'énergie et du repos : ce qui la vide, ce qui la recharge",
+  "sa priorisation : la seule chose qui, faite aujourd'hui, rendrait la journée réussie",
+  "la peur ou le doute qui la freine sur un de ses projets",
+  "le perfectionnisme : où il l'empêche de publier ou d'avancer",
+  "dire non et poser des limites : ce qu'elle accepte de trop et devrait refuser",
+  "déléguer ou automatiser : ce qu'elle porte seule et pourrait alléger",
+  "sa vision long terme (liberté financière et géographique) : l'alignement entre sa journée et ce cap",
+];
+
 // Prix en $ par million de tokens [entrée, sortie], pour l'estimation de coût renvoyée au client.
 const PRICES = {
   "claude-opus-4-8": [5, 25], "claude-opus-4-7": [5, 25], "claude-opus-4-6": [5, 25],
@@ -347,29 +367,30 @@ export default async function handler(req, res) {
       const kind = ["epictete", "defi", "journal"].includes(body.kind) ? body.kind : "defi";
       const s = body.state || {};
       const name = s.name || "Mathilde";
-      // Épictète : on tire un thème du Manuel encore non tiré récemment, pour une épreuve différente à chaque fois.
-      let epIdx = null, epTheme = "";
-      if (kind === "epictete") {
+      // On tire un thème (Manuel pour Épictète, angle de vie pour le défi) encore non tiré récemment, pour un contenu différent à chaque fois.
+      const THEMES = kind === "epictete" ? THEMES_EP : (kind === "defi" ? THEMES_DEFI : null);
+      let themeIdx = null, theme = "";
+      if (THEMES) {
         const avoid = Array.isArray(body.avoid) ? body.avoid.map(Number) : [];
-        let pool = THEMES_EP.map((_, i) => i).filter((i) => !avoid.includes(i));
-        if (!pool.length) pool = THEMES_EP.map((_, i) => i);
-        epIdx = pool[Math.floor(Math.random() * pool.length)];
-        epTheme = THEMES_EP[epIdx];
+        let pool = THEMES.map((_, i) => i).filter((i) => !avoid.includes(i));
+        if (!pool.length) pool = THEMES.map((_, i) => i);
+        themeIdx = pool[Math.floor(Math.random() * pool.length)];
+        theme = THEMES[themeIdx];
       }
       const persona = {
-        epictete: `You are Epictetus, a modern grounded stoic mentor for ${name} (a woman), never ascetic nor cruel. Craft ONE concrete stoic challenge to live TODAY, based SPECIFICALLY and ONLY on this theme from the Enchiridion: « ${epTheme} ». Make it concrete, modern, doable today, never ascetic nor radical, and phrase it freshly (do not fall back on the generic 'control what depends on you' unless that IS the theme). Briefly cite the chapter number if the theme has one. 2 to 3 sentences, in FRENCH, address her with 'tu'. No preamble.`,
-        defi: `You are an expert life coach for ${name} (a woman). Her world: a YouTube channel about the Vatican (US market), a comic book about WWII Pacific volunteers for schools, an automated markets/crypto analysis site, learning English, daily discipline. Ask ONE sharp, meaningful coaching question of the day that makes her reflect and act on her goals. One question only, in FRENCH, warm but incisive, address her with 'tu'. No preamble.`,
+        epictete: `You are Epictetus, a modern grounded stoic mentor for ${name} (a woman), never ascetic nor cruel. Craft ONE concrete stoic challenge to live TODAY, based SPECIFICALLY and ONLY on this theme from the Enchiridion: « ${theme} ». Make it concrete, modern, doable today, never ascetic nor radical, and phrase it freshly (do not fall back on the generic 'control what depends on you' unless that IS the theme). Briefly cite the chapter number if the theme has one. 2 to 3 sentences, in FRENCH, address her with 'tu'. No preamble.`,
+        defi: `You are an expert life coach for ${name} (a woman). Her world: a YouTube channel about the Vatican (US market), a comic book about WWII Pacific volunteers for schools, an automated markets/crypto analysis site, learning English, daily discipline; long-term she wants financial and geographic freedom. Ask ONE sharp, meaningful coaching question of the day, focused SPECIFICALLY on this angle: « ${theme} ». Make it fresh and concrete, one question only, in FRENCH, warm but incisive, address her with 'tu'. No preamble.`,
         journal: `You are an expert life coach helping ${name} (a woman) look back on her day. Ask 1 or 2 short, warm questions to understand how her day went and what she learned from it. In FRENCH, curious and caring, concise, address her with 'tu'. No preamble.`,
       }[kind];
       const r = await client.messages.create({
         model: CHAT_MODEL, max_tokens: 240,
         output_config: { effort: "low", format: { type: "json_schema", schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } } },
         system: persona,
-        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve, sur le thème indiqué" : "défi"))} du jour.` }],
+        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve, sur le thème indiqué" : "défi, sur l'angle indiqué"))} du jour.` }],
       });
       const t = r.content.find((b) => b.type === "text");
       const payload = JSON.parse(t.text);
-      if (kind === "epictete") payload.theme = String(epIdx); // renvoyé au client pour éviter de répéter ce thème
+      if (themeIdx !== null) payload.theme = String(themeIdx); // renvoyé au client pour éviter de répéter ce thème
       return ok(res, CHAT_MODEL, r, payload);
     }
 
