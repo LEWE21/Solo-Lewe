@@ -40,6 +40,8 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .brand .mark{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:var(--glass2);box-shadow:0 0 18px -4px var(--violet)}
 .brand .mark::before{content:"";position:absolute;inset:0;border-radius:50%;padding:2px;background:var(--iri);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}
 .brand .mark svg{width:30px;height:30px;position:relative}
+.ubadge{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#ff3b57;box-shadow:0 0 7px #ff3b57;z-index:4;animation:upulse 1.5s ease-in-out infinite}
+@keyframes upulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.6}}
 .brand h1{font-size:17px;font-weight:700;letter-spacing:.01em;margin:0;color:var(--txt)}
 .brand small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--dim2);text-transform:uppercase;margin-top:1px}
 .hud-status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim)}
@@ -69,6 +71,68 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .propcard:last-child{border-bottom:0}
 .propcard .pa{cursor:pointer;font-size:15px;padding:2px 6px}
 .propcard .pa.add{color:var(--mint)}.propcard .pa.no{color:var(--dim2)}.propcard .pa.no:hover{color:var(--pink)}
+/* ---- SOLO LEWE (système secret) ---- */
+body.solo-mode{background:#010207}
+body.solo-mode .topbar,body.solo-mode nav{display:none}
+body.solo-mode #view{padding-bottom:24px}
+.solo{color:#cfe2ff;font-family:var(--mono);display:flex;flex-direction:column;gap:11px;min-height:calc(100dvh - 34px);padding:6px 0 18px;
+  background:radial-gradient(1000px 700px at 50% -12%,rgba(77,184,255,.16),transparent 56%),radial-gradient(700px 600px at 10% 116%,rgba(154,134,255,.12),transparent 60%),radial-gradient(600px 560px at 92% 6%,rgba(255,59,87,.08),transparent 55%)}
+.solo .tbar{text-align:center;letter-spacing:.4em;font-size:14px;font-weight:800;color:#fff;text-shadow:0 0 24px #4db8ff;padding:6px 0}
+.solo .tbar small{display:block;font-size:9px;letter-spacing:.3em;color:#5a76ac;margin-top:5px;font-weight:400}
+.spanel{position:relative;background:linear-gradient(180deg,rgba(9,18,36,.8),rgba(4,9,20,.7));border:1px solid rgba(77,184,255,.45);box-shadow:0 0 30px -12px #4db8ff,inset 0 0 44px -18px rgba(77,184,255,.5);padding:15px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
+.spanel::before,.spanel::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #4db8ff;opacity:.7}
+.spanel::before{top:5px;left:5px;border-right:0;border-bottom:0}.spanel::after{bottom:5px;right:5px;border-left:0;border-top:0}
+.spl{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#4db8ff;margin-bottom:12px;display:flex;gap:8px}
+.spl::before{content:"◤"}.spl::after{content:"◢";margin-left:auto}
+.srank{display:flex;align-items:center;gap:14px}
+.rbig{font-weight:800;font-size:52px;line-height:.9;text-shadow:0 0 26px currentColor}
+.srank .rt{flex:1;min-width:0}
+.srank .who{font-size:15px;color:#fff;letter-spacing:.06em;margin:2px 0 8px}
+.srank .rl{font-size:10px;letter-spacing:.14em;color:#5a76ac;text-transform:uppercase}
+.sbar{height:8px;background:rgba(77,184,255,.1);border:1px solid rgba(77,184,255,.4);position:relative;overflow:hidden;margin-top:5px}
+.sbar i{position:absolute;inset:0;transform-origin:left}
+.sxp{display:flex;justify-content:space-between;font-size:10px;color:#5a76ac;margin:12px 0 5px}
+.scap{display:grid;grid-template-columns:150px 1fr 46px;align-items:center;gap:10px;font-size:12px;padding:5px 0}
+.scap .n{color:#cfe2ff}.scap .tr{height:6px;background:rgba(77,184,255,.1);border:1px solid rgba(77,184,255,.22);position:relative;overflow:hidden}
+.scap .tr i{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,#3a7de0,#8fe6ff)}
+.scap .lv{color:#8fe6ff;text-align:right}
+.sttl{display:inline-flex;gap:7px;font-size:12px;color:#ffd45a;border:1px solid rgba(255,212,90,.4);background:rgba(255,212,90,.08);padding:6px 11px;margin:3px 6px 3px 0}
+.svoice{font-size:12px;line-height:1.65;color:#8fe6ff;border-left:2px solid #4db8ff;padding:4px 0 4px 12px}
+.svoice b{color:#4db8ff}
+.sreset{font-size:10px;letter-spacing:.14em;color:#5a76ac;cursor:pointer;text-transform:uppercase;border:1px solid rgba(77,184,255,.45);background:transparent;padding:10px 12px;align-self:center;margin-top:6px}
+.stabs{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin:2px 0 3px}
+.stab{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#5a76ac;background:rgba(9,18,36,.6);border:1px solid rgba(77,184,255,.28);padding:8px 12px;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);transition:.2s}
+.stab.on{color:#04203a;background:linear-gradient(120deg,#8fe6ff,#4db8ff);border-color:#8fe6ff;box-shadow:0 0 18px -6px #4db8ff}
+.sbody{display:flex;flex-direction:column;gap:11px}
+.uquest{position:relative;border:1px solid rgba(255,59,87,.55);background:linear-gradient(180deg,rgba(40,8,16,.82),rgba(20,4,10,.75));box-shadow:0 0 34px -10px #ff3b57,inset 0 0 40px -20px #ff3b57;padding:15px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);animation:uqin .5s ease}
+@keyframes uqin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.uqh{font-size:10px;letter-spacing:.2em;color:#ff6b82;text-shadow:0 0 14px #ff3b57;font-weight:800}
+.uqt{font-size:17px;color:#fff;font-weight:700;margin:9px 0 8px;line-height:1.3;font-family:var(--sans,inherit)}
+.uqmeta{font-size:11px;color:#e79aa8;letter-spacing:.03em}.uqmeta b{color:#fff}
+.uqtimer{font-size:12px;color:#ffd45a;margin-top:8px;letter-spacing:.04em}.uqtimer b{color:#fff}
+.uquest .btn{background:linear-gradient(120deg,#ff3b57,#ff6b48);box-shadow:0 8px 22px -10px #ff3b57}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.sstat{border:1px solid rgba(77,184,255,.22);background:rgba(77,184,255,.05);padding:9px 11px}
+.sstat b{display:block;font-size:20px;color:#8fe6ff;line-height:1;margin-bottom:3px}
+.sstat span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#5a76ac}
+body.solo-mode .win{background:linear-gradient(180deg,rgba(9,18,36,.82),rgba(4,9,20,.72));border:1px solid rgba(77,184,255,.3);box-shadow:0 0 26px -15px #4db8ff}
+body.solo-mode .win-h .t{color:#dce9ff}
+body.solo-mode .win-h .r{color:#5a76ac}
+body.solo-mode .subhead,body.solo-mode .empty{color:#7f9bd0}
+body.solo-mode .epr{color:#e6f1ff}
+body.solo-mode .coachmsg{color:#dce9ff}
+body.solo-mode .logline{color:#a9c2ea;border-color:rgba(77,184,255,.14)}
+body.solo-mode .logline .tm{color:#5a76ac}
+body.solo-mode .kpi{background:rgba(77,184,255,.05);border-color:rgba(77,184,255,.22)}
+body.solo-mode .kpi b,body.solo-mode .kpi .kv{color:#8fe6ff}
+body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.3);color:#e6f1ff}
+#secret{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(1,2,7,.93)}
+#secret.show{display:grid}
+.secretwin{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.secrethint{font-family:var(--mono);font-size:10px;letter-spacing:.4em;color:#4db8ff;text-transform:uppercase}
+.secretcore{width:76px;height:76px;border-radius:50%;cursor:pointer;display:grid;place-items:center;font-family:var(--mono);color:#04203a;font-weight:800;font-size:14px;background:radial-gradient(circle at 45% 40%,#d6f0ff,#4db8ff 72%);box-shadow:0 0 34px -2px #4db8ff,0 0 80px -8px #4db8ff}
+.secretcore:active{transform:scale(.9)}
+.secretdots{display:flex;gap:9px}.secretdots i{width:10px;height:10px;border-radius:50%;border:1px solid rgba(77,184,255,.5)}.secretdots i.on{background:#4db8ff;box-shadow:0 0 10px #4db8ff}
 .a-hero{grid-area:hero}.a-today{grid-area:today}.a-obj{grid-area:obj}
 
 .core{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -82,6 +146,7 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .core-num .cap{font-family:var(--mono);font-size:8px;letter-spacing:.26em;color:var(--dim);margin-top:5px;text-transform:uppercase}
 .core-info{flex:1;min-width:180px}
 .core-info .who{font-size:19px;font-weight:700;color:var(--txt)}
+.core-info .cozysub{font-size:12.5px;color:var(--dim);margin-top:7px;line-height:1.5}
 .core-info .rank{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--dim);margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .core-info .rank b{color:var(--amber);font-weight:600}
 .brief{margin-top:15px;background:var(--glass3);border:1px solid var(--brd2);border-left:3px solid var(--violet);border-radius:var(--r-md);padding:12px 14px}
@@ -341,7 +406,7 @@ nav button.on:hover{color:#fff}
 <div id="app">
   <div class="topbar">
     <div class="brand">
-      <div class="mark"><svg viewBox="0 0 64 64"><g fill="#c68a5e"><ellipse cx="25" cy="19" rx="6.4" ry="16.5" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.4" ry="16.5" transform="rotate(13 39 18)"/><ellipse cx="32" cy="42" rx="17.5" ry="15.5"/></g><g fill="#ff9bd4" opacity=".85"><ellipse cx="25" cy="20" rx="2.7" ry="9.5" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.7" ry="9.5" transform="rotate(13 39 19)"/></g><path d="M15 42 Q15 23 32 23 Q49 23 49 42" fill="none" stroke="#7b5cff" stroke-width="3.4" stroke-linecap="round"/><rect x="9.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><rect x="45.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><circle cx="26" cy="42" r="2.3" fill="#3a3550"/><circle cx="38" cy="42" r="2.3" fill="#3a3550"/><circle cx="26.8" cy="41.2" r=".7" fill="#fff"/><circle cx="38.8" cy="41.2" r=".7" fill="#fff"/><ellipse cx="32" cy="46.5" rx="2" ry="1.5" fill="#3a3550"/><path d="M27.5 50.5 Q32 55.5 36.5 50.5" fill="none" stroke="#3a3550" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="47" r="3" fill="#ff9bd4" opacity=".6"/><circle cx="43" cy="47" r="3" fill="#ff9bd4" opacity=".6"/></svg></div>
+      <div class="mark"><span class="ubadge" id="ubadge" hidden></span><svg viewBox="0 0 64 64"><g fill="#c68a5e"><ellipse cx="25" cy="19" rx="6.4" ry="16.5" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.4" ry="16.5" transform="rotate(13 39 18)"/><ellipse cx="32" cy="42" rx="17.5" ry="15.5"/></g><g fill="#ff9bd4" opacity=".85"><ellipse cx="25" cy="20" rx="2.7" ry="9.5" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.7" ry="9.5" transform="rotate(13 39 19)"/></g><path d="M15 42 Q15 23 32 23 Q49 23 49 42" fill="none" stroke="#7b5cff" stroke-width="3.4" stroke-linecap="round"/><rect x="9.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><rect x="45.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><circle cx="26" cy="42" r="2.3" fill="#3a3550"/><circle cx="38" cy="42" r="2.3" fill="#3a3550"/><circle cx="26.8" cy="41.2" r=".7" fill="#fff"/><circle cx="38.8" cy="41.2" r=".7" fill="#fff"/><ellipse cx="32" cy="46.5" rx="2" ry="1.5" fill="#3a3550"/><path d="M27.5 50.5 Q32 55.5 36.5 50.5" fill="none" stroke="#3a3550" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="47" r="3" fill="#ff9bd4" opacity=".6"/><circle cx="43" cy="47" r="3" fill="#ff9bd4" opacity=".6"/></svg></div>
       <div><h1>ROBI</h1><small>Ton tableau de bord</small></div>
     </div>
     <div class="hud-status"><span class="dot"></span><span id="hud-clock"></span></div>
@@ -359,14 +424,14 @@ nav button.on:hover{color:#fff}
 <nav id="nav">
   <button data-v="statut" class="on"><span class="ni">◎</span>Cockpit</button>
   <button data-v="quetes"><span class="ni">✓</span>Tâches</button>
-  <button data-v="journal"><span class="ni">☾</span>Journal</button>
-  <button data-v="evolution"><span class="ni">⚔</span>Évolution</button>
+  <button data-v="donjons"><span class="ni">▲</span>Objectifs</button>
 </nav>
 
 <div id="nstack"></div>
 <div id="flash"></div>
 <div id="ask"></div>
 <div id="modal"></div>
+<div id="secret"></div>
 <div class="toast" id="toast"></div>
 <div id="boot"></div>
 
@@ -595,6 +660,63 @@ function award(q){
 /* ---- Mécanique : combo (progression) ---- */
 function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
 
+/* ---- Quêtes urgentes imposées par le Système (Solo Lewe) ---- */
+/* Intensité "équilibrée" : ~1 tous les 2-3 jours, échéance, +XP si réussie, petit malus si ignorée. */
+function urgentEligible(){return S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);});}
+function urgentActive(){return !!(S.urgent&&S.urgent.status==="active");}
+function pickUrgentBase(){
+  var pool=urgentEligible();
+  var tied=pool.filter(function(q){return q.mission;});
+  var src=tied.length?tied:pool;
+  if(src.length){var q=src[(S.doneCount+(S.log?S.log.length:0))%src.length];return {qid:q.id,title:q.title,stat:q.stat,mission:q.mission||null};}
+  if(S.missions.length){var m=S.missions[(S.doneCount)%S.missions.length];return {qid:null,title:"Avance 20 minutes sur « "+m.title+" »",stat:"discipline",mission:m.id};}
+  return {qid:null,title:"Accorde-toi 20 minutes de concentration pleine",stat:"mental",mission:null};
+}
+function genUrgent(){
+  var b=pickUrgentBase(),now=Date.now();
+  S.urgent={id:uid(),qid:b.qid,title:b.title,stat:b.stat,mission:b.mission,xp:35,penalty:15,createdTs:now,dueTs:now+44*3600*1000,status:"active",seen:false};
+  log("⚠ Quête urgente imposée par le Système : "+b.title);save();
+}
+function urgentTick(){
+  if(urgentActive()&&Date.now()>S.urgent.dueTs){
+    S.urgent.status="failed";S.hunter.xp=Math.max(0,S.hunter.xp-S.urgent.penalty);
+    log("Quête urgente expirée : -"+S.urgent.penalty+" XP");
+    sysNotify("⟪ Système ⟫","Quête urgente expirée",["-"+S.urgent.penalty+" XP","« "+S.urgent.title+" »"]);
+    S.urgentNext=isoPlus(today(),1);save();return;
+  }
+  if(urgentActive())return;
+  if(!S.urgentNext){S.urgentNext=isoPlus(today(),1);save();return;}
+  if(today()>=S.urgentNext){
+    if(urgentEligible().length||S.missions.length){genUrgent();S.urgentNext=isoPlus(today(),2+((S.doneCount)%2));save();}
+    else{S.urgentNext=isoPlus(today(),1);save();}
+  }
+}
+function urgentComplete(){
+  if(!urgentActive())return;var u=S.urgent;
+  if(u.qid){var q=find(S.quests,u.qid);if(q&&!q.done){q.done=true;award(q);}}
+  var r=gainXP(u.stat,u.xp,"Quête urgente accomplie : "+u.title);
+  u.status="done";
+  sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[u.stat].name.toUpperCase(),"Le Système reconnaît ta réactivité."]);
+  flash("rank","QUÊTE ACCOMPLIE","+"+u.xp+" XP · Le Système est satisfait");
+  afterGain(r);save();render();
+}
+function urgentCountdown(){
+  if(!urgentActive())return "";
+  var ms=S.urgent.dueTs-Date.now();if(ms<0)ms=0;
+  var h=Math.floor(ms/3600000),mn=Math.floor((ms%3600000)/60000);
+  return h>=1?(h+"h "+mn+"m"):(mn+"m");
+}
+function urgentBanner(){
+  if(!urgentActive())return "";
+  var u=S.urgent,mn=u.mission?((find(S.missions,u.mission)||{}).title||""):"";
+  return '<div class="uquest"><div class="uqh">⚠ QUÊTE URGENTE · IMPOSÉE PAR LE SYSTÈME</div>'+
+    '<div class="uqt">'+esc(u.title)+'</div>'+
+    '<div class="uqmeta">'+(mn?'⟡ '+esc(mn)+' · ':'')+'Récompense <b>+'+u.xp+' XP</b> · Échec <b>-'+u.penalty+' XP</b></div>'+
+    '<div class="uqtimer">⏳ Temps restant : <b id="uq-count">'+urgentCountdown()+'</b></div>'+
+    '<button class="btn" data-uq-do style="width:100%;margin-top:10px">⚔ Accomplir la quête</button></div>';
+}
+function updateUrgentBadge(){var b=document.getElementById("ubadge");if(b)b.hidden=!urgentActive();}
+
 /* notifications */
 function sysNotify(tag,title,lines){
   var st=document.getElementById("nstack");if(!st)return;
@@ -606,9 +728,11 @@ function sysNotify(tag,title,lines){
 var flashT;
 function flash(kind,big,sub){
   var el=document.getElementById("flash");if(!el)return;
+  var persist=(kind==="level"||kind==="rank"); // montées de niveau/palier : ne disparaît qu'au clic
   el.className="show";
-  el.innerHTML='<div class="flashwin '+(kind||"")+'"><div class="fbig">'+big+'</div>'+(sub?'<div class="fsub">'+sub+'</div>':'')+'</div>';
-  clearTimeout(flashT);flashT=setTimeout(function(){el.className="";},kind==="pen"?3400:((kind==="level"||kind==="rank")?2900:2100));
+  el.innerHTML='<div class="flashwin '+(kind||"")+'"><div class="fbig">'+big+'</div>'+(sub?'<div class="fsub">'+sub+'</div>':'')+(persist?'<div class="fhint">Touche pour continuer</div>':'')+'</div>';
+  clearTimeout(flashT);
+  if(!persist)flashT=setTimeout(function(){el.className="";},kind==="pen"?3400:2100);
   el.onclick=function(){clearTimeout(flashT);el.className="";};
 }
 var tt;
@@ -656,23 +780,28 @@ function companionLine(mood){
 function moodLabel(mood){return {radieux:"Radieux",content:"Content",neutre:"Éveillé",soir:"En veille",attend:"Il t'attendait"}[mood]||"";}
 
 /* ---- Avatar lapin : visage (humeur) + équipement (rang) ---- */
-function avFace(mood){
+function avFace(mood,dark){
+  var fc=dark?"#a9ecff":"#3a3550"; // yeux / bouche / nez
+  var fur=dark?"#242b46":"#c68a5e"; // fourrure
+  var acc=dark?"#4db8ff":"#ff9bd4"; // intérieur oreilles / joues
+  var eyeGlow=dark?' style="filter:drop-shadow(0 0 2.4px #4db8ff)"':'';
   var eyes;
-  if(mood==="radieux"||mood==="content")eyes='<g><path d="M22.5 42 Q26 38.3 29.5 42" fill="none" stroke="#3a3550" stroke-width="2.4" stroke-linecap="round"/><path d="M34.5 42 Q38 38.3 41.5 42" fill="none" stroke="#3a3550" stroke-width="2.4" stroke-linecap="round"/></g>';
-  else if(mood==="soir")eyes='<g><path d="M22.5 42 Q26 44.2 29.5 42" fill="none" stroke="#3a3550" stroke-width="2.2" stroke-linecap="round"/><path d="M34.5 42 Q38 44.2 41.5 42" fill="none" stroke="#3a3550" stroke-width="2.2" stroke-linecap="round"/></g>';
-  else if(mood==="attend")eyes='<g><circle cx="26" cy="43" r="2.1" fill="#3a3550"/><circle cx="38" cy="43" r="2.1" fill="#3a3550"/></g>';
-  else eyes='<g><circle cx="26" cy="42" r="2.4" fill="#3a3550"/><circle cx="38" cy="42" r="2.4" fill="#3a3550"/><circle cx="26.9" cy="41.1" r=".8" fill="#fff"/><circle cx="38.9" cy="41.1" r=".8" fill="#fff"/></g>';
+  if(mood==="radieux"||mood==="content")eyes='<g><path d="M22.5 42 Q26 38.3 29.5 42" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/><path d="M34.5 42 Q38 38.3 41.5 42" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/></g>';
+  else if(mood==="soir")eyes='<g><path d="M22.5 42 Q26 44.2 29.5 42" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/><path d="M34.5 42 Q38 44.2 41.5 42" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/></g>';
+  else if(mood==="attend")eyes='<g><circle cx="26" cy="43" r="2.1" fill="'+fc+'"/><circle cx="38" cy="43" r="2.1" fill="'+fc+'"/></g>';
+  else eyes='<g><circle cx="26" cy="42" r="2.4" fill="'+fc+'"/><circle cx="38" cy="42" r="2.4" fill="'+fc+'"/><circle cx="26.9" cy="41.1" r=".8" fill="#fff"/><circle cx="38.9" cy="41.1" r=".8" fill="#fff"/></g>';
   var mouth;
-  if(mood==="radieux")mouth='<path d="M26.5 49 Q32 56 37.5 49" fill="none" stroke="#3a3550" stroke-width="2.4" stroke-linecap="round"/>';
-  else if(mood==="content")mouth='<path d="M28 50 Q32 54.5 36 50" fill="none" stroke="#3a3550" stroke-width="2.2" stroke-linecap="round"/>';
-  else if(mood==="soir")mouth='<ellipse cx="32" cy="51" rx="2.1" ry="2.7" fill="#3a3550"/>';
-  else if(mood==="attend")mouth='<path d="M29.5 51.4 Q32 50.4 34.5 51.4" fill="none" stroke="#3a3550" stroke-width="2" stroke-linecap="round"/>';
-  else mouth='<path d="M30 50.5 Q32 52.6 34 50.5" fill="none" stroke="#3a3550" stroke-width="2" stroke-linecap="round"/>';
-  var blush={radieux:.85,content:.62,neutre:.45,soir:.4,attend:.42}[mood]||.45;
-  return '<g class="ears"><g fill="#c68a5e"><ellipse cx="25" cy="19" rx="6.2" ry="16" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.2" ry="16" transform="rotate(13 39 18)"/></g><g fill="#ff9bd4" opacity=".85"><ellipse cx="25" cy="20" rx="2.6" ry="9" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.6" ry="9" transform="rotate(13 39 19)"/></g></g>'
-    +'<ellipse cx="32" cy="42" rx="17" ry="15" fill="#c68a5e"/>'
-    +'<circle cx="21.5" cy="46.5" r="2.8" fill="#ff9bd4" opacity="'+blush+'"/><circle cx="42.5" cy="46.5" r="2.8" fill="#ff9bd4" opacity="'+blush+'"/>'
-    +eyes+'<ellipse cx="32" cy="46.5" rx="1.9" ry="1.4" fill="#3a3550"/>'+mouth;
+  if(mood==="radieux")mouth='<path d="M26.5 49 Q32 56 37.5 49" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/>';
+  else if(mood==="content")mouth='<path d="M28 50 Q32 54.5 36 50" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/>';
+  else if(mood==="soir")mouth='<ellipse cx="32" cy="51" rx="2.1" ry="2.7" fill="'+fc+'"/>';
+  else if(mood==="attend")mouth='<path d="M29.5 51.4 Q32 50.4 34.5 51.4" fill="none" stroke="'+fc+'" stroke-width="2" stroke-linecap="round"/>';
+  else mouth='<path d="M30 50.5 Q32 52.6 34 50.5" fill="none" stroke="'+fc+'" stroke-width="2" stroke-linecap="round"/>';
+  var blush=dark?.32:({radieux:.85,content:.62,neutre:.45,soir:.4,attend:.42}[mood]||.45);
+  return '<g class="ears"><g fill="'+fur+'"><ellipse cx="25" cy="19" rx="6.2" ry="16" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.2" ry="16" transform="rotate(13 39 18)"/></g><g fill="'+acc+'" opacity="'+(dark?.55:.85)+'"><ellipse cx="25" cy="20" rx="2.6" ry="9" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.6" ry="9" transform="rotate(13 39 19)"/></g></g>'
+    +(dark?'<ellipse cx="32" cy="42" rx="18" ry="16" fill="none" stroke="#4db8ff" stroke-width="1" opacity=".45"/>':'')
+    +'<ellipse cx="32" cy="42" rx="17" ry="15" fill="'+fur+'"/>'
+    +'<circle cx="21.5" cy="46.5" r="2.8" fill="'+acc+'" opacity="'+blush+'"/><circle cx="42.5" cy="46.5" r="2.8" fill="'+acc+'" opacity="'+blush+'"/>'
+    +'<g'+eyeGlow+'>'+eyes+'</g><ellipse cx="32" cy="46.5" rx="1.9" ry="1.4" fill="'+fc+'"/>'+mouth;
 }
 function avHeadwear(rank,col){
   if(rank==="E")return '<path d="M16 33 Q32 29 48 33 L48 36.5 Q32 32.5 16 36.5 Z" fill="'+col+'"/><path d="M48 34 l5 -3 -1 4 4 1 -5 2z" fill="'+col+'"/>';
@@ -689,7 +818,7 @@ function avMoodFx(mood){
   if(mood==="attend")return '<text class="fx" x="47" y="24" font-size="10" fill="#a2b6d3" font-family="system-ui" font-weight="800">?</text>';
   return "";
 }
-function robiAvatar(rank,mood,px){
+function robiAvatar(rank,mood,px,dark){
   var order=["E","D","C","B","A","S"],i=order.indexOf(rank);if(i<0){i=0;rank="E";}
   var col={E:"#8aa0b8",D:"#5fd3ac",C:"#34c9ee",B:"#6ea8ff",A:"#a07bff",S:"#ffcf4d"}[rank];
   var hasShoulder=i>=1,hasPauldron=i>=2,hasChest=i>=3,hasCape=i>=3,hasSword=i>=1,swordGlow=i>=4,hasAura=i>=4,elite=i>=5;
@@ -702,7 +831,7 @@ function robiAvatar(rank,mood,px){
   if(hasShoulder){s+='<path d="M13 84 Q13 61 32 59 Q51 61 51 84 Z" fill="'+col+'" opacity=".85"/>';if(hasChest)s+='<path d="M26 84 L26 66 Q32 63 38 66 L38 84" fill="#0e1a30" opacity=".22"/><circle cx="32" cy="70" r="2.4" fill="'+(elite?"#fff2c8":"#eaf1fb")+'" opacity=".9"/>';}
   if(hasPauldron)s+='<ellipse cx="15" cy="61" rx="6" ry="5" fill="'+col+'"/><ellipse cx="49" cy="61" rx="6" ry="5" fill="'+col+'"/>';
   if(hasSword){var blade=i<3?"#b98a4a":(elite?"url(#iravS)":(i>=4?col:"#cfd8e6"));var glow=swordGlow?' style="filter:drop-shadow(0 0 3px '+(elite?"#ffe08a":col)+')"':'';s+='<g'+glow+'><line x1="50" y1="52" x2="'+(elite?61:59)+'" y2="'+(elite?20:25)+'" stroke="'+blade+'" stroke-width="'+(elite?3.4:2.6)+'" stroke-linecap="round"/><line x1="46.5" y1="49.5" x2="54" y2="52.5" stroke="#6b4a2a" stroke-width="2.4" stroke-linecap="round"/><line x1="47" y1="50" x2="44.5" y2="55" stroke="#6b4a2a" stroke-width="2.6" stroke-linecap="round"/></g>';}
-  s+=avFace(mood);
+  s+=avFace(mood,dark);
   s+=avHeadwear(rank,col);
   s+='</g>';
   s+=avMoodFx(mood)+((elite&&mood!=="soir")?'<path class="fx" d="M11 20 l1.2 2.6 2.8 .3 -2.1 1.9 .6 2.8 -2.5 -1.5 -2.5 1.5 .6 -2.8 -2.1 -1.9 2.8 -.3z" fill="#ffe08a"/>':"");
@@ -714,7 +843,7 @@ function warriorLadder(){
   var cols={E:"#8aa0b8",D:"#5fd3ac",C:"#34c9ee",B:"#6ea8ff",A:"#a07bff",S:"#ffcf4d"};
   var cur=rankOf(S.hunter.level).r;
   return '<div class="ladder">'+order.map(function(r){
-    return '<div class="step'+(r===cur?" cur":"")+'">'+robiAvatar(r,r===cur?"radieux":"content",56)+'<div class="rr" style="color:'+cols[r]+'">'+r+'</div><div class="nn">'+names[r]+'</div></div>';
+    return '<div class="step'+(r===cur?" cur":"")+'">'+robiAvatar(r,r===cur?"radieux":"content",56,true)+'<div class="rr" style="color:'+cols[r]+'">'+r+'</div><div class="nn">'+names[r]+'</div></div>';
   }).join("")+'</div>';
 }
 
@@ -862,8 +991,14 @@ function initEffects(){
     if(comp){comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet");}
     var go=e.target.closest("[data-go]");
     if(go){view=go.getAttribute("data-go");render();return;}
+    var sx=e.target.closest("[data-solo-exit]");
+    if(sx){view="statut";render();return;}
     var ct=e.target.closest("[data-cocktab]");
     if(ct){cockTab=ct.getAttribute("data-cocktab");render();return;}
+    var stb=e.target.closest("[data-solotab]");
+    if(stb){soloTab=stb.getAttribute("data-solotab");render();return;}
+    var uqd=e.target.closest("[data-uq-do]");
+    if(uqd){sysConfirm("Accomplir la quête urgente ?",["<b>« "+esc(S.urgent.title)+" »</b>","","Le Système ne récompense que le réel. Confirme seulement si c'est fait."],function(){urgentComplete();});return;}
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");view="donjons";render();return;}
     var os=e.target.closest("[data-obj-sel]");
@@ -1121,7 +1256,8 @@ function render(){
   applyTheme();
   var v=document.getElementById("view");
   var html;
-  if(view==="statut")html=vStatut();
+  if(view==="solo")html=vSolo();
+  else if(view==="statut")html=vStatut();
   else if(view==="quetes")html=vQuetes();
   else if(view==="donjons")html=vObjectifs();
   else if(view==="maitre")html=vMaitre();
@@ -1129,6 +1265,9 @@ function render(){
   else html=vEvolution();
   v.innerHTML='<div class="view-anim">'+html+'</div>';
   v.classList.toggle("cockpit",view==="statut");
+  document.body.classList.toggle("solo-mode",view==="solo");
+  if(view==="solo"&&urgentActive()&&!S.urgent.seen){S.urgent.seen=true;save();}
+  updateUrgentBadge();
   bind();
   wireWheel();
   setClock();
@@ -1190,7 +1329,86 @@ function convoMakeTask(mid){
     sysNotify("Tâche créée",q.title,[m.title]);render();renderConvo("obj",mid);
   }).catch(function(){toast("Erreur réseau");});
 }
-var cockTab="statut",objSel=null,OBJBUSY=false;
+/* ---- SOLO LEWE : le Système secret (phase 1) ---- */
+function rankColor(r){return (RANKS.filter(function(x){return x.r===r;})[0]||RANKS[0]).c;}
+function unlockedTitles(){
+  var t=["L'Éveillée"],st=S.streak||0,lvl=S.hunter.level,rk=rankOf(lvl).r;
+  if(st>=3)t.push("La Constante");
+  if(st>=7)t.push("Celle qui se lève avant le soleil");
+  if(rankOrder(rk)>=2)t.push("La Solitaire du Pacifique");
+  if(S.stats.mental&&S.stats.mental.level>=5)t.push("L'Esprit Aiguisé");
+  if(rankOrder(rk)>=5)t.push("Souveraine du Système");
+  return t;
+}
+function soloStat(val,lab){return '<div class="sstat"><b>'+val+'</b><span>'+lab+'</span></div>';}
+function vSolo(){
+  var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r);
+  var xpfrac=pct(h.xp,need)/100;
+  var order=["E","D","C","B","A","S"],ci=order.indexOf(rk.r);
+  var nextR=ci>=0&&ci<5?order[ci+1]:null;
+  var curMin=rk.min,nextMin=nextR?(RANKS.filter(function(x){return x.r===nextR;})[0].min):curMin;
+  var af=nextR?Math.max(0,Math.min(1,(h.level-curMin)/Math.max(1,nextMin-curMin))):1;
+  var tabs=[["profil","Profil"],["capacites","Capacités"],["epreuves","Épreuves"],["journal","Journal"],["chroniques","Chroniques"]];
+  var body="";
+  if(soloTab==="capacites"){
+    body+='<div class="spanel"><div class="spl">Capacités</div>';
+    Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;body+='<div class="scap"><span class="n">'+m.ic+' '+m.name+'</span><span class="tr"><i style="transform:scaleX('+p+')"></i></span><span class="lv">Lv.'+st.level+'</span></div>';});
+    body+='</div>';
+    body+='<div class="spanel"><div class="spl">Ton guerrier</div>'+warriorLadder()+'</div>';
+  }else if(soloTab==="epreuves"){
+    body+=defiCard("epictete")+'<div style="height:11px"></div>'+defiCard("defi");
+  }else if(soloTab==="journal"){
+    body+=vJournal();
+    if(S.journal&&S.journal.length){
+      body+='<div class="win"><div class="win-h"><span class="t">Tes entrées</span><span class="ln"></span><span class="r">'+S.journal.length+'</span></div>';
+      body+=S.journal.slice(0,12).map(function(e){return '<div class="jentry"><div class="jh"><span class="jmo">'+MOODS[(e.mood||3)-1]+'</span><span class="jd">'+e.date+(e.sleep!=null?' · '+e.sleep+'h 🌙':'')+'</span></div>'+(e.note?'<div class="jn">'+esc(e.note)+'</div>':'')+'</div>';}).join("");
+      body+='</div>';
+    }
+  }else if(soloTab==="chroniques"){
+    body+='<div class="win"><div class="win-h"><span class="t">Rapports de ROBI</span><span class="ln"></span><span class="r">'+(syncOn()?ROBI_FEED.length:"—")+'</span></div>';
+    body+='<div class="subhead">Ce que ton Claude t\'a rapporté depuis l\'ombre.</div>';
+    body+=(syncOn()&&ROBI_FEED.length)?ROBI_FEED.slice(0,15).map(function(e){return '<div class="logline"><span class="tm">'+esc((e.at||"").slice(0,10))+'</span>'+esc(e.text)+'</div>';}).join(""):(syncOn()?'<div class="empty">Aucun rapport pour l\'instant.</div>':'<div class="empty">Liaison inactive (⚙ Paramètres).</div>');
+    body+='</div>';
+    body+='<div class="win"><div class="win-h"><span class="t">Journal du Système</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
+    body+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
+    body+='</div>';
+    body+='<div class="subhead" style="text-align:center;margin:4px 0 0">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
+  }else{
+    body+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,"radieux",56)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="rl">'+(nextR?("Ascension vers le rang "+nextR):"Rang maximal atteint")+'</div><div class="sbar"><i style="transform:scaleX('+af+');background:linear-gradient(90deg,#2f6bd6,#8fe6ff)"></i></div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div></div></div></div>';
+    body+='<div class="spanel"><div class="spl">Constantes</div><div class="sgrid">'+soloStat((S.streak||0)+" j","Série")+soloStat((S.best||0)+" j","Record")+soloStat("x"+(S.combo||0),"Combo")+soloStat((S.doneCount||0),"Quêtes accomplies")+'</div></div>';
+    body+='<div class="spanel"><div class="spl">Titres</div>'+unlockedTitles().map(function(t){return '<span class="sttl">⬥ '+esc(t)+'</span>';}).join("")+'</div>';
+    body+='<div class="spanel"><div class="svoice"><b>⟪ Système ⟫</b> Vous seule voyez ceci, Joueur. Ce que vous accomplissez dans la lumière nourrit ce qui grandit dans l\'ombre. Poursuivez votre ascension.</div></div>';
+  }
+  var s='<div class="solo">';
+  s+='<div class="tbar">◤ SOLO LEWE ◢<small>Système personnel de '+esc(h.name)+' · accès restreint</small></div>';
+  s+=urgentBanner();
+  s+='<div class="stabs">'+tabs.map(function(t){return '<button class="stab'+(soloTab===t[0]?" on":"")+'" data-solotab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>';
+  s+='<div class="sbody">'+body+'</div>';
+  s+='<button class="sreset" data-solo-exit>↻ Reverrouiller · revenir au cozy</button>';
+  s+='</div>';
+  return s;
+}
+var secretTaps=0,secretTimer=null,secretArmTimer=null;
+function secretSeqLen(){return (S.secretSeq&&S.secretSeq.len)||4;}
+function drawSecretDots(){var d=document.getElementById("secret-dots");if(!d)return;var n=secretSeqLen(),html="";for(var i=0;i<n;i++)html+='<i class="'+(i<secretTaps?"on":"")+'"></i>';d.innerHTML=html;}
+function closeSecret(){var el=document.getElementById("secret");if(el)el.className="";secretTaps=0;clearTimeout(secretTimer);}
+function armSecret(){
+  var el=document.getElementById("secret");if(!el)return;secretTaps=0;
+  el.innerHTML='<div class="secretwin"><div class="secrethint">Séquence</div><div class="secretcore" id="secret-core">◉</div><div class="secretdots" id="secret-dots"></div></div>';
+  el.className="show";drawSecretDots();
+  clearTimeout(secretTimer);secretTimer=setTimeout(closeSecret,3000);
+  var core=document.getElementById("secret-core");
+  if(core)core.onclick=function(){secretTaps++;drawSecretDots();clearTimeout(secretTimer);secretTimer=setTimeout(closeSecret,3000);if(secretTaps>=secretSeqLen()){clearTimeout(secretTimer);setTimeout(function(){closeSecret();view="solo";render();},220);}};
+  el.onclick=function(ev){if(ev.target===el)closeSecret();};
+}
+function initSecret(){
+  var logo=document.querySelector(".brand");if(!logo)return;
+  function start(){clearTimeout(secretArmTimer);secretArmTimer=setTimeout(armSecret,820);}
+  function cancel(){clearTimeout(secretArmTimer);}
+  logo.addEventListener("mousedown",start);logo.addEventListener("touchstart",start,{passive:true});
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(function(ev){logo.addEventListener(ev,cancel);});
+}
+var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
   var di=dailyInfo();
@@ -1213,42 +1431,20 @@ function vStatut(){
     '<circle cx="100" cy="100" r="15" fill="#e9dcff" opacity=".9"/>'+
     '</svg><div class="core-num"><div class="big">'+DAYPCT+'%</div><div class="cap">'+(mo==="soir"?"Bilan":"Journée")+'</div></div></div>';
   hero+='<div class="core-info"><div class="who">'+esc(h.name)+'</div>';
-  hero+='<div class="rank">Niveau <b>'+h.level+'</b> '+iBtn("level")+' · Palier <b>'+rk.r+'</b> '+iBtn("rank")+' · Série <b>'+(S.streak||0)+' j</b></div>';
-  hero+='<div class="xprow" style="margin-top:12px"><div class="lab"><span>XP '+iBtn("xp")+'</span><span>'+h.xp+' / '+need+'</span></div>'+bar(h.xp,need)+'</div></div></div>';
+  hero+='<div class="cozysub">'+(mo==="soir"?"Le soir tombe sur Nouméa. Souffle.":(mo==="matin"?"Nouvelle journée. À ton rythme.":"Doucement, tu avances."))+'</div></div></div>';
   hero+='<div class="brief"><span class="jarvis">◉ ROBI · Briefing</span>'+esc(briefLine)+(latestRep?' '+esc(latestRep.text):'')+'</div>';
-  hero+='<div class="minigauges">'+
-    '<div class="mg"><div class="gv"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(120,140,190,.25)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#22c9ee" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="'+energyoff+'" transform="rotate(-90 22 22)"/></svg><b>'+stamina+'</b></div><div class="gt">Énergie '+iBtn("stamina")+'<b>du jour</b></div></div>'+
-    '<div class="mg"><div class="gv"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="rgba(120,140,190,.25)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="#ffb457" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="'+regoff+'" transform="rotate(-90 22 22)"/></svg><b>'+(S.streak||0)+'</b></div><div class="gt">Régularité '+iBtn("streak")+'<b>jours</b></div></div>'+
-    '<div class="chip" style="align-self:center">Combo '+iBtn("combo")+' <b>x'+(S.combo||0)+'</b></div>'+
-    '</div>';
   hero+='<div class="companion" data-pet><div class="av">'+robiAvatar(rk.r,mood,84)+'</div><div class="ct"><div class="cm">'+moodLabel(mood)+'</div><div class="cd">'+esc(companionLine(mood))+'</div></div></div>';
-  hero+='<div class="plab" style="margin-top:16px">Systèmes · ton évolution</div><div class="sys">';
-  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;hero+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+' '+iBtn(k)+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">niv '+st.level+'</span></div>';});
-  hero+='</div>';
   hero+='</div>';
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+di.done+' / '+di.tot+'</span></div>';
-  if(mo==="soir"){
-    todc+='<div class="subhead">La journée touche à sa fin. Prends un moment pour ton journal du soir.</div><button class="btn" data-go="journal" style="width:100%">Ouvrir mon journal</button>';
-  }else{
-    var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-    var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);}).sort(function(a,b){return b.base-a.base;}).slice(0,3);
-    var list=dueList.concat(prio);
-    todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
-    todc+=wheelCard();
-  }
+  if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
+  var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
+  var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q);}).sort(function(a,b){return b.base-a.base;}).slice(0,3);
+  var list=dueList.concat(prio);
+  todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
+  todc+=wheelCard();
   todc+='</div>';
-  var objc='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span></div><div class="subhead">Touche un objectif pour faire le point et choisir tes tâches avec ROBI.</div>';
-  S.missions.slice().sort(byRankDesc).forEach(function(m){
-    var qs=S.quests.filter(function(q){return q.mission===m.id;});
-    var done=qs.filter(function(q){return q.done;}).length;
-    var frac=done/Math.max(1,qs.length);
-    var rkc=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
-    objc+='<div class="objrow" data-go-obj="'+m.id+'"><span class="otag" style="color:'+rkc.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rkc.c+'99,'+rkc.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
-  });
-  objc+='</div>';
-  var defis=defiCard("defi")+'<div style="height:14px"></div>'+defiCard("epictete");
-  var tabs=[["statut","Statut"],["aujourdhui","Aujourd'hui"],["defis","Défis"],["objectifs","Objectifs"]];
-  var body=cockTab==="aujourdhui"?todc:(cockTab==="defis"?defis:(cockTab==="objectifs"?objc:hero));
+  var tabs=[["statut","Statut"],["aujourdhui","Aujourd'hui"]];
+  var body=cockTab==="aujourdhui"?todc:hero;
   return '<div class="cocktabs">'+tabs.map(function(t){return '<button class="cocktab'+(cockTab===t[0]?" on":"")+'" data-cocktab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="cockbody">'+body+'</div>';
 }
 function questRow(q,depth){
@@ -1548,6 +1744,7 @@ function showBoot(){
 }
 function afterSync(){
   var ro=rollover();
+  urgentTick();
   render();
   showBoot();
   if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
@@ -1559,9 +1756,10 @@ if(getLink()&&syncOn())syncPull(false).then(afterSync);
 else afterSync();
 // Au retour sur l'app (changement d'onglet, réveil de l'iPad), on récupère les derniers changements des autres appareils.
 document.addEventListener("visibilitychange",function(){
-  if(!document.hidden&&syncOn())syncPull(false).then(function(){loadFeed();ingestTasks();});
+  if(!document.hidden){urgentTick();updateUrgentBadge();if(syncOn())syncPull(false).then(function(){loadFeed();ingestTasks();});}
 });
-initTheme();initEffects();
+setInterval(function(){urgentTick();updateUrgentBadge();var c=document.getElementById("uq-count");if(c&&urgentActive())c.textContent=urgentCountdown();},60000);
+initTheme();initEffects();initSecret();
 })();
 </script>
 </body></html>
