@@ -1607,11 +1607,12 @@ function vStatut(){
   hero+='<div class="brief"><span class="jarvis">◉ Citation du jour</span>'+esc(citation)+'</div>';
   hero+='<div class="companion" data-pet><div class="av">'+robiAvatar(rk.r,mood,84)+'</div><div class="ct"><div class="cm">'+moodLabel(mood)+'</div><div class="cd">'+esc(companionLine(mood))+'</div></div></div>';
   hero+='</div>';
-  var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+di.done+' / '+di.tot+'</span></div>';
-  if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);}).slice(0,3);
-  var list=dueList.concat(prio);
+  var opens=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);}); // toutes les tâches ouvertes du jour (plus de plafond)
+  var list=dueList.concat(opens);
+  var todo=dueList.filter(function(q){return !q.done;}).length+opens.length;
+  var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+todo+' à faire</span></div>';
+  if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
   todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
   todc+=wheelCard();
   todc+='</div>';
