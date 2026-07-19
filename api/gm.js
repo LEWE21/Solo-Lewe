@@ -246,6 +246,28 @@ export default async function handler(req, res) {
       return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
     }
 
+    // 6bis) Citation tranchante et productive du jour, en lien avec ses projets (JSON structuré)
+    if (action === "citation") {
+      const st = body.state || {};
+      const objs = Array.isArray(body.objectives) ? body.objectives.slice(0, 12) : [];
+      const sys = "Tu forges UNE citation tranchante et productive, en FRANÇAIS, pour Mathilde. Style : incisif et stoïcien à la manière d'Épictète, mais moderne et motivant, jamais mièvre ni ascétique. Une phrase qui claque, lui parle et la pousse à agir aujourd'hui, en lien direct avec ce qu'elle construit en ce moment (ses projets ci-dessous). Elle distingue ce qui dépend d'elle (son effort, sa constance) de ce qui n'en dépend pas (les résultats, les chiffres). Contraintes : max 22 mots, tutoiement, PAS de tiret long, pas de guillemets, pas d'auteur ni d'attribution, pas de préambule. Sortie : la phrase seule.";
+      const goals = "Ses grands buts : chaîne YouTube sur le Vatican (marché US) à monétiser, BD sur les volontaires du Pacifique pour les écoles, site d'analyse fondamentale des marchés et cryptos. Elle vise la liberté financière et géographique, et plus de discipline au quotidien.";
+      const cur = objs.length ? `Ce qu'elle construit en ce moment (ses objectifs) : ${objs.map((o) => o.title + (o.note ? " (" + o.note + ")" : "")).join(" ; ")}.` : "";
+      const user = `${cur}\n${goals}\nSérie en cours : ${st.streak || 0} jour(s).`;
+      const r = await client.messages.create({
+        model: CHAT_MODEL,
+        max_tokens: 120,
+        output_config: {
+          effort: "low",
+          format: { type: "json_schema", schema: { type: "object", properties: { line: { type: "string" } }, required: ["line"], additionalProperties: false } },
+        },
+        system: sys,
+        messages: [{ role: "user", content: user }],
+      });
+      const t = r.content.find((b) => b.type === "text");
+      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
+    }
+
     // 8) Bilan hebdomadaire : réaligner les tâches sur l'avancement réel des projets (JSON structuré)
     if (action === "weekly_review") {
       const dungeons = Array.isArray(body.dungeons) ? body.dungeons.slice(0, 20) : [];

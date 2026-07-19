@@ -1129,6 +1129,28 @@ function gm(action,extra){
   }catch(e){return Promise.reject(e);}
 }
 function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {name:h.name,level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats,coachStyle:S.coachStyle||"robi"};}
+/* ---- Citation tranchante et productive du jour (en lien avec ses projets) ---- */
+var LOCAL_CITS=[
+ 'Ta chaîne ne grandit pas en la regardant. Publie, puis recommence.',
+ 'La BD finie vaut mille planches parfaites jamais montrées.',
+ 'Le marché récompense la constance, pas ton humeur. Tiens ton cap.',
+ 'Tu n\'attends pas d\'être prête. Tu le deviens en agissant.',
+ 'Ce qui dépend de toi : l\'effort d\'aujourd\'hui. Le reste, laisse-le.',
+ 'Discipline aujourd\'hui, liberté demain. Le troc est honnête.',
+ 'Une tâche validée pèse plus que dix intentions.',
+ 'Fais d\'abord la chose que tu repousses. C\'est elle qui te fait avancer.'
+];
+function localCitation(){var d=today(),n=0;for(var i=0;i<d.length;i++)n+=d.charCodeAt(i);return LOCAL_CITS[n%LOCAL_CITS.length];}
+var CITBUSY=false;
+function loadCitation(){
+  if(S.quoteDate===today()&&S.quote)return;
+  if(CITBUSY)return;CITBUSY=true;
+  var objs=(S.missions||[]).map(function(m){return {title:m.title,note:m.note||""};});
+  gm("citation",{state:apiState(),objectives:objs}).then(function(r){
+    CITBUSY=false;
+    if(r&&r.line){S.quote=r.line;S.quoteDate=today();save();if(view==="statut")render();}
+  }).catch(function(){CITBUSY=false;});
+}
 
 /* ---- Explications (i) ---- */
 var INFO={
@@ -1513,8 +1535,7 @@ function vStatut(){
   var regoff=Math.round(113*(1-Math.min(1,(S.streak||0)/7)));
   var mo=momentOf(),mood=companionMood();
   var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var briefLine=(S.greetDate===today()&&S.greetLine)?S.greetLine:(hello+" "+esc(h.name)+".");
-  var latestRep=(ROBI_FEED&&ROBI_FEED[0])?ROBI_FEED[0]:null;
+  var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
   var hero='<div class="win iri a-hero"><div class="win-h"><span class="t">Cockpit</span><span class="ln"></span><span class="r">'+today()+'</span></div>';
   hero+='<div class="core"><div class="reactor"><svg viewBox="0 0 200 200">'+
     '<defs><radialGradient id="rglow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c9b3ff" stop-opacity=".45"/><stop offset="60%" stop-color="#7b5cff" stop-opacity=".12"/><stop offset="100%" stop-color="#7b5cff" stop-opacity="0"/></radialGradient>'+
@@ -1528,7 +1549,7 @@ function vStatut(){
     '</svg><div class="core-num"><div class="big">'+DAYPCT+'%</div><div class="cap">'+(mo==="soir"?"Bilan":"Journée")+'</div></div></div>';
   hero+='<div class="core-info"><div class="who">'+esc(h.name)+'</div>';
   hero+='<div class="cozysub">'+(mo==="soir"?"Le soir tombe sur Nouméa. Souffle.":(mo==="matin"?"Nouvelle journée. À ton rythme.":"Doucement, tu avances."))+'</div></div></div>';
-  hero+='<div class="brief"><span class="jarvis">◉ ROBI · Briefing</span>'+esc(briefLine)+(latestRep?' '+esc(latestRep.text):'')+'</div>';
+  hero+='<div class="brief"><span class="jarvis">◉ Citation du jour</span>'+esc(citation)+'</div>';
   hero+='<div class="companion" data-pet><div class="av">'+robiAvatar(rk.r,mood,84)+'</div><div class="ct"><div class="cm">'+moodLabel(mood)+'</div><div class="cd">'+esc(companionLine(mood))+'</div></div></div>';
   hero+='</div>';
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+di.done+' / '+di.tot+'</span></div>';
@@ -1845,7 +1866,7 @@ function afterSync(){
   showBoot();
   if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
   else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
-  loadFeed();ingestTasks();
+  loadFeed();ingestTasks();loadCitation();
 }
 // D'abord on récupère la sauvegarde partagée (avec le timestamp d'origine), PUIS on traite la journée.
 if(getLink()&&syncOn())syncPull(false).then(afterSync);
