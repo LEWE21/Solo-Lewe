@@ -1238,10 +1238,12 @@ function closeModal(){var el=document.getElementById("modal");if(el)el.className
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ ROBI</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
 function openRenameTask(qId){
   var q=find(S.quests,qId);if(!q)return;
-  openModal('<div class="mtag">▸ Renommer la tâche</div><div class="addrow" style="margin-top:12px"><input type="text" id="rn-title" maxlength="160" placeholder="Nouveau nom de la tâche..."><button class="btn" id="rn-save">Renommer</button></div>');
+  var dateField=q.daily?"":'<div class="subhead" style="margin:16px 0 6px">Échéance (facultatif)</div><div class="addrow"><input type="date" id="rn-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="rn-duedel"'+(q.due?"":' style="display:none"')+'>Retirer</button></div>';
+  openModal('<div class="mtag">▸ '+(q.daily?"Renommer la tâche":"Modifier la tâche")+'</div><div class="addrow" style="margin-top:12px"><input type="text" id="rn-title" maxlength="160" placeholder="Nom de la tâche..."><button class="btn" id="rn-save">Enregistrer</button></div>'+dateField);
   var inp=document.getElementById("rn-title");if(inp){inp.value=q.title;try{inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}catch(_){}}
-  function commit(){var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);save();closeModal();render();toast("Tâche renommée");}
+  function commit(){var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);var due=document.getElementById("rn-due");if(due&&!q.daily){var dv=due.value;if(dv&&dv>=today())q.due=dv;else delete q.due;}save();closeModal();render();toast("Tâche enregistrée");}
   var sv=document.getElementById("rn-save");if(sv)sv.onclick=commit;
+  var dd=document.getElementById("rn-duedel");if(dd)dd.onclick=function(){var due=document.getElementById("rn-due");if(due)due.value="";dd.style.display="none";};
   if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
 }
 function openMoveQuest(qId){
@@ -1608,12 +1610,21 @@ function vStatut(){
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+di.done+' / '+di.tot+'</span></div>';
   if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);}).sort(function(a,b){return b.base-a.base;}).slice(0,3);
+  var prio=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);}).slice(0,3);
   var list=dueList.concat(prio);
   todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
   todc+=wheelCard();
   todc+='</div>';
   return '<div class="cockbody">'+hero+todc+'</div>';
+}
+function dueBadge(q){ // badge d'échéance sur une tâche non journalière
+  if(!q.due||q.daily)return "";
+  var dd=dayDiff(q.due,today()),col,txt;
+  if(dd<0){col="var(--pink)";txt="⏰ en retard ("+fmtD(q.due)+")";}
+  else if(dd===0){col="var(--gold)";txt="⏰ aujourd'hui";}
+  else if(dd<=3){col="var(--gold)";txt="⏰ dans "+dd+" j";}
+  else{col="var(--dim)";txt="⏰ "+fmtD(q.due);}
+  return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
 }
 function questRow(q,depth){
   depth=depth||0;
@@ -1626,13 +1637,13 @@ function questRow(q,depth){
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+dueBadge(q)+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
 }
 function questTree(list){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
   var kids={},roots=[];
   list.forEach(function(q){var pid=(q.dependsOn&&byId[q.dependsOn])?q.dependsOn:null;if(pid){(kids[pid]=kids[pid]||[]).push(q);}else{roots.push(q);}});
-  function sf(a,b){return ((a.done?1:0)-(b.done?1:0))||(b.base-a.base);}
+  function sf(a,b){if((a.done?1:0)!==(b.done?1:0))return (a.done?1:0)-(b.done?1:0);var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";if(ad!==bd)return ad<bd?-1:1;return b.base-a.base;} // échéances d'abord (la plus proche en haut), puis par XP
   var out="",seen={};
   function emit(q,depth){if(seen[q.id]||depth>4)return;seen[q.id]=1;out+=questRow(q,depth);(kids[q.id]||[]).slice().sort(sf).forEach(function(c){emit(c,depth+1);});}
   roots.sort(sf).forEach(function(q){emit(q,0);});
