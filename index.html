@@ -1141,8 +1141,11 @@ function pubEligibleDate(m){ // la date la plus proche non publiée dont la fen�
 function pubTick(){ // synchronise les tâches de publication avec les dates planifiées (une seule active par objectif)
   var changed=false;
   (S.missions||[]).forEach(function(m){
+    // 1) toute publication déjà validée : on retire sa date du planning (elle est publiée)
+    S.quests.forEach(function(q){if(q.pub&&q.mission===m.id&&q.done&&m.pubDates){var n=m.pubDates.length;m.pubDates=m.pubDates.filter(function(d){return d!==q.pubDate;});if(m.pubDates.length!==n)changed=true;}});
     var keep=pubEligibleDate(m);
-    S.quests=S.quests.filter(function(q){if(q.pub&&q.mission===m.id&&!q.done&&q.pubDate!==keep){changed=true;return false;}return true;});
+    // 2) on retire les tâches de publication validées OU obsolètes (une seule active à la fois)
+    S.quests=S.quests.filter(function(q){if(q.pub&&q.mission===m.id&&(q.done||q.pubDate!==keep)){changed=true;return false;}return true;});
     if(keep&&!S.quests.some(function(q){return q.pub&&q.mission===m.id&&q.pubDate===keep;})){S.quests.push(makePubQuest(m,keep));changed=true;}
   });
   if(changed)save();
