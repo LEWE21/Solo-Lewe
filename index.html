@@ -670,9 +670,25 @@ function gainXP(statKey,gain,label){
   log(label+" (+"+gain+" XP "+STATS[statKey].name+")");save();
   return {gain:gain,statKey:statKey,statLeveled:su>0,statLevel:st.level,leveled:lu>0,level:h.level,rankChanged:rankOf(h.level).r!==beforeRank,rank:rankOf(h.level).r};
 }
+/* ---- Sons (Web Audio, synthétisés, aucun fichier à charger) ---- */
+var AUDIO=null;
+function soundOn(){return S.sound!==false;}
+function audioCtx(){if(AUDIO)return AUDIO;try{AUDIO=new (window.AudioContext||window.webkitAudioContext)();}catch(e){AUDIO=null;}return AUDIO;}
+function initAudio(){var c=audioCtx();if(c&&c.state==="suspended")c.resume().catch(function(){});}
+function tone(freq,start,dur,type,vol){var c=audioCtx();if(!c)return;var t0=c.currentTime+start;var o=c.createOscillator(),g=c.createGain();o.type=type||"sine";o.frequency.setValueAtTime(freq,t0);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol||0.16,t0+0.014);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+dur+0.03);}
+function sfx(name){
+  if(!soundOn()||!name)return;var c=audioCtx();if(!c)return;if(c.state==="suspended")c.resume().catch(function(){});
+  if(name==="check"){tone(660,0,0.13,"triangle",0.16);tone(988,0.06,0.15,"triangle",0.14);}
+  else if(name==="success"){tone(784,0,0.13,"triangle",0.17);tone(1047,0.09,0.22,"triangle",0.16);tone(1319,0.18,0.24,"triangle",0.12);}
+  else if(name==="level"){[523,659,784,1047].forEach(function(f,i){tone(f,i*0.09,0.24,"triangle",0.18);});}
+  else if(name==="rank"){[523,659,784,1047,1319].forEach(function(f,i){tone(f,i*0.1,0.3,"sawtooth",0.15);});tone(1568,0.55,0.5,"triangle",0.14);}
+  else if(name==="penalty"){tone(196,0,0.4,"sawtooth",0.18);tone(146,0.14,0.45,"sawtooth",0.16);}
+  else if(name==="urgent"){tone(880,0,0.13,"square",0.13);tone(880,0.2,0.13,"square",0.13);tone(1175,0.4,0.16,"square",0.12);}
+  else if(name==="secret"){[330,392,494,587,740,988].forEach(function(f,i){tone(f,i*0.085,0.32,"sine",0.13);});tone(1319,0.6,0.6,"sine",0.1);}
+}
 function afterGain(r){
-  if(r.rankChanged){flash("rank","PALIER "+r.rank,"Membre promu");}
-  else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ ROBI ⟫","Niveau "+r.level+" atteint",["ROBI reconnaît ta croissance, Membre."]);}
+  if(r.rankChanged){flash("rank","PALIER "+r.rank,"Membre promu");sfx("rank");}
+  else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ ROBI ⟫","Niveau "+r.level+" atteint",["ROBI reconnaît ta croissance, Membre."]);sfx("level");}
 }
 function award(q){
   if(q.pub){var pm=find(S.missions,q.mission);if(pm&&pm.pubDates)pm.pubDates=pm.pubDates.filter(function(d){return d!==q.pubDate;});S.quests=S.quests.filter(function(x){return x.id!==q.id;});log("Vidéo publiée : "+q.title);}
@@ -685,6 +701,7 @@ function award(q){
   if(r.statLeveled)lines.push(m.name+" niv "+r.statLevel);
   sysNotify("Tâche accomplie",esc(q.title),lines);
   afterGain(r);
+  sfx(q.pub?"success":"check");
   save();
 }
 /* ---- Mécanique : combo (progression) ---- */
@@ -705,14 +722,14 @@ function pickUrgentBase(){
 function genUrgent(){
   var b=pickUrgentBase(),now=Date.now();
   S.urgent={id:uid(),qid:b.qid,title:b.title,stat:b.stat,mission:b.mission,xp:35,penalty:15,createdTs:now,dueTs:now+44*3600*1000,status:"active",seen:false};
-  log("⚠ Quête urgente imposée par le Système : "+b.title);save();
+  log("⚠ Quête urgente imposée par le Système : "+b.title);sfx("urgent");save();
 }
 function urgentTick(){
   if(urgentActive()&&Date.now()>S.urgent.dueTs){
     S.urgent.status="failed";S.hunter.xp=Math.max(0,S.hunter.xp-S.urgent.penalty);
     log("Quête urgente expirée : -"+S.urgent.penalty+" XP");
     sysNotify("⟪ Système ⟫","Quête urgente expirée",["-"+S.urgent.penalty+" XP","« "+S.urgent.title+" »"]);
-    S.urgentNext=isoPlus(today(),1);save();return;
+    sfx("penalty");S.urgentNext=isoPlus(today(),1);save();return;
   }
   if(urgentActive())return;
   if(!S.urgentNext){S.urgentNext=isoPlus(today(),1);save();return;}
@@ -728,7 +745,7 @@ function urgentComplete(){
   u.status="done";
   sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[u.stat].name.toUpperCase(),"Le Système reconnaît ta réactivité."]);
   flash("rank","QUÊTE ACCOMPLIE","+"+u.xp+" XP · Le Système est satisfait");
-  afterGain(r);save();render();
+  sfx("success");afterGain(r);save();render();
 }
 function urgentCountdown(){
   if(!urgentActive())return "";
@@ -1038,7 +1055,7 @@ function chJudge(kind,answer){
   CHBUSY[kind]=true;ch.answer=answer;S.ch[kind]=ch;render();
   gm("coach_judge",{kind:kind,prompt:ch.prompt,answer:answer,state:apiState()}).then(function(r){
     CHBUSY[kind]=false;var okj=!!(r&&r.ok),msg=(r&&r.message)?r.message:"";ch.msg=msg;ch.ok=okj;ch.done=true;
-    if(okj){var m=chMeta(kind);var g=gainXP(m.stat,m.xp,m.label);sysNotify("✔ "+m.label,"+"+m.xp+" XP · "+STATS[m.stat].name,[msg.slice(0,70)]);afterGain(g);if(kind==="journal"){S.journal.unshift({date:today(),mood:jMood,sleep:null,note:answer});}}
+    if(okj){var m=chMeta(kind);var g=gainXP(m.stat,m.xp,m.label);sysNotify("✔ "+m.label,"+"+m.xp+" XP · "+STATS[m.stat].name,[msg.slice(0,70)]);afterGain(g);sfx("success");if(kind==="journal"){S.journal.unshift({date:today(),mood:jMood,sleep:null,note:answer});}}
     S.ch[kind]=ch;save();render();
   }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
 }
@@ -1084,6 +1101,7 @@ function ripple(e,el){try{var r=document.createElement("span");r.className="rip"
 function initEffects(){
   document.addEventListener("click",function(e){
     if(!e.target||!e.target.closest)return;
+    initAudio(); // débloque le son au premier geste (politique navigateur)
     var t=e.target.closest(".btn,.cbtn,.check,.icobtn,.mclose,nav button");
     if(t)ripple(e,t);
     var comp=e.target.closest(".companion");
@@ -1091,7 +1109,7 @@ function initEffects(){
       comp.classList.remove("pet");void comp.offsetWidth;comp.classList.add("pet"); // caresse
       // Entrée secrète : 3 tapes d'affilée sur le lapin (fenêtre de 800 ms entre chaque)
       secretTaps++;clearTimeout(secretTimer);
-      if(secretTaps>=3){secretTaps=0;if(view!=="solo"){view="solo";render();}return;}
+      if(secretTaps>=3){secretTaps=0;if(view!=="solo"){sfx("secret");view="solo";render();}return;}
       secretTimer=setTimeout(function(){secretTaps=0;},800);
     }
     var go=e.target.closest("[data-go]");
@@ -1752,7 +1770,9 @@ function settEntries(){
 function openSettings(tab){
   tab=tab||"absences";
   var tabs=[["absences","Absences"],["liaison","Liaison"],["entrees","Entrées"]];
-  var h='<div class="mtag">▸ Paramètres</div><div class="settabs">'+tabs.map(function(t){return '<button class="settab'+(t[0]===tab?" on":"")+'" data-settab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="setbody">';
+  var h='<div class="mtag">▸ Paramètres</div>';
+  h+='<div style="display:flex;justify-content:flex-end;margin:-2px 0 8px"><button class="btn ghost" id="set-sound">'+(soundOn()?"🔊 Sons activés":"🔇 Sons coupés")+'</button></div>';
+  h+='<div class="settabs">'+tabs.map(function(t){return '<button class="settab'+(t[0]===tab?" on":"")+'" data-settab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="setbody">';
   h+=tab==="liaison"?settLiaison():(tab==="entrees"?settEntries():settAbsences());
   h+='</div>';
   openModal(h);
@@ -1761,6 +1781,7 @@ function openSettings(tab){
 }
 function wireSettings(tab){
   function refresh(){openSettings(tab);}
+  var sb=document.getElementById("set-sound");if(sb)sb.onclick=function(){S.sound=!soundOn();save();initAudio();if(soundOn())sfx("check");refresh();};
   function addAbs(from,to){if(to<from){var t=from;from=to;to=t;}if(to<today()){toast("Choisis des dates à venir");return;}S.absences=S.absences||[];S.absences.push({from:from,to:to});save();sysNotify("Absence planifiée",fmtAbs({from:from,to:to}),["Pénalités suspendues"]);refresh();}
   var e;
   e=document.getElementById("set-ab-day");if(e)e.onclick=function(){addAbs(today(),today());};
@@ -1913,7 +1934,7 @@ function afterSync(){
   urgentTick();
   render();
   showBoot();
-  if(ro&&ro.k==="pen")flash("pen","PÉNALITÉ","-40 XP · Série perdue");
+  if(ro&&ro.k==="pen"){flash("pen","PÉNALITÉ","-40 XP · Série perdue");sfx("penalty");}
   else if(ro&&ro.k==="done")sysNotify("ROBI","Journalières accomplies hier",["Série x"+ro.streak]);
   loadFeed();ingestTasks();loadCitation();
 }
