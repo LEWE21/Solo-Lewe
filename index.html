@@ -60,6 +60,15 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 
 .plab{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;display:flex;align-items:center;gap:9px;margin-bottom:13px}
 .plab::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--brd2),transparent)}
+/* ---- Cockpit : journalières à gauche, prioritaires à droite ---- */
+.todaycols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.todaycol{min-width:0}
+.todaycol .plab{margin-bottom:8px}
+.q.cpt{padding:8px 3px;gap:9px}
+.q.cpt .body{min-width:0;flex:1}
+.q.cpt .ttl{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q.cpt .meta{margin-top:3px}
+.q.cpt .xpv{flex:none}
 .subhead{font-family:var(--font);font-size:12.5px;letter-spacing:0;color:var(--dim);margin:4px 0 12px;line-height:1.5}
 
 /* ---- cockpit ---- */
@@ -1627,10 +1636,10 @@ function vStatut(){
   var todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+todo+' à faire</span></div>';
   if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
-  todc+='<div class="plab" style="margin:2px 0 10px">🔁 Journalières</div>';
-  todc+=dueList.length?dueList.map(dailyRow).join(""):'<div class="empty" style="padding:4px 0">Aucune journalière aujourd\'hui.</div>';
-  todc+='<div class="plab" style="margin:16px 0 10px">⚡ Prioritaires aujourd\'hui</div>';
-  todc+=focus.length?focus.map(function(q){return questRow(q);}).join(""):'<div class="empty" style="padding:4px 0">Rien d\'urgent aujourd\'hui. Ta liste complète est dans l\'onglet Tâches.</div>';
+  todc+='<div class="todaycols">';
+  todc+='<div class="todaycol"><div class="plab" style="margin:2px 0 8px">🔁 Journalières</div>'+(dueList.length?dueList.map(function(q){return dailyRow(q,true);}).join(""):'<div class="empty" style="padding:4px 0">Aucune aujourd\'hui.</div>')+'</div>';
+  todc+='<div class="todaycol"><div class="plab" style="margin:2px 0 8px">⚡ Prioritaires</div>'+(focus.length?focus.map(function(q){return questRow(q,0,true);}).join(""):'<div class="empty" style="padding:4px 0">Rien d\'urgent.</div>')+'</div>';
+  todc+='</div>';
   todc+='<button class="btn ghost" data-go="quetes" style="width:100%;margin-top:12px">Toutes mes tâches →</button>';
   todc+=wheelCard();
   todc+='</div>';
@@ -1645,13 +1654,14 @@ function dueBadge(q){ // badge d'échéance sur une tâche non journalière
   else{col="var(--dim)";txt="⏰ "+fmtD(q.due);}
   return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
 }
-function questRow(q,depth){
+function questRow(q,depth,compact){
   depth=depth||0;
   if(q.pub){
     var plate=today()>q.pubDate;
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:#ff6fb5;border-color:#ff6fb555">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
   var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
+  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span></div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
@@ -1669,8 +1679,9 @@ function questTree(list){
   list.forEach(function(q){if(!seen[q.id])emit(q,0);});
   return out;
 }
-function dailyRow(q){
+function dailyRow(q,compact){
   var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
+  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
