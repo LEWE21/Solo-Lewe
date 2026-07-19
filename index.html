@@ -1608,12 +1608,14 @@ function vStatut(){
   hero+='<div class="companion" data-pet><div class="av">'+robiAvatar(rk.r,mood,84)+'</div><div class="ct"><div class="cm">'+moodLabel(mood)+'</div><div class="cd">'+esc(companionLine(mood))+'</div></div></div>';
   hero+='</div>';
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var opens=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);}); // toutes les tâches ouvertes du jour (plus de plafond)
-  var list=dueList.concat(opens);
-  var todo=dueList.filter(function(q){return !q.done;}).length+opens.length;
+  // Focus du jour : journalières + tâches urgentes (priorité haute) ou à échéance proche/dépassée. La liste complète vit dans l'onglet Tâches.
+  var focus=S.quests.filter(function(q){if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;var soon=q.due&&dayDiff(q.due,today())<=3;return soon||q.prio==="high";}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
+  var list=dueList.concat(focus);
+  var todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
   var todc='<div class="win a-today"><div class="win-h"><span class="t">'+(mo==="soir"?"Ce soir":"Aujourd\'hui")+'</span><span class="ln"></span><span class="r">'+todo+' à faire</span></div>';
   if(mo==="soir")todc+='<div class="subhead">La journée touche à sa fin. Termine ce qui compte, le reste attendra demain.</div>';
-  todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien de prévu. Ajoute une tâche dans l\'onglet Tâches.</div>';
+  todc+=list.length?list.map(function(q){return q.daily?dailyRow(q):questRow(q);}).join(""):'<div class="empty">Rien d\'urgent aujourd\'hui. Ta liste complète est dans l\'onglet Tâches.</div>';
+  todc+='<button class="btn ghost" data-go="quetes" style="width:100%;margin-top:10px">Toutes mes tâches →</button>';
   todc+=wheelCard();
   todc+='</div>';
   return '<div class="cockbody">'+hero+todc+'</div>';
