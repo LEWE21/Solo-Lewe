@@ -1495,10 +1495,14 @@ function armSecret(){
 }
 function initSecret(){
   var logo=document.querySelector(".brand");if(!logo)return;
-  function start(){clearTimeout(secretArmTimer);secretArmTimer=setTimeout(armSecret,820);}
-  function cancel(){clearTimeout(secretArmTimer);}
-  logo.addEventListener("mousedown",start);logo.addEventListener("touchstart",start,{passive:true});
-  ["mouseup","mouseleave","touchend","touchcancel"].forEach(function(ev){logo.addEventListener(ev,cancel);});
+  logo.style.cursor="pointer";logo.style.touchAction="manipulation"; // évite le zoom double-tap et le délai mobile
+  secretTaps=0;
+  // Entrée secrète : 3 tapes d'affilée sur le logo (fenêtre de 800 ms entre chaque)
+  logo.addEventListener("click",function(){
+    secretTaps++;clearTimeout(secretTimer);
+    if(secretTaps>=3){secretTaps=0;if(view!=="solo"){view="solo";render();}return;}
+    secretTimer=setTimeout(function(){secretTaps=0;},800);
+  });
 }
 var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
 function vStatut(){
