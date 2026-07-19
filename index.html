@@ -211,6 +211,18 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 .objrow .obar{flex:none;width:74px;height:6px;border-radius:var(--r-pill);background:var(--track);position:relative;overflow:hidden}
 .objrow .obar i{position:absolute;inset:0;transform-origin:left;border-radius:var(--r-pill)}
 .objrow .op{width:38px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--dim)}
+/* ---- Tâches groupées par objectif ---- */
+.taskgroup{border:1px solid var(--brd2);border-radius:var(--r-md);margin:8px 0;overflow:hidden;background:var(--glass3)}
+.tghead{display:flex;align-items:center;gap:9px;padding:11px 12px;cursor:pointer;user-select:none;transition:background .15s}
+.tghead:hover{background:var(--glass2)}
+.tghead .tgchev{color:var(--dim2);font-size:11px;width:12px;flex:none}
+.tghead .otag{font-family:var(--mono);font-weight:700;font-size:12px;width:auto;flex:none}
+.tghead .tgtitle{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tghead .tgprog{flex:none;width:54px;height:6px;border-radius:var(--r-pill);background:var(--track);position:relative;overflow:hidden}
+.tghead .tgprog i{position:absolute;inset:0;transform-origin:left;border-radius:var(--r-pill)}
+.tghead .tgcount{flex:none;font-family:var(--mono);font-size:10px;color:var(--dim);min-width:30px;text-align:right}
+.tghead .tgopen{flex:none;color:var(--dim2);font-size:20px;line-height:1;padding:0 3px;cursor:pointer}.tghead .tgopen:hover{color:var(--violet)}
+.tgbody{padding:0 12px 4px}
 
 /* ---- tâches ---- */
 .q{display:flex;align-items:center;gap:12px;padding:12px 3px;border-bottom:1px solid var(--track)}
@@ -1126,6 +1138,8 @@ function initEffects(){
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");view="donjons";render();return;}
+    var tg=e.target.closest("[data-tgroup]");
+    if(tg){var gid=tg.getAttribute("data-tgroup");taskCollapse[gid]=!taskCollapse[gid];render();return;}
     var os=e.target.closest("[data-obj-sel]");
     if(os){objSel=os.getAttribute("data-obj-sel");render();return;}
     var ob=e.target.closest("[data-obj-back]");
@@ -1672,10 +1686,24 @@ function vQuetes(){
   s+='<div class="warn">⚠ Termine tes journalières du jour avant minuit, sous peine de pénalité '+iBtn("penalty")+' (-40 XP · série et combo perdus). Pour changer une journalière (fréquence, pause, retrait), touche ⚙ et parles-en à ROBI.</div>';
   s+=dailies.length?ordered.map(dailyRow).join(""):'<div class="empty">Aucune tâche journalière.</div>';
   s+='</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Tâches</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
-  s+=reg.length?questTree(reg):'<div class="empty">Aucune tâche.</div>';
-  s+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
+  s+='<div class="win"><div class="win-h"><span class="t">Tâches par objectif</span><span class="ln"></span><span class="r">'+reg.filter(function(q){return !q.done;}).length+' actives</span></div>';
+  var groups=[];
+  S.missions.slice().sort(byRankDesc).forEach(function(m){var qs=reg.filter(function(q){return q.mission===m.id;});if(qs.length)groups.push({m:m,qs:qs});});
+  var noObj=reg.filter(function(q){return !q.mission;});
+  groups.forEach(function(g){s+=taskGroup(g.m,g.qs);});
+  if(noObj.length)s+=taskGroup(null,noObj);
+  if(!reg.length)s+='<div class="empty">Aucune tâche. Ajoute-en une ci-dessous.</div>';
+  s+='<div class="addrow" style="margin-top:12px"><input type="text" id="q-title" placeholder="Écris ta tâche, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
   return s;
+}
+var taskCollapse={};
+function taskGroup(m,qs){
+  var mid=m?m.id:"__none",title=m?m.title:"Hors objectif";
+  var col=m?((RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]).c):"var(--dim2)";
+  var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=!taskCollapse[mid];
+  var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+mid+'"><span class="tgchev">'+(open?"▾":"▸")+'</span>'+(m?'<span class="otag" style="color:'+col+'">'+m.rank+'</span>':'')+'<span class="tgtitle">'+esc(title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span>'+(m?'<span class="tgopen" data-go-obj="'+mid+'" title="Ouvrir l\'objectif">›</span>':'')+'</div>';
+  if(open)h+='<div class="tgbody">'+questTree(qs)+'</div>';
+  return h+'</div>';
 }
 
 function vObjectifs(){
