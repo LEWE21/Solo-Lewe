@@ -112,7 +112,6 @@ export default async function handler(req, res) {
         model: MECH_MODEL,
         max_tokens: 250,
         output_config: {
-          effort: "low",
           format: {
             type: "json_schema",
             schema: {
@@ -142,7 +141,6 @@ export default async function handler(req, res) {
         model: MECH_MODEL,
         max_tokens: 120,
         output_config: {
-          effort: "low",
           format: {
             type: "json_schema",
             schema: {
@@ -170,7 +168,6 @@ export default async function handler(req, res) {
         model: MECH_MODEL,
         max_tokens: 250,
         output_config: {
-          effort: "low",
           format: {
             type: "json_schema",
             schema: {
@@ -204,7 +201,6 @@ export default async function handler(req, res) {
         model: MECH_MODEL,
         max_tokens: 200,
         output_config: {
-          effort: "low",
           format: {
             type: "json_schema",
             schema: {
@@ -236,7 +232,6 @@ export default async function handler(req, res) {
         model: CHAT_MODEL,
         max_tokens: 120,
         output_config: {
-          effort: "low",
           format: { type: "json_schema", schema: { type: "object", properties: { line: { type: "string" } }, required: ["line"], additionalProperties: false } },
         },
         system: sys,
@@ -258,7 +253,6 @@ export default async function handler(req, res) {
         model: CHAT_MODEL,
         max_tokens: 120,
         output_config: {
-          effort: "low",
           format: { type: "json_schema", schema: { type: "object", properties: { line: { type: "string" } }, required: ["line"], additionalProperties: false } },
         },
         system: sys,
@@ -278,7 +272,6 @@ export default async function handler(req, res) {
         model: MECH_MODEL,
         max_tokens: 700,
         output_config: {
-          effort: "low",
           format: {
             type: "json_schema",
             schema: {
