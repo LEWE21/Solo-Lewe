@@ -1023,8 +1023,12 @@ function chMeta(kind){return {epictete:{stat:"mental",xp:25,label:"Épreuve d'É
 function getCh(kind){S.ch=S.ch||{};return S.ch[kind]||{};}
 function chStart(kind){
   if(CHBUSY[kind])return;CHBUSY[kind]=true;render();
-  gm("coach_prompt",{kind:kind,state:apiState()}).then(function(r){
-    CHBUSY[kind]=false;S.ch=S.ch||{};S.ch[kind]={date:today(),prompt:(r&&r.text)?r.text:"(indisponible, réessaie)",done:false,msg:"",answer:""};save();render();
+  var extra={kind:kind,state:apiState()};
+  if(kind==="epictete")extra.avoid=(S.epHist||[]); // thèmes récents à ne pas répéter
+  gm("coach_prompt",extra).then(function(r){
+    CHBUSY[kind]=false;S.ch=S.ch||{};S.ch[kind]={date:today(),prompt:(r&&r.text)?r.text:"(indisponible, réessaie)",done:false,msg:"",answer:""};
+    if(kind==="epictete"&&r&&r.theme!=null&&r.theme!==""){S.epHist=(S.epHist||[]).concat([Number(r.theme)]);if(S.epHist.length>8)S.epHist=S.epHist.slice(-8);}
+    save();render();
   }).catch(function(){CHBUSY[kind]=false;toast("Connexion impossible");render();});
 }
 function chJudge(kind,answer){

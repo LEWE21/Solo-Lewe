@@ -9,6 +9,26 @@ const CHAT_MODEL = process.env.SYSTEME_CHAT_MODEL || MODEL;
 const MECH_MODEL = process.env.SYSTEME_MECH_MODEL || "claude-haiku-4-5";
 const STATS = ["physique", "mental", "creativite", "business", "social", "discipline"];
 
+// Thèmes du Manuel d'Épictète (Enchiridion) pour varier l'épreuve du jour, un chapitre différent à chaque fois.
+const THEMES_EP = [
+  "ch.1 — le partage : distingue nettement ce qui dépend d'elle (son acte, son attitude) de ce qui n'en dépend pas (le résultat, l'avis des autres)",
+  "ch.5 — le jugement : ce qui trouble n'est pas la chose, mais le jugement porté dessus ; reformuler une contrariété en faits nus",
+  "ch.11 — le prêt : tenir une chose ou une personne à laquelle elle tient comme un bien prêté, avec gratitude, sans crispation de possession",
+  "ch.4 — la réserve : agir 'avec réserve' (je ferai ceci, si rien ne s'y oppose) et rester stable si l'externe contrarie",
+  "ch.29 — le coût : peser d'avance ce qu'exige une chose repoussée, puis s'y engager pleinement",
+  "ch.33 — la parole : parler peu et à propos, éviter une plainte ou un bavardage d'habitude",
+  "ch.14 & 23 — sans se justifier : poser une limite claire (un non) sans se justifier ni chercher l'approbation",
+  "ch.9 & 41 — le corps instrument : soigner son corps avec mesure, sans en faire une préoccupation, comme un outil au service de plus haut",
+  "ch.48 — le progrès : ne blâmer personne d'autre pour un contretemps, ramener l'attention sur sa propre part",
+  "ch.30 — les rôles : accomplir le devoir concret d'un de ses rôles du jour, indépendamment de l'humeur",
+  "la comparaison : quand elle se compare (abonnés, réussite d'autrui), se rappeler qu'elle ne voit pas le prix payé ; revenir à son propre effort",
+  "premeditatio malorum : anticiper le matin un contretemps probable et décider d'avance d'y répondre avec calme",
+  "ch.15 — au banquet : face à une envie ou une opportunité, prendre sa part avec mesure, sans s'y jeter ni s'y accrocher",
+  "la gratitude : nommer trois choses qu'elle a et tient pour acquises",
+  "l'obstacle comme entraînement : prendre la contrariété du jour et chercher en quoi elle muscle son caractère",
+  "ch.51 — maintenant : traiter la chose sans cesse remise comme le moment décisif d'agir en adulte",
+];
+
 // Prix en $ par million de tokens [entrée, sortie], pour l'estimation de coût renvoyée au client.
 const PRICES = {
   "claude-opus-4-8": [5, 25], "claude-opus-4-7": [5, 25], "claude-opus-4-6": [5, 25],
@@ -327,8 +347,17 @@ export default async function handler(req, res) {
       const kind = ["epictete", "defi", "journal"].includes(body.kind) ? body.kind : "defi";
       const s = body.state || {};
       const name = s.name || "Mathilde";
+      // Épictète : on tire un thème du Manuel encore non tiré récemment, pour une épreuve différente à chaque fois.
+      let epIdx = null, epTheme = "";
+      if (kind === "epictete") {
+        const avoid = Array.isArray(body.avoid) ? body.avoid.map(Number) : [];
+        let pool = THEMES_EP.map((_, i) => i).filter((i) => !avoid.includes(i));
+        if (!pool.length) pool = THEMES_EP.map((_, i) => i);
+        epIdx = pool[Math.floor(Math.random() * pool.length)];
+        epTheme = THEMES_EP[epIdx];
+      }
       const persona = {
-        epictete: `You are Epictetus, a modern grounded stoic mentor for ${name} (a woman), never ascetic nor cruel. Give ONE short, concrete stoic challenge to live TODAY, inspired by the Enchiridion: actionable, modern, not radical. 2 to 3 sentences, in FRENCH, address her with 'tu'. No preamble.`,
+        epictete: `You are Epictetus, a modern grounded stoic mentor for ${name} (a woman), never ascetic nor cruel. Craft ONE concrete stoic challenge to live TODAY, based SPECIFICALLY and ONLY on this theme from the Enchiridion: « ${epTheme} ». Make it concrete, modern, doable today, never ascetic nor radical, and phrase it freshly (do not fall back on the generic 'control what depends on you' unless that IS the theme). Briefly cite the chapter number if the theme has one. 2 to 3 sentences, in FRENCH, address her with 'tu'. No preamble.`,
         defi: `You are an expert life coach for ${name} (a woman). Her world: a YouTube channel about the Vatican (US market), a comic book about WWII Pacific volunteers for schools, an automated markets/crypto analysis site, learning English, daily discipline. Ask ONE sharp, meaningful coaching question of the day that makes her reflect and act on her goals. One question only, in FRENCH, warm but incisive, address her with 'tu'. No preamble.`,
         journal: `You are an expert life coach helping ${name} (a woman) look back on her day. Ask 1 or 2 short, warm questions to understand how her day went and what she learned from it. In FRENCH, curious and caring, concise, address her with 'tu'. No preamble.`,
       }[kind];
@@ -336,10 +365,12 @@ export default async function handler(req, res) {
         model: CHAT_MODEL, max_tokens: 240,
         output_config: { effort: "low", format: { type: "json_schema", schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } } },
         system: persona,
-        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve" : "défi"))} du jour.` }],
+        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve, sur le thème indiqué" : "défi"))} du jour.` }],
       });
       const t = r.content.find((b) => b.type === "text");
-      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
+      const payload = JSON.parse(t.text);
+      if (kind === "epictete") payload.theme = String(epIdx); // renvoyé au client pour éviter de répéter ce thème
+      return ok(res, CHAT_MODEL, r, payload);
     }
 
     // 11) coach_judge : juge si la réponse mérite la récompense, et explique si non
