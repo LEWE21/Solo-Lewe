@@ -480,7 +480,7 @@ var GAME_OFFSET_MIN=660;
 function today(){var g=new Date(Date.now()+GAME_OFFSET_MIN*60000);return g.getUTCFullYear()+"-"+String(g.getUTCMonth()+1).padStart(2,"0")+"-"+String(g.getUTCDate()).padStart(2,"0");}
 
 var STATS={
-  physique:{name:"Physique",ic:"💪",col:"#3ac2ff"},
+  physique:{name:"Force",ic:"💪",col:"#3ac2ff"},
   mental:{name:"Mental",ic:"🧠",col:"#9a6cff"},
   creativite:{name:"Créativité",ic:"🎨",col:"#ff6fc7"},
   business:{name:"Business",ic:"💰",col:"#ffcf4d"},
@@ -1231,7 +1231,7 @@ var INFO={
   daily:{t:"Tâches journalières",d:"Des tâches à refaire chaque jour (tes habitudes). Elles se remettent à zéro chaque matin et font partie de la pénalité si non faites."},
   penalty:{t:"Pénalité",d:"Si tu ne finis pas toutes tes journalières avant minuit : -40 XP, et ta série + ton combo repartent à zéro."},
   dungeon:{t:"Objectif",d:"Un de tes grands projets. Chaque tâche rattachée le fait progresser. Son rang (E → S) reflète sa difficulté. Touche-le pour l'ouvrir."},
-  physique:{t:"💪 Physique",d:"Sport, santé, sommeil, énergie. Monte quand tu prends soin de ton corps."},
+  physique:{t:"💪 Force",d:"Sport, santé, sommeil, énergie. Monte quand tu prends soin de ton corps."},
   mental:{t:"🧠 Mental",d:"Focus, apprentissage, lecture, discipline mentale, stoïcisme."},
   creativite:{t:"🎨 Créativité",d:"BD, YouTube, création de contenu, idées artistiques."},
   business:{t:"💰 Business",d:"Crypto, revenus, monétisation, projets business."},
@@ -1549,7 +1549,7 @@ function vSolo(){
     body+='</div>';
     body+='<div class="spanel"><div class="spl">Ton guerrier</div>'+warriorLadder()+'</div>';
   }else if(soloTab==="epreuves"){
-    body+=defiCard("epictete")+'<div style="height:11px"></div>'+defiCard("defi");
+    body+=defiCard("epictete");
   }else if(soloTab==="journal"){
     body+=vJournal();
     if(S.journal&&S.journal.length){
