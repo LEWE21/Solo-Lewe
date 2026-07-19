@@ -312,6 +312,8 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 .addrow input[type=text],.addrow input[type=number],.addrow input[type=date]{flex:1;min-width:140px;border-radius:var(--r-md);background:var(--glass2);border:1px solid var(--brd2);color:var(--txt);padding:11px 13px;font-family:var(--font);font-size:14px;outline:none}
 .addrow input:focus{border-color:var(--violet)}
 .addrow input::placeholder{color:var(--dim2)}
+.selin{flex:none;max-width:180px;border-radius:var(--r-md);background:var(--glass2);border:1px solid var(--brd2);color:var(--txt);padding:11px 13px;font-family:var(--font);font-size:13.5px;outline:none;cursor:pointer}
+.selin:focus{border-color:var(--violet)}
 .addrow select{border-radius:var(--r-md);background:var(--glass2);border:1px solid var(--brd2);color:var(--txt);padding:11px 10px;font-family:var(--mono);font-size:11px}
 .btn{position:relative;overflow:hidden;font-family:var(--font);font-size:13.5px;font-weight:600;letter-spacing:0;cursor:pointer;color:#fff;border:0;background:linear-gradient(120deg,var(--violet),var(--blue));border-radius:var(--r-pill);padding:11px 17px;box-shadow:0 12px 26px -12px var(--blue);transition:transform .15s ease,box-shadow .2s ease}
 .btn:hover{transform:translateY(-1px)}
@@ -1706,7 +1708,7 @@ function vQuetes(){
   groups.forEach(function(g){s+=taskGroup(g.m,g.qs);});
   if(noObj.length)s+=taskGroup(null,noObj);
   if(!reg.length)s+='<div class="empty">Aucune tâche. Ajoute-en une ci-dessous.</div>';
-  s+='<div class="addrow" style="margin-top:12px"><input type="text" id="q-title" placeholder="Écris ta tâche, ROBI la classe..."><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat, la priorité et l\'objectif tout seul.</div></div>';
+  s+='<div class="addrow" style="margin-top:12px"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="__auto">Objectif : auto</option><option value="">Sans objectif</option>'+S.missions.slice().sort(byRankDesc).map(function(m){return '<option value="'+m.id+'">'+esc(m.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add">Ajouter</button></div><div class="subhead" style="margin:10px 0 0">ROBI choisit la stat et la priorité. Choisis l\'objectif, ou laisse « auto ».</div></div>';
   return s;
 }
 var taskCollapse={};
@@ -1882,7 +1884,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var qa=document.getElementById("q-add");
-  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:c.mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
+  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
   if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);S.missions.push({id:uid(),title:t,rank:rk,note:nt});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
   var jbs=document.querySelectorAll(".jm");
