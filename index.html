@@ -95,7 +95,24 @@ body.solo-mode #view{padding-bottom:24px}
 .scap{display:grid;grid-template-columns:150px 1fr 46px;align-items:center;gap:10px;font-size:12px;padding:5px 0}
 .scap .n{color:#cfe2ff}.scap .tr{height:6px;background:rgba(77,184,255,.1);border:1px solid rgba(77,184,255,.22);position:relative;overflow:hidden}
 .scap .tr i{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,#3a7de0,#8fe6ff)}
+.scap{grid-template-columns:150px 1fr 46px 24px}
 .scap .lv{color:#8fe6ff;text-align:right}
+.scap .capgo{cursor:pointer;text-align:right;font-size:13px;opacity:.75;transition:.2s}.scap .capgo:hover{opacity:1;transform:scale(1.15)}
+.capgoal{margin:2px 0 12px;padding:9px 11px;border-left:2px solid #4db8ff;background:rgba(77,184,255,.06);font-size:11.5px}
+.capgoal.ok{border-color:#43d9a3;background:rgba(67,217,163,.07)}
+.capgoal.tight{border-color:#ffd45a;background:rgba(255,212,90,.07)}
+.capgoal.no{border-color:#ff6b82;background:rgba(255,107,130,.07)}
+.capgoal.learn{border-color:#7f9bd0;background:rgba(127,155,208,.06)}
+.cgl{display:flex;justify-content:space-between;color:#dce9ff;font-weight:600;letter-spacing:.02em}
+.cgm{color:#a9c2ea;margin-top:5px}.cgm b{color:#fff}
+.cgv{margin-top:5px;color:#cfe2ff}
+.capgoal.ok .cgv{color:#8fe6c8}.capgoal.tight .cgv{color:#ffe08a}.capgoal.no .cgv{color:#ff9db0}.capgoal.learn .cgv{color:#a9c2ea}
+.capprev{margin-top:14px;padding:11px 13px;border-radius:8px;background:#0c1424;border:1px solid rgba(77,184,255,.4);font-size:12px;line-height:1.5}
+.capprev .cgm{color:#a9c2ea}.capprev .cgm b{color:#fff}.capprev .cgv{margin-top:6px;color:#cfe2ff}
+.capprev.ok{border-color:#43d9a3}.capprev.ok .cgv{color:#8fe6c8}
+.capprev.tight{border-color:#ffd45a}.capprev.tight .cgv{color:#ffe08a}
+.capprev.no{border-color:#ff6b82}.capprev.no .cgv{color:#ff9db0}
+.capprev.learn{border-color:#7f9bd0}.capprev.learn .cgv{color:#a9c2ea}
 .sttl{display:inline-flex;gap:7px;font-size:12px;color:#ffd45a;border:1px solid rgba(255,212,90,.4);background:rgba(255,212,90,.08);padding:6px 11px;margin:3px 6px 3px 0}
 .svoice{font-size:12px;line-height:1.65;color:#8fe6ff;border-left:2px solid #4db8ff;padding:4px 0 4px 12px}
 .svoice b{color:#4db8ff}
@@ -319,6 +336,8 @@ nav button.on:hover{color:#fff}
 .flashwin.pen .fbig{color:var(--pink);text-shadow:0 8px 40px rgba(255,111,181,.5)}
 .flashwin.level .fbig{color:var(--cyan);text-shadow:0 8px 40px rgba(34,201,238,.5)}
 .flashwin .fsub{font-family:var(--font);font-size:14px;letter-spacing:.02em;color:var(--dim);margin-top:12px}
+.flashwin .fhint{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim2);margin-top:22px;animation:hintpulse 1.7s ease-in-out infinite}
+@keyframes hintpulse{0%,100%{opacity:.4}50%{opacity:.9}}
 @keyframes flashIn{0%{opacity:0;transform:scale(.6)}55%{opacity:1}100%{opacity:1;transform:scale(1)}}
 
 #ask{position:fixed;inset:0;z-index:64;display:none;place-items:center;background:rgba(4,8,18,.55);backdrop-filter:blur(5px);padding:20px}
@@ -633,8 +652,15 @@ function rollover(){
 }
 function log(text){S.log.unshift({t:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),text:text});if(S.log.length>80)S.log.pop();}
 
+function bumpPace(statKey,gain){ // trace l'effort validé du jour, par capacité
+  S.pace=S.pace||{};
+  var p=S.pace[statKey]||(S.pace[statKey]={date:today(),today:0,hist:[]});
+  if(p.date!==today()){p.hist.unshift(p.today);if(p.hist.length>14)p.hist.length=14;p.today=0;p.date=today();}
+  p.today+=gain;
+}
 function gainXP(statKey,gain,label){
   var st=S.stats[statKey]||(S.stats[statKey]={level:1,xp:0});
+  bumpPace(statKey,gain);
   var su=0;st.xp+=gain;while(st.xp>=statNeed(st.level)){st.xp-=statNeed(st.level);st.level++;su++;}
   var h=S.hunter,beforeRank=rankOf(h.level).r,lu=0;
   h.xp+=gain;while(h.xp>=xpNeed(h.level)){h.xp-=xpNeed(h.level);h.level++;lu++;}
@@ -716,6 +742,70 @@ function urgentBanner(){
     '<button class="btn" data-uq-do style="width:100%;margin-top:10px">⚔ Accomplir la quête</button></div>';
 }
 function updateUrgentBadge(){var b=document.getElementById("ubadge");if(b)b.hidden=!urgentActive();}
+
+/* ---- Échéances de capacités : atteindre un palier avant une date, au rythme de tes efforts validés ---- */
+function capPace(statKey){ // XP/jour moyen récent (jours passés enregistrés)
+  var p=S.pace&&S.pace[statKey];if(!p)return null;
+  var arr=(p.hist||[]).slice(0,10);if(!arr.length)return null;
+  var sum=0;arr.forEach(function(x){sum+=x;});return sum/arr.length;
+}
+function xpToLevel(cur,curXp,target){var need=0;for(var l=cur;l<target;l++)need+=statNeed(l);return Math.max(0,need-curXp);}
+function daysUntil(due){var a=new Date(today()+"T00:00:00Z"),b=new Date(due+"T00:00:00Z");return Math.round((b-a)/86400000);}
+function capGoalInfo(statKey){
+  var g=S.capGoals&&S.capGoals[statKey];if(!g)return null;
+  var st=S.stats[statKey],need=xpToLevel(st.level,st.xp,g.target),days=daysUntil(g.due);
+  var perDay=days>0?Math.ceil(need/days):need,pace=capPace(statKey);
+  var done=st.level>=g.target,expired=days<0&&!done,verdict,cls;
+  if(done){verdict="Palier atteint. Le Système salue ta constance.";cls="ok";}
+  else if(expired){verdict="Échéance dépassée. Redéfinis une date.";cls="no";}
+  else if(pace==null){verdict="Le Système apprend ton rythme. Valide des tâches "+STATS[statKey].name+" quelques jours.";cls="learn";}
+  else{var ratio=perDay/Math.max(1,pace);
+    if(ratio<=1)     {verdict="Atteignable à ton rythme actuel.";cls="ok";}
+    else if(ratio<=1.6){verdict="Serré : il faut pousser un peu chaque jour.";cls="tight";}
+    else               {verdict="Trop ambitieux pour la date. Recule l'échéance ou vise un palier plus bas.";cls="no";}
+  }
+  return {g:g,need:need,days:days,perDay:perDay,pace:pace,done:done,expired:expired,verdict:verdict,cls:cls};
+}
+function capRow(k){
+  var st=S.stats[k],m=STATS[k],p=pct(st.xp,statNeed(st.level))/100;
+  var s='<div class="scap"><span class="n">'+m.ic+' '+m.name+'</span><span class="tr"><i style="transform:scaleX('+p+')"></i></span><span class="lv">Lv.'+st.level+'</span><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span></div>';
+  var gi=capGoalInfo(k);
+  if(gi){
+    s+='<div class="capgoal '+gi.cls+'"><div class="cgl"><span>◈ Objectif : niveau '+gi.g.target+'</span><span>'+(gi.done?'✔ atteint':(gi.expired?'échéance passée':gi.days+' j restants'))+'</span></div>';
+    if(!gi.done&&!gi.expired)s+='<div class="cgm">Il te faut ≈ <b>'+gi.perDay+' XP/jour</b>'+(gi.pace!=null?' · ton rythme : '+Math.round(gi.pace)+' XP/jour':'')+'</div>';
+    s+='<div class="cgv">'+gi.verdict+'</div></div>';
+  }
+  return s;
+}
+var CAPSEL=null; // {stat,target,due}
+function openCapGoal(statKey){
+  var st=S.stats[statKey],m=STATS[statKey],g=S.capGoals&&S.capGoals[statKey];
+  if(!CAPSEL||CAPSEL.stat!==statKey){CAPSEL={stat:statKey,target:g?g.target:st.level+1,due:g?g.due:isoPlus(today(),21)};}
+  if(CAPSEL.target<=st.level)CAPSEL.target=st.level+1;
+  var need=xpToLevel(st.level,st.xp,CAPSEL.target),days=daysUntil(CAPSEL.due);
+  var perDay=days>0?Math.ceil(need/days):need,pace=capPace(statKey);
+  var verdict,cls;
+  if(days<=0){verdict="Choisis une date à venir.";cls="no";}
+  else if(pace==null){verdict="Le Système n'a pas encore mesuré ton rythme sur cette capacité. Il jugera dès que tu auras validé des tâches.";cls="learn";}
+  else{var ratio=perDay/Math.max(1,pace);cls=ratio<=1?"ok":(ratio<=1.6?"tight":"no");verdict=ratio<=1?"Faisable à ton rythme actuel.":(ratio<=1.6?"Serré mais possible en poussant.":"Le Système juge cette échéance irréaliste au vu de tes efforts récents.");}
+  var h='<div class="mtag">▸ Échéance de capacité</div><div class="mtitle">'+m.ic+' '+m.name+'</div>';
+  h+='<div class="subhead" style="margin:6px 0 12px">Niveau actuel : <b style="color:'+m.col+'">Lv.'+st.level+'</b>. Ta progression ne compte que les tâches <b>validées</b>.</div>';
+  h+='<div class="subhead" style="margin:0 0 6px">Palier visé</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  [1,2,3].forEach(function(d){var t=st.level+d;h+='<button class="btn'+(CAPSEL.target===t?"":" ghost")+'" data-captgt="'+t+'">Niveau '+t+'</button>';});
+  h+='</div>';
+  h+='<div class="subhead" style="margin:14px 0 6px">Avant le</div><div class="addrow"><input type="date" id="capdue" value="'+CAPSEL.due+'" min="'+isoPlus(today(),1)+'" style="max-width:170px"></div>';
+  h+='<div class="capprev '+cls+'"><div class="cgm">À gagner : <b>'+need+' XP</b> · '+(days>0?days+' jours':'date invalide')+(days>0?' · ≈ <b>'+perDay+' XP/jour</b>':'')+(pace!=null?' · ton rythme : '+Math.round(pace)+' XP/jour':'')+'</div><div class="cgv">'+verdict+'</div></div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" id="capset">'+(cls==="no"?"Définir quand même":"Définir l'échéance")+'</button>'+(g?'<button class="btn ghost" id="capdel" style="color:var(--pink)">Retirer</button>':'')+'</div>';
+  openModal(h,m.col);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-captgt]"),function(el){el.onclick=function(){CAPSEL.target=parseInt(el.dataset.captgt,10);openCapGoal(statKey);};});
+  var due=document.getElementById("capdue");if(due)due.onchange=function(){CAPSEL.due=due.value||CAPSEL.due;openCapGoal(statKey);};
+  var setb=document.getElementById("capset");if(setb)setb.onclick=function(){
+    if(daysUntil(CAPSEL.due)<=0){toast("Choisis une date à venir");return;}
+    S.capGoals=S.capGoals||{};S.capGoals[statKey]={target:CAPSEL.target,due:CAPSEL.due,start:{level:st.level,xp:st.xp,date:today()}};
+    save();closeModal();render();toast("Échéance fixée");sysNotify("⟪ Système ⟫","Échéance imposée",[m.name+" · niveau "+CAPSEL.target,"avant le "+CAPSEL.due]);
+  };
+  var delb=document.getElementById("capdel");if(delb)delb.onclick=function(){if(S.capGoals)delete S.capGoals[statKey];save();closeModal();render();toast("Échéance retirée");};
+}
 
 /* notifications */
 function sysNotify(tag,title,lines){
@@ -999,6 +1089,8 @@ function initEffects(){
     if(stb){soloTab=stb.getAttribute("data-solotab");render();return;}
     var uqd=e.target.closest("[data-uq-do]");
     if(uqd){sysConfirm("Accomplir la quête urgente ?",["<b>« "+esc(S.urgent.title)+" »</b>","","Le Système ne récompense que le réel. Confirme seulement si c'est fait."],function(){urgentComplete();});return;}
+    var cg=e.target.closest("[data-capgoal]");
+    if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");view="donjons";render();return;}
     var os=e.target.closest("[data-obj-sel]");
@@ -1351,8 +1443,8 @@ function vSolo(){
   var tabs=[["profil","Profil"],["capacites","Capacités"],["epreuves","Épreuves"],["journal","Journal"],["chroniques","Chroniques"]];
   var body="";
   if(soloTab==="capacites"){
-    body+='<div class="spanel"><div class="spl">Capacités</div>';
-    Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;body+='<div class="scap"><span class="n">'+m.ic+' '+m.name+'</span><span class="tr"><i style="transform:scaleX('+p+')"></i></span><span class="lv">Lv.'+st.level+'</span></div>';});
+    body+='<div class="spanel"><div class="spl">Capacités</div><div class="subhead" style="margin:-4px 0 10px;color:#7f9bd0">Touche 🎯 pour fixer une échéance. Seules tes tâches validées font monter une capacité.</div>';
+    Object.keys(STATS).forEach(function(k){body+=capRow(k);});
     body+='</div>';
     body+='<div class="spanel"><div class="spl">Ton guerrier</div>'+warriorLadder()+'</div>';
   }else if(soloTab==="epreuves"){
@@ -1374,7 +1466,7 @@ function vSolo(){
     body+='</div>';
     body+='<div class="subhead" style="text-align:center;margin:4px 0 0">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
   }else{
-    body+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,"radieux",56)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="rl">'+(nextR?("Ascension vers le rang "+nextR):"Rang maximal atteint")+'</div><div class="sbar"><i style="transform:scaleX('+af+');background:linear-gradient(90deg,#2f6bd6,#8fe6ff)"></i></div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div></div></div></div>';
+    body+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,"radieux",56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="rl">'+(nextR?("Ascension vers le rang "+nextR):"Rang maximal atteint")+'</div><div class="sbar"><i style="transform:scaleX('+af+');background:linear-gradient(90deg,#2f6bd6,#8fe6ff)"></i></div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div></div></div></div>';
     body+='<div class="spanel"><div class="spl">Constantes</div><div class="sgrid">'+soloStat((S.streak||0)+" j","Série")+soloStat((S.best||0)+" j","Record")+soloStat("x"+(S.combo||0),"Combo")+soloStat((S.doneCount||0),"Quêtes accomplies")+'</div></div>';
     body+='<div class="spanel"><div class="spl">Titres</div>'+unlockedTitles().map(function(t){return '<span class="sttl">⬥ '+esc(t)+'</span>';}).join("")+'</div>';
     body+='<div class="spanel"><div class="svoice"><b>⟪ Système ⟫</b> Vous seule voyez ceci, Joueur. Ce que vous accomplissez dans la lumière nourrit ce qui grandit dans l\'ombre. Poursuivez votre ascension.</div></div>';
