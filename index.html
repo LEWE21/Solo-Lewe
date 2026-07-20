@@ -314,6 +314,13 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 .addrow input::placeholder{color:var(--dim2)}
 .selin{flex:none;max-width:180px;border-radius:var(--r-md);background:var(--glass2);border:1px solid var(--brd2);color:var(--txt);padding:11px 13px;font-family:var(--font);font-size:13.5px;outline:none;cursor:pointer}
 .selin:focus{border-color:var(--violet)}
+/* ---- Suivi du sommeil : mini graphe 7 nuits ---- */
+.sleepbars{display:flex;gap:8px;align-items:flex-end;margin-top:16px}
+.sleepbars .sb{flex:1;text-align:center;min-width:0}
+.sleepbars .sbv{height:56px;display:flex;align-items:flex-end;background:var(--track);border-radius:6px;overflow:hidden}
+.sleepbars .sbv i{display:block;width:100%;border-radius:6px}
+.sleepbars .sbh{font-family:var(--mono);font-size:10.5px;color:var(--txt);margin-top:5px}
+.sleepbars .sbl{font-family:var(--mono);font-size:9px;color:var(--dim2)}
 .addrow select{border-radius:var(--r-md);background:var(--glass2);border:1px solid var(--brd2);color:var(--txt);padding:11px 10px;font-family:var(--mono);font-size:11px}
 .btn{position:relative;overflow:hidden;font-family:var(--font);font-size:13.5px;font-weight:600;letter-spacing:0;cursor:pointer;color:#fff;border:0;background:linear-gradient(120deg,var(--violet),var(--blue));border-radius:var(--r-pill);padding:11px 17px;box-shadow:0 12px 26px -12px var(--blue);transition:transform .15s ease,box-shadow .2s ease}
 .btn:hover{transform:translateY(-1px)}
@@ -1207,7 +1214,7 @@ function gm(action,extra){
     return fetch("/api/gm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},extra||{}))}).then(function(res){return res.json();}).then(function(j){if(j&&typeof j._usd==="number"){S.costUsd=(S.costUsd||0)+j._usd;save();}return j;});
   }catch(e){return Promise.reject(e);}
 }
-function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{};return {name:h.name,level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:j.sleep,stats:S.stats,coachStyle:S.coachStyle||"robi"};}
+function apiState(){var h=S.hunter,rk=rankOf(h.level),j=(S.journal&&S.journal[0])||{},sl=(S.sleepLog&&S.sleepLog[0])?S.sleepLog[0].h:j.sleep;return {name:h.name,level:h.level,rank:rk.r,streak:S.streak,lastMood:j.mood,lastSleep:sl,stats:S.stats,coachStyle:S.coachStyle||"robi"};}
 /* ---- Citation tranchante et productive du jour (en lien avec ses projets) ---- */
 var LOCAL_CITS=[
  'Ta chaîne ne grandit pas en la regardant. Publie, puis recommence.',
@@ -1787,8 +1794,38 @@ function objAcceptProp(i){
 }
 function objRefuseProp(i){var m=find(S.missions,objSel);if(!m||!m.proposals)return;m.proposals.splice(i,1);save();render();}
 
+/* ---- Suivi du sommeil ---- */
+function sleepToday(){var l=(S.sleepLog||[]).filter(function(x){return x.date===today();})[0];return l?l.h:null;}
+function sleepAvg(n){var a=(S.sleepLog||[]).slice(0,n);if(!a.length)return null;var t=0;a.forEach(function(x){t+=x.h;});return t/a.length;}
+function setSleep(h){
+  S.sleepLog=S.sleepLog||[];
+  var i=-1;for(var k=0;k<S.sleepLog.length;k++){if(S.sleepLog[k].date===today()){i=k;break;}}
+  var first=(i<0);
+  if(i>=0)S.sleepLog[i].h=h;else S.sleepLog.unshift({date:today(),h:h});
+  if(S.sleepLog.length>60)S.sleepLog.length=60;
+  save();
+  if(first){var r=gainXP("physique",5,"Sommeil noté ("+h+" h)");sysNotify("Sommeil",h+" h notées",["+5 XP · "+STATS.physique.name]);afterGain(r);}
+  else toast("Sommeil mis à jour");
+  render();
+}
+function sleepCard(){
+  var t=sleepToday(),avg=sleepAvg(7);
+  var s='<div class="win"><div class="win-h"><span class="t">Sommeil</span><span class="ln"></span><span class="r">'+(avg!=null?("moy. 7 nuits : "+avg.toFixed(1)+" h"):"—")+'</span></div>';
+  s+='<div class="subhead">'+(t!=null?("Cette nuit : <b>"+t+" h</b>. Tu peux corriger."):"Combien d'heures as-tu dormi cette nuit ?")+'</div>';
+  s+='<div class="addrow"><input type="number" id="sleep-h" min="0" max="16" step="0.5" placeholder="7.5" value="'+(t!=null?t:"")+'" style="max-width:120px"><button class="btn" id="sleep-save">Enregistrer</button></div>';
+  var last=(S.sleepLog||[]).slice(0,7).slice().reverse();
+  if(last.length){
+    s+='<div class="sleepbars">'+last.map(function(x){
+      var pc=Math.max(8,Math.min(100,(x.h/10)*100));
+      var col=x.h<6?"var(--pink)":(x.h>=7?"var(--mint)":"var(--gold)");
+      return '<div class="sb"><div class="sbv"><i style="height:'+pc+'%;background:'+col+'"></i></div><div class="sbh">'+x.h+'</div><div class="sbl">'+String(x.date).slice(8,10)+'</div></div>';
+    }).join("")+'</div>';
+  }
+  return s+'</div>';
+}
 function vJournal(){
-  var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
+  var s=sleepCard();
+  s+='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
   s+='<div style="display:flex;gap:8px">';
   for(var i=1;i<=5;i++){s+='<button type="button" class="btn ghost jm'+(jMood===i?" sel":"")+'" data-m="'+i+'" style="flex:1;font-size:20px;padding:10px">'+MOODS[i-1]+'</button>';}
   s+='</div></div>';
@@ -1887,6 +1924,8 @@ function bind(){
   if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
   if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);S.missions.push({id:uid(),title:t,rank:rk,note:nt});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
+  var ssv=document.getElementById("sleep-save");
+  if(ssv)ssv.onclick=function(){var el=document.getElementById("sleep-h");var v=parseFloat(el?el.value:"");if(isNaN(v)||v<0||v>16){toast("Entre un nombre d'heures (0 à 16)");return;}setSleep(v);};
   var jbs=document.querySelectorAll(".jm");
   Array.prototype.forEach.call(jbs,function(b){b.onclick=function(){jMood=parseInt(b.dataset.m,10);Array.prototype.forEach.call(jbs,function(x){x.classList.toggle("sel",x===b);});};});
   var ja=document.getElementById("j-add");
