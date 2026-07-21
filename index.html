@@ -31,7 +31,7 @@ html[data-theme="night"]{
 *{box-sizing:border-box}
 html{height:100%}
 body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--txt);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .7s ease,color .4s ease;height:100dvh}
-#app{max-width:1120px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:12px 16px 0}
+#app{max-width:1500px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:14px 26px 0}
 #view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:96px}
 @media(max-width:400px){#app{padding:10px 11px 0}}
 
@@ -85,7 +85,7 @@ body.solo-mode{background:#010207}
 body.solo-mode .topbar{display:none}
 body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28);box-shadow:0 0 30px -14px #4db8ff}
 /* --- Tableau de bord : grille de cartes plutôt qu'une pile verticale --- */
-.ckgrid{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:11px;align-items:start}
+.ckgrid{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:13px;align-items:start}
 .ckcol{display:flex;flex-direction:column;gap:11px;min-width:0}
 @media(max-width:860px){.ckgrid{grid-template-columns:1fr}}
 .capgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:9px}
@@ -120,6 +120,8 @@ body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28)
 .wkstrip i{flex:1;height:9px;border-radius:3px;background:rgba(77,184,255,.12);border:1px solid rgba(77,184,255,.2)}
 .wkstrip i.on{background:var(--cc);border-color:var(--cc);box-shadow:0 0 12px -3px var(--cc)}
 .wkmsg{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:#7f9bd0}
+.udot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3b57;margin-right:9px;vertical-align:1px;box-shadow:0 0 10px #ff3b57;animation:updulse 1.6s ease-in-out infinite}
+@keyframes updulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
 .q .more{color:var(--dim2);cursor:pointer;font-size:17px;line-height:1;padding:2px 7px;flex:none;border-radius:8px}
 .q .more:hover{color:var(--txt);background:rgba(127,155,208,.12)}
 .q .more.on{color:var(--pink)}
@@ -127,19 +129,19 @@ body.solo-mode nav button .nl{color:#5f7cb4}
 body.solo-mode nav button.on .nl,body.solo-mode nav button:hover .nl{color:#dce9ff}
 body.solo-mode nav button.on{background:rgba(127,155,208,.07);box-shadow:inset 0 0 0 1px rgba(143,230,255,.25)}
 body.solo-mode #view{padding-bottom:24px}
-.solo{color:#cfe2ff;font-family:var(--mono);display:flex;flex-direction:column;gap:11px;min-height:calc(100dvh - 34px);padding:6px 0 18px;
-  background:radial-gradient(1000px 700px at 50% -12%,rgba(77,184,255,.16),transparent 56%),radial-gradient(700px 600px at 10% 116%,rgba(154,134,255,.12),transparent 60%),radial-gradient(600px 560px at 92% 6%,rgba(255,59,87,.08),transparent 55%)}
-.solo .tbar{text-align:center;letter-spacing:.4em;font-size:14px;font-weight:800;color:#fff;text-shadow:0 0 24px #4db8ff;padding:6px 0}
-.solo .tbar small{display:block;font-size:9px;letter-spacing:.3em;color:#5a76ac;margin-top:5px;font-weight:400}
-.spanel{position:relative;background:linear-gradient(180deg,rgba(9,18,36,.8),rgba(4,9,20,.7));border:1px solid rgba(77,184,255,.45);box-shadow:0 0 30px -12px #4db8ff,inset 0 0 44px -18px rgba(77,184,255,.5);padding:15px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
-.spanel::before,.spanel::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #4db8ff;opacity:.7}
-.spanel::before{top:5px;left:5px;border-right:0;border-bottom:0}.spanel::after{bottom:5px;right:5px;border-left:0;border-top:0}
-.spl{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#4db8ff;margin-bottom:12px;display:flex;gap:8px}
+.solo{color:#cfe2ff;font-family:var(--font);display:flex;flex-direction:column;gap:13px;padding:2px 0 18px;
+  background:radial-gradient(1100px 620px at 22% -14%,rgba(123,92,255,.13),transparent 58%),radial-gradient(900px 560px at 88% 4%,rgba(77,184,255,.09),transparent 56%)}
+.solo .tbar{font-family:var(--mono);display:flex;align-items:baseline;gap:13px;letter-spacing:.2em;font-size:12px;font-weight:600;
+  color:#dce9ff;text-transform:uppercase;padding:2px 2px 4px}
+.solo .tbar small{font-size:9.5px;letter-spacing:.12em;color:#4a628f;font-weight:400;text-transform:none}
+.spanel{position:relative;background:linear-gradient(165deg,#151c3a,rgba(11,16,36,.92));border:1px solid rgba(127,155,208,.18);
+  border-radius:18px;padding:17px}
+.spl{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:#4db8ff;margin-bottom:13px;display:flex;gap:9px;align-items:center}
 .spl::before{content:"◤"}.spl::after{content:"◢";margin-left:auto}
 .srank{display:flex;align-items:center;gap:14px}
-.rbig{font-weight:800;font-size:52px;line-height:.9;text-shadow:0 0 26px currentColor}
+.rbig{font-family:var(--mono);font-weight:700;font-size:42px;line-height:.9;text-shadow:0 0 22px currentColor}
 .srank .rt{flex:1;min-width:0}
-.srank .who{font-size:15px;color:#fff;letter-spacing:.06em;margin:2px 0 8px}
+.srank .who{font-family:var(--mono);font-size:10px;color:#7f9bd0;letter-spacing:.16em;margin:2px 0 8px;text-transform:uppercase}
 .srank .rl{font-size:10px;letter-spacing:.14em;color:#5a76ac;text-transform:uppercase}
 .sbar{height:8px;background:rgba(77,184,255,.1);border:1px solid rgba(77,184,255,.4);position:relative;overflow:hidden;margin-top:5px}
 .sbar i{position:absolute;inset:0;transform-origin:left}
@@ -166,8 +168,8 @@ body.solo-mode #view{padding-bottom:24px}
 .capprev.no{border-color:#ff6b82}.capprev.no .cgv{color:#ff9db0}
 .capprev.learn{border-color:#7f9bd0}.capprev.learn .cgv{color:#a9c2ea}
 .sttl{display:inline-flex;gap:7px;font-size:12px;color:#ffd45a;border:1px solid rgba(255,212,90,.4);background:rgba(255,212,90,.08);padding:6px 11px;margin:3px 6px 3px 0}
-.svoice{font-size:12px;line-height:1.65;color:#8fe6ff;border-left:2px solid #4db8ff;padding:4px 0 4px 12px}
-.svoice b{color:#4db8ff}
+.svoice{font-size:14.5px;line-height:1.6;color:#e6f1ff;border-left:3px solid #7b5cff;padding:2px 0 2px 14px}
+.svoice b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#7b5cff;margin-bottom:8px;text-transform:uppercase}
 .sreset{font-size:10px;letter-spacing:.14em;color:#5a76ac;cursor:pointer;text-transform:uppercase;border:1px solid rgba(77,184,255,.45);background:transparent;padding:10px 12px;align-self:center;margin-top:6px}
 .stabs{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin:2px 0 3px}
 .stab{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#5a76ac;background:rgba(9,18,36,.6);border:1px solid rgba(77,184,255,.28);padding:8px 12px;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);transition:.2s}
@@ -279,7 +281,9 @@ body.solo-mode .bdtext{background:rgba(4,9,20,.7);border-color:rgba(77,184,255,.
 /* ---- tâches ---- */
 .q{display:flex;align-items:center;gap:12px;padding:12px 3px 12px 12px;border-bottom:1px solid var(--track);border-left:3px solid var(--tc,transparent)}
 .q .body{display:flex;align-items:center;gap:11px;flex-wrap:wrap;min-width:0}
-.q .ttl{flex:1;min-width:180px}
+.q .ttl{flex:1;min-width:180px;font-family:var(--font);font-size:14px;line-height:1.35;color:#e6f1ff}
+.q .xpv{font-family:var(--mono);font-size:11px;color:#8fe6ff}
+.q .tag{font-family:var(--mono);font-size:9px;letter-spacing:.04em;padding:3px 8px;border-radius:7px}
 .q.pubrow{border:1px solid rgba(255,111,181,.42);border-radius:12px;padding:12px;margin:6px 0;background:linear-gradient(180deg,rgba(255,111,181,.09),transparent)}
 .q.pubrow.late{border-color:rgba(255,111,181,.75);box-shadow:0 0 22px -10px #ff6fb5}
 .q:last-child{border-bottom:0}
@@ -863,6 +867,7 @@ function award(q){
   S.doneCount++;S.combo++;
   var mult=comboMult();
   var gain=Math.max(1,Math.round(q.base*mult));
+  urgentBonus(q);
   var ck=questCap(q); // la capacité du projet prime sur celle devinée depuis le titre
   var r=gainXP(ck,gain,"Tâche : "+q.title);
   var m=STATS[ck];
@@ -921,6 +926,19 @@ function urgentCountdown(){
   var ms=S.urgent.dueTs-Date.now();if(ms<0)ms=0;
   var h=Math.floor(ms/3600000),mn=Math.floor((ms%3600000)/60000);
   return h>=1?(h+"h "+mn+"m"):(mn+"m");
+}
+function isUrgent(q){return urgentActive()&&S.urgent.qid===q.id&&!q.done;}
+function urgentDot(q){
+  if(!isUrgent(q))return "";
+  return '<span class="udot" title="Imposée par le Système · '+urgentCountdown()+' restantes · +'+S.urgent.xp+' XP bonus"></span>';
+}
+function urgentBonus(q){ // le bonus tombe quand tu valides la tache elle-meme
+  if(!urgentActive()||S.urgent.qid!==q.id)return;
+  var u=S.urgent;u.status="done";
+  var r=gainXP(u.stat,u.xp,"Quête urgente accomplie : "+u.title);
+  sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[u.stat].name.toUpperCase(),"Le Système reconnaît ta réactivité."]);
+  flash("rank","QUÊTE ACCOMPLIE","+"+u.xp+" XP · Le Système est satisfait");
+  sfx("success");afterGain(r);save();
 }
 function urgentBanner(){
   if(!urgentActive())return "";
@@ -1290,8 +1308,6 @@ function initEffects(){
     if(ct){cockTab=ct.getAttribute("data-cocktab");render();return;}
     var stb=e.target.closest("[data-solotab]");
     if(stb){soloTab=stb.getAttribute("data-solotab");render();return;}
-    var uqd=e.target.closest("[data-uq-do]");
-    if(uqd){sysConfirm("Accomplir la quête urgente ?",["<b>« "+esc(S.urgent.title)+" »</b>","","Le Système ne récompense que le réel. Confirme seulement si c'est fait."],function(){urgentComplete();});return;}
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var gob=e.target.closest("[data-go-obj]");
@@ -1800,7 +1816,6 @@ function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
   var s='<div class="solo"><div class="tbar">◤ SOLO LEWE ◢<small>Système de '+esc(h.name)+'</small></div>';
-  s+=urgentBanner();
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
   s+='<div class="spanel"><div class="svoice"><b>⟪ Citation du jour ⟫</b> '+esc(citation)+'</div></div>';
@@ -1906,7 +1921,7 @@ function questRow(q,depth,compact,ctx){
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:#ff6fb5;border-color:#ff6fb555">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span></div>';}
+  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span></div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -1918,7 +1933,7 @@ function questRow(q,depth,compact,ctx){
   var acts=(rowMenu===q.id)
     ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
     :('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>');
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
 }
 function questTree(list,ctx){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -1933,10 +1948,10 @@ function questTree(list,ctx){
 }
 function dailyRow(q,compact){
   var m=STATS[questCap(q)]||STATS.mental;var due=dueToday(q);
-  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';
+  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
-    '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
+    '<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
     '<span class="xpv">+'+q.base+'</span>'+((rowMenu===q.id)?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span><span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>'):('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>'))+'</div>';
 }
 function vQuetes(){
