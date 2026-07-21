@@ -65,6 +65,7 @@ body{
 #view::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:99px}
 .view-anim{animation:viewIn .34s cubic-bezier(.2,.7,.2,1) both;flex:1;display:flex;flex-direction:column;min-height:0}
 .view-anim>.solo{flex:1;min-height:0}
+.solo:has(>.ckgrid){display:block;flex:0 0 auto}
 @keyframes viewIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
 
 /* ---------- Barre du haut ---------- */
@@ -130,21 +131,24 @@ nav button.capnav.wk .nlv b{color:var(--cc)}
 
 /* ---------- Le systeme ---------- */
 .solo{display:flex;flex-direction:column;gap:14px;padding:4px 0 20px;background:none;min-height:0}
-.solo>.ckgrid{flex:1;min-height:0}
 .solo .tbar{font-family:var(--mono);display:flex;align-items:baseline;gap:13px;letter-spacing:.2em;font-size:12px;
   font-weight:600;color:var(--txt);text-transform:uppercase;padding:2px 2px 2px}
 .solo .tbar small{font-size:9.5px;letter-spacing:.12em;color:var(--dim2);font-weight:400;text-transform:none}
 .cockbody{display:flex;flex-direction:column;gap:14px}
 
+/* Capacite : l'etat et les outils a gauche, le travail a droite */
+.solo>.capgrid{flex:1;min-height:0}
+.capgrid{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:14px;align-items:stretch}
+.capcol{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0}
+.capmain{overflow-y:auto;overflow-x:hidden;margin:0 -4px;padding:0 4px;scrollbar-width:thin}
+.capmain::-webkit-scrollbar{width:7px}
+.capmain::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+.capside{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.capside::-webkit-scrollbar{width:0}
+
 /* Cockpit : deux colonnes, chacune a sa hauteur naturelle */
-.ckgrid{display:grid;grid-template-columns:minmax(300px,400px) minmax(0,1fr);gap:14px;align-items:stretch}
-.ckcol{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0}
-/* La carte du jour prend la hauteur restante et fait defiler SA liste,
-   au lieu de laisser un trou sous les colonnes courtes. */
-.a-today{display:flex;flex-direction:column;min-height:0;flex:1}
-.tscroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;margin:0 -4px;padding:0 4px;scrollbar-width:thin}
-.tscroll::-webkit-scrollbar{width:7px}
-.tscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+.ckgrid{display:grid;grid-template-columns:minmax(300px,400px) minmax(0,1fr);gap:14px;align-items:start}
+.ckcol{display:flex;flex-direction:column;gap:14px;min-width:0}
 
 /* Profil */
 .srank{display:flex;align-items:center;gap:15px}
@@ -202,7 +206,7 @@ nav button.capnav.wk .nlv b{color:var(--cc)}
 @keyframes updulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
 
 /* ---------- Projets ---------- */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,360px));gap:12px;justify-content:start}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
 .pcard{position:relative;cursor:pointer;padding:15px 15px 14px 18px;border-radius:18px;overflow:hidden;transition:transform .18s,border-color .18s}
 .pcard:before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:18px;
   background:radial-gradient(130% 95% at 0% 0%,var(--pc),transparent 56%);opacity:.16}
@@ -258,23 +262,6 @@ nav button.capnav.wk .nlv b{color:var(--cc)}
 .cgl{display:flex;justify-content:space-between;gap:9px;font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:7px}
 .cgm{font-size:13px;color:var(--txt);margin-bottom:5px}
 .cgv{font-size:12.5px;color:var(--dim);line-height:1.55}
-
-/* ---------- Cette semaine et Tes chiffres ---------- */
-.wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.wcell{position:relative;display:grid;justify-items:center;gap:5px;padding:12px 6px 10px;border-radius:var(--r-md);
-  cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--brd);border-left:3px solid var(--cc);transition:.18s}
-.wcell:hover{background:rgba(255,255,255,.1);border-color:var(--cc)}
-.wcell.on{background:linear-gradient(150deg,color-mix(in srgb,var(--cc) 22%,transparent),rgba(255,255,255,.04));border-color:var(--cc)}
-.wcell .wi{font-size:19px;line-height:1}
-.wcell .wn{font-family:var(--mono);font-size:7.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim2)}
-.wcell.on .wn{color:var(--txt)}
-.wcell .wm{position:absolute;top:6px;right:8px;font-size:9px;color:var(--dim2)}
-.wcell.on .wm{color:var(--cc)}
-.kgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.kpi{padding:14px 12px;border-radius:var(--r-md);text-align:center}
-.kpi b{display:block;font-family:var(--mono);font-size:23px;font-weight:700;color:var(--cyan);line-height:1.1}
-.kpi span{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);margin-top:6px}
-.kpi i{display:block;font-style:normal;font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:3px}
 
 /* ---------- Formulaires et boutons ---------- */
 .addrow{display:flex;gap:9px;flex-wrap:wrap}
@@ -442,13 +429,15 @@ input:focus,textarea:focus,select:focus{border-color:var(--brd-hi);background:rg
    700px : le rail devient une pilule en bas
    520px : la barre du haut tient sur une ligne
    ========================================================================= */
-@media(min-width:1400px){
-  .tscroll{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start}
-  .tscroll .empty{grid-column:1/-1}
-}
 @media(max-width:1100px){
   .ckgrid{grid-template-columns:minmax(280px,340px) minmax(0,1fr)}
   #app{padding-left:calc(18px + env(safe-area-inset-left,0px));padding-right:calc(18px + env(safe-area-inset-right,0px))}
+}
+@media(max-width:1000px){
+  .capgrid{grid-template-columns:1fr;align-items:start}
+  .capcol{min-height:auto}
+  .capmain,.capside{overflow:visible;margin:0;padding:0}
+  .solo>.capgrid{flex:0 0 auto}
 }
 @media(max-width:860px){
   .ckgrid{grid-template-columns:1fr}
@@ -1903,30 +1892,6 @@ function projBlock(list,qsOf){ // les projets ouverts en pleine largeur, les aut
   if(fermes.length)h+='<div class="pgrid">'+fermes.map(function(pr){return projCard(pr,qsOf(pr));}).join("")+'</div>';
   return h;
 }
-function weekCard(){ // ou en es-tu cette semaine, capacite par capacite
-  var ks=Object.keys(STATS),faites=ks.filter(capTouchedThisWeek).length;
-  var s='<div class="spanel"><div class="spl">Cette semaine<span style="flex:1"></span><span style="color:var(--dim2)">'+faites+'/'+ks.length+'</span></div>';
-  s+='<div class="wgrid">';
-  ks.forEach(function(k){
-    var m=STATS[k],tw=capTouchedThisWeek(k);
-    s+='<div class="wcell'+(tw?" on":"")+'" data-go="cap:'+k+'" style="--cc:'+m.col+'" title="'+esc(m.name)+(tw?" · validée":" · à valider")+'"><span class="wi">'+m.ic+'</span><span class="wn">'+esc(NAVSHORT[k]||m.name)+'</span><span class="wm">'+(tw?"●":"○")+'</span></div>';
-  });
-  s+='</div><div class="wkmsg" style="margin-top:11px">'+(faites===ks.length?"Toutes tes capacités ont avancé cette semaine.":(ks.length-faites)+" capacité"+((ks.length-faites)>1?"s":"")+" attendent encore une tâche.")+'</div></div>';
-  return s;
-}
-function kpiCard(){ // les chiffres qui bougent, sans avoir a fouiller
-  var st=sleepToday(),moy=sleepAvg(7);
-  var faits=S.quests.filter(function(q){return q.done;}).length;
-  var k=[
-    {v:(S.streak||0),u:"jours",l:"Série"},
-    {v:S.doneCount||0,u:"total",l:"Accomplies"},
-    {v:faits,u:"aujourd'hui",l:"Validées"},
-    {v:(moy!=null?moy.toFixed(1):(st!=null?st.toFixed(1):"—")),u:(moy!=null?"h / nuit":"h"),l:"Sommeil"}
-  ];
-  return '<div class="spanel"><div class="spl">Tes chiffres</div><div class="kgrid">'+
-    k.map(function(x){return '<div class="kpi"><b>'+x.v+'</b><span>'+esc(x.l)+'</span><i>'+esc(x.u)+'</i></div>';}).join("")+
-    '</div></div>';
-}
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
@@ -1934,14 +1899,13 @@ function vCockpit(){
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
   s+='<div class="spanel"><div class="svoice"><b>⟪ Citation du jour ⟫</b> '+esc(citation)+'</div></div>';
-  s+=weekCard()+kpiCard();
   s+='</div><div class="ckcol">';  // ← colonne de droite
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   var focus=S.quests.filter(function(q){if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;var soon=q.due&&dayDiff(q.due,today())<=3;return soon||q.prio==="high";}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
   var list=dueList.concat(focus),todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
-  s+='<div class="spanel a-today"><div class="spl">Aujourd\'hui · '+todo+' à faire</div><div class="tscroll">';
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui · '+todo+' à faire</div>';
   s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien à faire aujourd\'hui.</div>';
-  s+='</div></div>';
+  s+='</div>';
   s+='</div></div>';  // fin colonne droite + grille
   s+='</div>';        // fin .solo
   return s;
@@ -1952,6 +1916,7 @@ function vCap(k){
   var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
   var qsOf=function(pr){return S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});};
   var s='<div class="solo"><div class="tbar">'+m.ic+' '+m.name.toUpperCase()+'<small>'+projs.length+' projet'+(projs.length>1?'s':'')+'</small></div>';
+  s+='<div class="capgrid"><div class="capcol capside">';
   s+='<div class="spanel capstate '+(tw?"ok":"todo")+'" style="--cc:'+m.col+'"><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span>';
   s+='<div class="csbig">'+(tw?"SEMAINE VALIDÉE":"SEMAINE À VALIDER")+'</div>';
   s+='<div class="cssub">Niveau '+lvl+' · '+wk.length+' semaine'+(wk.length>1?'s':'')+' active'+(wk.length>1?'s':'')+'</div>';
@@ -1964,6 +1929,11 @@ function vCap(k){
     s+='<div class="cgv">'+gi.verdict+'</div></div>';
   }
   s+='</div>';
+  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
+  if(k==="physique"){s+=sleepCard();}
+  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
+  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
+  s+='</div><div class="capcol capmain">';   // ← colonne de droite : les projets et les tâches
   var themes=[];
   projs.forEach(function(p){var th=(p.theme||"").trim();if(th&&themes.indexOf(th)<0)themes.push(th);});
   themes.forEach(function(th){ // niveau intermédiaire, seulement là où il y en a un
@@ -1975,10 +1945,7 @@ function vCap(k){
   if(libres.length)s+='<div class="spanel">'+projBlock(libres,qsOf)+'</div>';
   var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
-  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead" style="margin:0 0 10px">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
-  if(k==="physique"){s+=sleepCard();}
-  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
-  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
+  s+='</div></div>';   // fin colonne droite + grille
   return s+'</div>';
 }
 function vStatut(){
