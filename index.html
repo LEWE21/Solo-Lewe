@@ -82,7 +82,11 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 .propcard .pa.add{color:var(--mint)}.propcard .pa.no{color:var(--dim2)}.propcard .pa.no:hover{color:var(--pink)}
 /* ---- SOLO LEWE (système secret) ---- */
 body.solo-mode{background:#010207}
-body.solo-mode .topbar,body.solo-mode nav{display:none}
+body.solo-mode .topbar{display:none}
+body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28);box-shadow:0 0 30px -14px #4db8ff}
+body.solo-mode nav button{color:#6f8cc4}
+body.solo-mode nav button:hover{color:#dce9ff}
+body.solo-mode nav button.on{color:#fff;background:linear-gradient(120deg,#3b2fb8,#1e7fd6);box-shadow:0 0 18px -6px #4db8ff}
 body.solo-mode #view{padding-bottom:24px}
 .solo{color:#cfe2ff;font-family:var(--mono);display:flex;flex-direction:column;gap:11px;min-height:calc(100dvh - 34px);padding:6px 0 18px;
   background:radial-gradient(1000px 700px at 50% -12%,rgba(77,184,255,.16),transparent 56%),radial-gradient(700px 600px at 10% 116%,rgba(154,134,255,.12),transparent 60%),radial-gradient(600px 560px at 92% 6%,rgba(255,59,87,.08),transparent 55%)}
@@ -474,9 +478,13 @@ nav button.on:hover{color:#fff}
 </div>
 
 <nav id="nav">
-  <button data-v="statut" class="on"><span class="ni">◎</span>Cockpit</button>
-  <button data-v="quetes"><span class="ni">✓</span>Tâches</button>
-  <button data-v="donjons"><span class="ni">▲</span>Objectifs</button>
+  <button data-v="cockpit" class="on"><span class="ni">◎</span>Cockpit</button>
+  <button data-v="cap:physique"><span class="ni">💪</span>Force</button>
+  <button data-v="cap:mental"><span class="ni">🧠</span>Mental</button>
+  <button data-v="cap:creativite"><span class="ni">🎨</span>Créa</button>
+  <button data-v="cap:business"><span class="ni">💼</span>Business</button>
+  <button data-v="cap:social"><span class="ni">🤝</span>Social</button>
+  <button data-v="cap:discipline"><span class="ni">⚔</span>Discipline</button>
 </nav>
 
 <div id="nstack"></div>
@@ -511,6 +519,17 @@ var RANKS=[{r:"E",min:1,c:"#7c93ab"},{r:"D",min:5,c:"#59d0a8"},{r:"C",min:10,c:"
 function rankOf(lvl){var r=RANKS[0];for(var i=0;i<RANKS.length;i++){if(lvl>=RANKS[i].min)r=RANKS[i];}return r;}
 function rankOrder(r){var i=["E","D","C","B","A","S"].indexOf(r);return i<0?0:i;} // S le plus élevé
 function byRankDesc(a,b){return rankOrder(b.rank)-rankOrder(a.rank);} // du plus fort (S) au plus faible (E)
+/* ---- Un projet appartient à une capacité (Capacité > Projets > Tâches) ---- */
+function guessProjStat(title){
+  var t=(title||"").toLowerCase();
+  if(/anglais|english|skills|apprend|learn|formation|lecture/.test(t))return "mental";
+  if(/\bbd\b|dessin|planche|illustration|cr[ée]a|sc[ée]nario/.test(t))return "creativite";
+  if(/organis|discipline|maison|r[ée]veil|m[ée]nage|rangement/.test(t))return "discipline";
+  if(/social|communaut|contact|r[ée]seau social/.test(t))return "social";
+  if(/sport|muscu|corps|sant[ée]|physique|force|sommeil/.test(t))return "physique";
+  return "business";
+}
+function capOf(m){return (m&&STATS[m.stat])?m.stat:guessProjStat(m&&m.title);}
 function xpNeed(lvl){return 100+(lvl-1)*40;}
 function statNeed(lvl){return 60+(lvl-1)*25;}
 function baseFor(prio,daily){return daily?15:({high:25,med:18,low:12})[prio||"med"];}
@@ -607,6 +626,8 @@ function load(){
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
     if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;if(!("ft" in r))r.ft=null;if(!r.coachStyle)r.coachStyle="robi";
+    /* Chaque projet appartient à une capacité (migration des projets existants) */
+    if(Array.isArray(r.missions))r.missions.forEach(function(m){if(!m.stat||!STATS[m.stat])m.stat=guessProjStat(m.title);});
   }
   ensureProposals(r);
   return r;
@@ -648,6 +669,7 @@ function ingestTasks(){
       var daily=!!x.daily,mission=null;
       if(x.objective){var mm=S.missions.filter(function(m){return m.title.toLowerCase()===String(x.objective).toLowerCase()||m.id===x.objective;})[0];if(mm)mission=mm.id;}
       var q={id:uid(),title:String(x.title).slice(0,160),stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission};
+      if(!daily&&x.due&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.due)))q.due=String(x.due); // échéance posée par Claude Code
       if(x.after)q._after=String(x.after);
       if(x.afterObjective)q._afterObj=String(x.afterObjective);
       S.quests.push(q);created.push(q);added++;
@@ -889,7 +911,7 @@ function sysConfirm(title,lines,onYes){
 var jMood=3;
 
 /* render */
-var view="statut";
+var view="cockpit";
 /* ---- Thème adaptatif jour (5h-18h) / nuit (18h-5h), heure locale ---- */
 function currentTheme(){try{var o=localStorage.getItem("robi_theme");if(o==="day"||o==="night")return o;}catch(e){}var h=new Date().getHours();return (h>=5&&h<18)?"day":"night";}
 function applyTheme(){document.documentElement.setAttribute("data-theme",currentTheme());}
@@ -1155,7 +1177,7 @@ function initEffects(){
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var gob=e.target.closest("[data-go-obj]");
-    if(gob){objSel=gob.getAttribute("data-go-obj");view="donjons";render();return;}
+    if(gob){objSel=gob.getAttribute("data-go-obj");var gm=find(S.missions,objSel);view=gm?("cap:"+capOf(gm)):"cockpit";render();return;}
     var tg=e.target.closest("[data-tgroup]");
     if(tg){var gid=tg.getAttribute("data-tgroup");taskCollapse[gid]=!taskCollapse[gid];render();return;}
     var os=e.target.closest("[data-obj-sel]");
@@ -1330,7 +1352,7 @@ function applyDailyEdit(){
     else if(r.op==="resume"){q.paused=false;msg="« "+q.title+" » réactivée : "+cadLabel(q)+".";}
     else if(r.op==="delete"){S.quests=S.quests.filter(function(x){return x.id!==q.id;});msg="« "+q.title+" » retirée des journalières.";}
     else{pushChat("assistant","Action inconnue.");renderChat();return;}
-    save();manageId=null;view="quetes";pushChat("assistant","✔ "+msg);log("Journalière ajustée : "+q.title);render();
+    save();manageId=null;view="cockpit";pushChat("assistant","✔ "+msg);log("Journalière ajustée : "+q.title);render();
   }).catch(function(){toast("Erreur réseau");});
 }
 function pushChat(role,content){S.chat=S.chat||[];S.chat.push({role:role,content:content});if(S.chat.length>60)S.chat.shift();save();}
@@ -1467,17 +1489,14 @@ function render(){
   pubTick();
   var v=document.getElementById("view");
   var html;
-  if(view==="solo")html=vSolo();
-  else if(view==="statut")html=vStatut();
-  else if(view==="quetes")html=vQuetes();
-  else if(view==="donjons")html=vObjectifs();
+  if(view.indexOf("cap:")===0)html=vCap(view.slice(4));
   else if(view==="maitre")html=vMaitre();
-  else if(view==="journal")html=vJournal();
-  else html=vEvolution();
+  else if(view==="evolution")html=vEvolution();
+  else {view="cockpit";html=vCockpit();}
   v.innerHTML='<div class="view-anim">'+html+'</div>';
-  v.classList.toggle("cockpit",view==="statut");
-  document.body.classList.toggle("solo-mode",view==="solo");
-  if(view==="solo"&&urgentActive()&&!S.urgent.seen){S.urgent.seen=true;save();}
+  v.classList.remove("cockpit");
+  document.body.classList.add("solo-mode");
+  if(urgentActive()&&!S.urgent.seen){S.urgent.seen=true;save();}
   updateUrgentBadge();
   bind();
   wireWheel();
@@ -1614,6 +1633,59 @@ function armSecret(){
 }
 function initSecret(){secretTaps=0;} // l'entrée secrète est gérée sur le lapin du cockpit (voir initEffects)
 var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
+/* ================= SYSTÈME UNIQUE (mode jeu) : Cockpit + un onglet par Capacité ================= */
+function projGroup(pr,qs){
+  var col=(RANKS.filter(function(r){return r.r===pr.rank;})[0]||RANKS[0]).c;
+  var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=!taskCollapse[pr.id];
+  var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+pr.id+'"><span class="tgchev">'+(open?"▾":"▸")+'</span><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="tgtitle">'+esc(pr.title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span><span class="tgopen" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span></div>';
+  if(open)h+='<div class="tgbody">'+(qs.length?questTree(qs):'<div class="empty" style="padding:6px 0">Aucune tâche.</div>')+'</div>';
+  return h+'</div>';
+}
+function vCockpit(){
+  var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
+  var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
+  var s='<div class="solo"><div class="tbar">◤ SOLO LEWE ◢<small>Système de '+esc(h.name)+'</small></div>';
+  s+=urgentBanner();
+  s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
+  s+='<div class="spanel"><div class="svoice"><b>⟪ Citation du jour ⟫</b> '+esc(citation)+'</div></div>';
+  var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
+  var focus=S.quests.filter(function(q){if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;var soon=q.due&&dayDiff(q.due,today())<=3;return soon||q.prio==="high";}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
+  var list=dueList.concat(focus),todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui · '+todo+' à faire</div>';
+  s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien à faire aujourd\'hui.</div>';
+  s+='</div>';
+  var feed=(syncOn()&&ROBI_FEED.length)?ROBI_FEED.slice(0,3):[];
+  s+='<div class="spanel"><div class="spl">Chroniques</div>';
+  s+=feed.map(function(e){return '<div class="logline"><span class="tm">'+esc((e.at||"").slice(0,10))+'</span>'+esc(e.text)+'</div>';}).join("");
+  s+=S.log.length?S.log.slice(0,5).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):(feed.length?"":'<div class="empty">Aucune activité.</div>');
+  s+='</div></div>';
+  return s;
+}
+function vCap(k){
+  if(objSel){var mm=find(S.missions,objSel);if(mm&&capOf(mm)===k)return '<div class="solo">'+vObjDetail(mm)+'</div>';objSel=null;}
+  var m=STATS[k],st=S.stats[k]||{level:1,xp:0},p=pct(st.xp,statNeed(st.level))/100;
+  var s='<div class="solo"><div class="tbar">'+m.ic+' '+m.name.toUpperCase()+'<small>Niveau '+st.level+' · '+st.xp+' / '+statNeed(st.level)+' XP</small></div>';
+  s+='<div class="spanel"><div class="spl">Progression</div><div class="scap"><span class="n">'+m.ic+' '+m.name+'</span><span class="tr"><i style="transform:scaleX('+p+')"></i></span><span class="lv">Lv.'+st.level+'</span><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span></div>';
+  var gi=capGoalInfo(k);
+  if(gi){
+    s+='<div class="capgoal '+gi.cls+'"><div class="cgl"><span>◈ Objectif : niveau '+gi.g.target+'</span><span>'+(gi.done?'✔ atteint':(gi.expired?'échéance passée':gi.days+' j restants'))+'</span></div>';
+    if(!gi.done&&!gi.expired)s+='<div class="cgm">Il te faut ≈ <b>'+gi.perDay+' XP/jour</b>'+(gi.pace!=null?' · ton rythme : '+Math.round(gi.pace)+' XP/jour':'')+'</div>';
+    s+='<div class="cgv">'+gi.verdict+'</div></div>';
+  }
+  s+='</div>';
+  var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
+  projs.forEach(function(pr){
+    var qs=S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});
+    s+='<div class="spanel"><div class="spl">Projet</div>'+projGroup(pr,qs)+'</div>';
+  });
+  var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
+  if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan)+'</div>';
+  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead" style="margin:0 0 10px">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
+  if(k==="physique"){s+=sleepCard();}
+  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
+  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
+  return s+'</div>';
+}
 function vStatut(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level);
   var di=dailyInfo();
@@ -1749,7 +1821,7 @@ function vObjDetail(m){
   var qs=S.quests.filter(function(q){return q.mission===m.id;});
   var done=qs.filter(function(q){return q.done;}).length;
   var props=m.proposals||[];
-  var s='<div class="win iri"><div class="win-h"><span class="t" data-obj-back style="cursor:pointer">‹ Objectifs</span><span class="ln"></span><span class="r" style="color:'+rk.c+'">Rang '+m.rank+'</span></div>';
+  var s='<div class="win iri"><div class="win-h"><span class="t" data-obj-back style="cursor:pointer">‹ Retour</span><span class="ln"></span><span class="r" style="color:'+rk.c+'">Rang '+m.rank+'</span></div>';
   s+='<div class="mtitle" style="color:'+rk.c+';margin:0 0 6px">'+esc(m.title)+'</div>';
   if(m.note)s+='<div class="subhead" style="margin:0 0 8px">'+esc(m.note)+'</div>';
   s+='<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin:6px 0 6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
@@ -1920,9 +1992,9 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var qa=document.getElementById("q-add");
-  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
+  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var forced=qa.getAttribute("data-capadd");var st=(forced&&STATS[forced])?forced:c.stat;var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
-  if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);S.missions.push({id:uid(),title:t,rank:rk,note:nt});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
+  if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);var fc=ma.getAttribute("data-capadd");S.missions.push({id:uid(),title:t,rank:rk,note:nt,stat:(fc&&STATS[fc])?fc:guessProjStat(t)});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
   var ssv=document.getElementById("sleep-save");
   if(ssv)ssv.onclick=function(){var el=document.getElementById("sleep-h");var v=parseFloat(el?el.value:"");if(isNaN(v)||v<0||v>16){toast("Entre un nombre d'heures (0 à 16)");return;}setSleep(v);};
   var jbs=document.querySelectorAll(".jm");
@@ -1970,7 +2042,7 @@ function bind(){
   var ccm=document.getElementById("c-claim");if(ccm)ccm.onclick=claimEpreuve;
   var cv=document.getElementById("c-valider");if(cv)cv.onclick=makeQuestFromChat;
   var cap=document.getElementById("c-apply");if(cap)cap.onclick=applyDailyEdit;
-  var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;view="quetes";pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
+  var ccl=document.getElementById("c-cancel");if(ccl)ccl.onclick=function(){manageId=null;view="cockpit";pushChat("assistant","Gestion annulée. Rien n'a changé.");render();};
   var cdb=document.getElementById("c-debrief");if(cdb)cdb.onclick=debriefLearning;
   var crs=document.getElementById("c-review-start");if(crs)crs.onclick=startReview;
   var csg=document.getElementById("c-suggest");if(csg)csg.onclick=suggestTool;
@@ -1986,7 +2058,7 @@ function bind(){
   if(document.getElementById("chatbox"))renderChat();
 }
 
-Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.onclick=function(){view=b.dataset.v;render();};});
+Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.onclick=function(){view=b.dataset.v;objSel=null;render();};});
 /* réinitialisation retirée à la demande de Mathilde */
 document.getElementById("btn-export").onclick=function(){var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="systeme_mathilde.json";a.click();toast("Statut exporté");};
 document.getElementById("btn-import").onclick=function(){document.getElementById("file-import").click();};
