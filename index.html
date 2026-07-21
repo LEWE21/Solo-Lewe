@@ -127,6 +127,11 @@ body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28)
 .wkstrip i{flex:1;height:9px;border-radius:3px;background:rgba(77,184,255,.12);border:1px solid rgba(77,184,255,.2)}
 .wkstrip i.on{background:var(--cc);border-color:var(--cc);box-shadow:0 0 12px -3px var(--cc)}
 .wkmsg{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:#7f9bd0}
+.movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.movecap{display:grid;justify-items:center;gap:6px;padding:12px 6px;border-radius:14px;cursor:pointer;background:rgba(127,155,208,.06);border:1px solid rgba(127,155,208,.2);border-left:3px solid var(--cc);color:var(--dim);font-family:var(--mono);font-size:8px;letter-spacing:.06em;text-transform:uppercase;transition:.18s}
+.movecap:hover{color:var(--txt);border-color:var(--cc)}
+.movecap.on{background:rgba(127,155,208,.14);border-color:var(--cc);box-shadow:0 0 18px -7px var(--cc);color:var(--txt)}
+.movecap .mci{font-size:20px;line-height:1}
 .udot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3b57;margin-right:9px;vertical-align:1px;box-shadow:0 0 10px #ff3b57;animation:updulse 1.6s ease-in-out infinite}
 @keyframes updulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
 .q .more{color:var(--dim2);cursor:pointer;font-size:17px;line-height:1;padding:2px 7px;flex:none;border-radius:8px}
@@ -1457,14 +1462,46 @@ function openRenameTask(qId){
   var dd=document.getElementById("rn-duedel");if(dd)dd.onclick=function(){var due=document.getElementById("rn-due");if(due)due.value="";dd.style.display="none";};
   if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
 }
+var MOVESEL=null; // la capacite choisie dans la fenetre de deplacement
 function openMoveQuest(qId){
   var q=find(S.quests,qId);if(!q)return;
-  var h='<div class="mtag">▸ Changer d\'objectif</div><div class="mtitle">'+esc(q.title)+'</div><div class="subhead" style="margin:6px 0 12px">Choisis son objectif :</div><div style="display:grid;gap:8px">';
-  h+='<button class="btn ghost" data-dest="" style="text-align:left">Aucun objectif'+(!q.mission?' ✓':'')+'</button>';
-  S.missions.forEach(function(m){var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);h+='<button class="btn ghost" data-dest="'+m.id+'" style="text-align:left;border-color:'+rk.c+'55">'+esc(m.title)+' · rang '+m.rank+(q.mission===m.id?' ✓':'')+'</button>';});
+  var actuelle=questCap(q);
+  if(!MOVESEL||MOVESEL.q!==qId)MOVESEL={q:qId,cap:actuelle};
+  var cap=MOVESEL.cap,m=STATS[cap];
+  var h='<div class="mtag">▸ Déplacer la tâche</div><div class="mtitle">'+esc(q.title)+'</div>';
+  h+='<div class="subhead" style="margin:6px 0 10px">Une tâche rangée dans un projet prend la capacité de ce projet. Sans projet, elle garde la capacité que tu choisis ici.</div>';
+  // 1. La capacite
+  h+='<div class="plab">Capacité</div><div class="movecaps">';
+  Object.keys(STATS).forEach(function(k){
+    var st=STATS[k];
+    h+='<button class="movecap'+(k===cap?" on":"")+'" data-movecap="'+k+'" style="--cc:'+st.col+'"><span class="mci">'+st.ic+'</span><span class="mcn">'+esc(st.name)+'</span></button>';
+  });
   h+='</div>';
-  openModal(h);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){el.onclick=function(){var dest=el.dataset.dest||null;q.mission=dest;save();closeModal();sysNotify("Tâche déplacée",esc(q.title),[dest?("→ "+((find(S.missions,dest)||{}).title||"")):"→ Aucun objectif"]);render();};});
+  // 2. Le projet, parmi ceux de cette capacite
+  var projs=S.missions.filter(function(x){return capOf(x)===cap;}).sort(byRankDesc);
+  h+='<div class="plab" style="margin-top:16px">Projet · '+m.ic+' '+esc(m.name)+'</div><div style="display:grid;gap:8px">';
+  h+='<button class="btn ghost" data-dest="" style="text-align:left">Sans projet'+((!q.mission&&cap===actuelle)?' ✓':'')+'</button>';
+  if(projs.length)projs.forEach(function(p){
+    var rk=(RANKS.filter(function(r){return r.r===p.rank;})[0]||RANKS[0]);
+    h+='<button class="btn ghost" data-dest="'+p.id+'" style="text-align:left;border-color:'+rk.c+'55">'+esc(p.title)+' · rang '+p.rank+(q.mission===p.id?' ✓':'')+'</button>';
+  });
+  else h+='<div class="empty">Aucun projet dans cette capacité. La tâche y sera rangée sans projet.</div>';
+  h+='</div>';
+  openModal(h,m.col);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-movecap]"),function(el){
+    el.onclick=function(){MOVESEL.cap=el.getAttribute("data-movecap");openMoveQuest(qId);};
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){
+    el.onclick=function(){
+      var dest=el.getAttribute("data-dest")||null;
+      q.mission=dest;
+      q.stat=dest?capOf(find(S.missions,dest)):MOVESEL.cap; // le projet decide, sinon la capacite choisie
+      var fin=STATS[questCap(q)];
+      MOVESEL=null;save();closeModal();
+      sysNotify("Tâche déplacée",esc(q.title),[fin.ic+" "+fin.name,dest?("Projet : "+((find(S.missions,dest)||{}).title||"")):"Sans projet"]);
+      render();
+    };
+  });
 }
 
 /* ---- Objectif : fenêtre détaillée ---- */
@@ -1935,6 +1972,14 @@ function dueBadge(q){ // badge d'échéance sur une tâche non journalière
   else{col="var(--dim2)";txt="⏰ "+fmtD(q.due);}
   return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
 }
+function rowActs(q){ // les memes actions partout : le Cockpit en etait prive
+  if(rowMenu!==q.id)return '<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>';
+  return '<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span>'
+   +'<span class="edt" data-edit="'+q.id+'" title="Renommer ou dater">✎</span>'
+   +'<span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span>'
+   +(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':'<span class="del" data-del="'+q.id+'">✕</span>')
+   +'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>';
+}
 function questRow(q,depth,compact,ctx){
   depth=depth||0;ctx=ctx||{};
   if(q.pub){
@@ -1942,7 +1987,7 @@ function questRow(q,depth,compact,ctx){
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:#ff6fb5;border-color:#ff6fb555">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span></div>';}
+  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -1952,7 +1997,7 @@ function questRow(q,depth,compact,ctx){
   if(q.dependsOn&&blk)tags+='<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>';
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
   var acts=(rowMenu===q.id)
-    ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
+    ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
     :('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>');
   return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
 }
@@ -1969,11 +2014,11 @@ function questTree(list,ctx){
 }
 function dailyRow(q,compact){
   var m=STATS[questCap(q)]||STATS.mental;var due=dueToday(q);
-  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';
+  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span>'+((rowMenu===q.id)?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span><span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>'):('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>'))+'</div>';
+    '<span class="xpv">+'+q.base+'</span>'+((rowMenu===q.id)?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span><span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>'):('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>'))+'</div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
