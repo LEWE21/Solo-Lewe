@@ -114,6 +114,13 @@ body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28)
 .pcbar i{display:block;height:100%;border-radius:4px;background:var(--pc);transform-origin:left;transition:transform .5s}
 .pcf{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-family:var(--mono);font-size:9.5px;color:#7f9bd0}
 .pcf .nx{color:#ffcf6f}
+.pcgear{position:absolute;top:10px;right:34px;color:#4a628f;font-size:13px;line-height:1;padding:2px 5px;border-radius:8px;cursor:pointer}
+.pcgear:hover{color:#8fe6ff;background:rgba(77,184,255,.14)}
+.rankrow{display:flex;gap:7px;flex-wrap:wrap}
+.rankb{flex:1;min-width:42px;padding:10px 6px;border-radius:11px;cursor:pointer;font-family:var(--mono);font-size:14px;font-weight:700;
+  background:rgba(127,155,208,.06);border:1px solid rgba(127,155,208,.2);color:var(--dim2);transition:.18s}
+.rankb:hover{color:var(--rc);border-color:var(--rc)}
+.rankb.on{color:var(--rc);border-color:var(--rc);background:rgba(127,155,208,.14);box-shadow:0 0 18px -7px var(--rc)}
 .pcgo{position:absolute;top:9px;right:10px;color:#4a628f;font-size:17px;line-height:1;padding:2px 6px;border-radius:8px}
 .pcgo:hover{color:#8fe6ff;background:rgba(77,184,255,.14)}
 .capstate{position:relative;text-align:center}
@@ -1336,6 +1343,8 @@ function initEffects(){
     if(stb){soloTab=stb.getAttribute("data-solotab");render();return;}
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
+    var pmn=e.target.closest("[data-projman]");
+    if(pmn){openProjectManage(pmn.getAttribute("data-projman"));return;}
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");var gm=find(S.missions,objSel);view=gm?("cap:"+capOf(gm)):"cockpit";render();return;}
     var tg=e.target.closest("[data-tgroup]");
@@ -1462,6 +1471,82 @@ function openRenameTask(qId){
   var dd=document.getElementById("rn-duedel");if(dd)dd.onclick=function(){var due=document.getElementById("rn-due");if(due)due.value="";dd.style.display="none";};
   if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
 }
+var PROJSEL=null; // la capacite choisie dans la fenetre de gestion de projet
+function openProjectManage(mId){
+  var m=find(S.missions,mId);if(!m)return;
+  if(!PROJSEL||PROJSEL.m!==mId)PROJSEL={m:mId,cap:capOf(m),rank:m.rank,title:m.title,note:m.note||"",theme:m.theme||""};
+  var cap=PROJSEL.cap,st=STATS[cap];
+  var qs=S.quests.filter(function(q){return q.mission===m.id;});
+  var themes=[];S.missions.forEach(function(p){var t=(p.theme||"").trim();if(t&&capOf(p)===cap&&themes.indexOf(t)<0)themes.push(t);});
+  var h='<div class="mtag">▸ Gérer le projet</div><div class="mtitle">'+esc(m.title)+'</div>';
+  h+='<div class="subhead" style="margin:6px 0 14px">'+qs.length+' tâche'+(qs.length>1?'s':'')+' dans ce projet.</div>';
+  h+='<div class="plab">Nom</div><input type="text" id="pm-title" value="'+esc(PROJSEL.title)+'" style="width:100%">';
+  h+='<div class="plab" style="margin-top:14px">But (facultatif)</div><input type="text" id="pm-note" value="'+esc(PROJSEL.note)+'" placeholder="Ce que tu veux atteindre" style="width:100%">';
+  h+='<div class="plab" style="margin-top:16px">Capacité</div><div class="movecaps">';
+  Object.keys(STATS).forEach(function(k){var s2=STATS[k];
+    h+='<button class="movecap'+(k===cap?" on":"")+'" data-pmcap="'+k+'" style="--cc:'+s2.col+'"><span class="mci">'+s2.ic+'</span><span class="mcn">'+esc(s2.name)+'</span></button>';});
+  h+='</div>';
+  h+='<div class="plab" style="margin-top:16px">Thème dans '+st.ic+' '+esc(st.name)+' (facultatif)</div>';
+  h+='<input type="text" id="pm-theme" list="pm-themes" value="'+esc(PROJSEL.theme)+'" placeholder="Laisse vide pour ranger le projet directement dans la capacité" style="width:100%">';
+  h+='<datalist id="pm-themes">'+themes.map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist>';
+  h+='<div class="plab" style="margin-top:16px">Rang</div><div class="rankrow">';
+  RANKS.slice().reverse().forEach(function(r){
+    h+='<button class="rankb'+(r.r===PROJSEL.rank?" on":"")+'" data-pmrank="'+r.r+'" style="--rc:'+r.c+'">'+r.r+'</button>';});
+  h+='</div><div class="subhead" style="margin:8px 0 0">Le rang donne sa couleur au projet. S pour ce qui compte le plus.</div>';
+  h+='<div class="rowbtn" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pm-save">Enregistrer</button><button class="btn ghost" id="pm-del" style="color:var(--pink);border-color:var(--pink)">Supprimer le projet</button></div>';
+  openModal(h,st.col);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmcap]"),function(el){
+    el.onclick=function(){pmStash();PROJSEL.cap=el.getAttribute("data-pmcap");PROJSEL.theme="";openProjectManage(mId);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmrank]"),function(el){
+    el.onclick=function(){pmStash();PROJSEL.rank=el.getAttribute("data-pmrank");openProjectManage(mId);};});
+  var sv=document.getElementById("pm-save");
+  if(sv)sv.onclick=function(){
+    var t=(document.getElementById("pm-title").value||"").trim();
+    if(!t){toast("Le projet doit avoir un nom");return;}
+    var capAvant=capOf(m);
+    m.title=t.slice(0,120);
+    m.note=(document.getElementById("pm-note").value||"").trim().slice(0,160);
+    m.theme=(document.getElementById("pm-theme").value||"").trim().slice(0,40);
+    m.stat=PROJSEL.cap;m.rank=PROJSEL.rank;
+    // Les tâches suivent leur projet : sans ça elles resteraient comptées dans l'ancienne capacité
+    if(capAvant!==m.stat)S.quests.forEach(function(q){if(q.mission===m.id)q.stat=m.stat;});
+    PROJSEL=null;save();closeModal();
+    sysNotify("Projet mis à jour",esc(m.title),[STATS[m.stat].ic+" "+STATS[m.stat].name+(m.theme?" · "+m.theme:""),"Rang "+m.rank]);
+    render();
+  };
+  var dl=document.getElementById("pm-del");
+  if(dl)dl.onclick=function(){
+    var n=qs.length;
+    sysConfirm("Supprimer ce projet ?",
+      ["<b>« "+esc(m.title)+" »</b>","",
+       n?("Ses <b>"+n+" tâche"+(n>1?"s":"")+"</b> ne seront pas supprimées : elles resteront dans "+STATS[capOf(m)].name+", sans projet."):"Ce projet n'a aucune tâche.",
+       "Cette action est définitive."],
+      function(){deleteProject(m.id);});
+  };
+}
+function pmStash(){ // garde ce qui est tapé quand on recharge la fenêtre
+  var t=document.getElementById("pm-title"),n=document.getElementById("pm-note"),h=document.getElementById("pm-theme");
+  if(t)PROJSEL.title=t.value;if(n)PROJSEL.note=n.value;if(h)PROJSEL.theme=h.value;
+}
+function deleteProject(mId){
+  var m=find(S.missions,mId);if(!m)return;
+  var cap=capOf(m),titre=m.title;
+  // Les tâches de publication n'ont plus d'objet sans leur projet
+  S.quests=S.quests.filter(function(q){return !(q.pub&&q.mission===mId);});
+  // Les autres sont conservées, rattachées à la capacité du projet supprimé
+  var n=0;S.quests.forEach(function(q){if(q.mission===mId){q.mission=null;q.stat=cap;n++;}});
+  // Une dépendance qui pointait sur ce projet n'a plus de sens
+  S.quests.forEach(function(q){if(q.dependsOn===mId)delete q.dependsOn;});
+  S.missions=S.missions.filter(function(x){return x.id!==mId;});
+  if(objSel===mId)objSel=null;
+  delete projOpen[mId];delete taskCollapse[mId];
+  if(S.urgent&&S.urgent.mission===mId)S.urgent.mission=null;
+  PROJSEL=null;save();closeModal();
+  log("Projet supprimé : "+titre);
+  sysNotify("Projet supprimé",esc(titre),[n?(n+" tâche"+(n>1?"s":"")+" conservée"+(n>1?"s":"")+" dans "+STATS[cap].name):"Aucune tâche à conserver"]);
+  render();
+}
+
 var MOVESEL=null; // la capacite choisie dans la fenetre de deplacement
 function openMoveQuest(qId){
   var q=find(S.quests,qId);if(!q)return;
@@ -1844,7 +1929,7 @@ var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
 function projGroup(pr,qs){
   var col=(RANKS.filter(function(r){return r.r===pr.rank;})[0]||RANKS[0]).c;
   var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=true;
-  var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+pr.id+'"><span class="tgchev">'+(open?"▾":"▸")+'</span><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="tgtitle">'+esc(pr.title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span><span class="tgopen" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span></div>';
+  var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+pr.id+'"><span class="tgchev">'+(open?"▾":"▸")+'</span><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="tgtitle">'+esc(pr.title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span><span class="tgopen" data-projman="'+pr.id+'" title="Gérer le projet">⚙</span><span class="tgopen" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span></div>';
   if(open)h+='<div class="tgbody">'+(qs.length?questTree(qs,{hideCap:true,hideProj:true}):'<div class="empty" style="padding:6px 0">Aucune tâche.</div>')+'</div>';
   return h+'</div>';
 }
@@ -1855,6 +1940,7 @@ function projCard(pr,qs){
   var reste=qs.length-done;
   var right=next?('<span class="nx">⏰ '+fmtD(next.due)+'</span>'):(reste?(reste+' à faire'):'✔ tout est fait');
   return '<div class="pcard" data-tgroup="'+pr.id+'" style="--pc:'+col+'">'+
+    '<span class="pcgear" data-projman="'+pr.id+'" title="Gérer le projet">⚙</span>'+
     '<span class="pcgo" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span>'+
     '<div class="pch"><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="pcn">'+esc(pr.title)+'</span></div>'+
     '<div class="pcbar"><i style="transform:scaleX('+frac+')"></i></div>'+
@@ -2073,7 +2159,7 @@ function vObjDetail(m){
   var qs=S.quests.filter(function(q){return q.mission===m.id;});
   var done=qs.filter(function(q){return q.done;}).length;
   var props=m.proposals||[];
-  var s='<div class="win iri"><div class="win-h"><span class="t" data-obj-back style="cursor:pointer">‹ Retour</span><span class="ln"></span><span class="r" style="color:'+rk.c+'">Rang '+m.rank+'</span></div>';
+  var s='<div class="win iri"><div class="win-h"><span class="t" data-obj-back style="cursor:pointer">‹ Retour</span><span class="ln"></span><span class="r" style="color:'+rk.c+'">Rang '+m.rank+'</span><span class="icobtn" data-projman="'+m.id+'" title="Gérer le projet" style="width:28px;height:28px;font-size:13px;margin-left:8px">⚙</span></div>';
   s+='<div class="mtitle" style="color:'+rk.c+';margin:0 0 6px">'+esc(m.title)+'</div>';
   if(m.note)s+='<div class="subhead" style="margin:0 0 8px">'+esc(m.note)+'</div>';
   s+='<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin:6px 0 6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
