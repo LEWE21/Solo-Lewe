@@ -922,12 +922,11 @@ function pickUrgentBase(){
   var pool=urgentEligible();
   var tied=pool.filter(function(q){return q.mission;});
   var src=tied.length?tied:pool;
-  if(src.length){var q=src[(S.doneCount+(S.log?S.log.length:0))%src.length];return {qid:q.id,title:q.title,stat:q.stat,mission:q.mission||null};}
-  if(S.missions.length){var m=S.missions[(S.doneCount)%S.missions.length];return {qid:null,title:"Avance 20 minutes sur « "+m.title+" »",stat:"discipline",mission:m.id};}
-  return {qid:null,title:"Accorde-toi 20 minutes de concentration pleine",stat:"mental",mission:null};
+  if(src.length){var q=src[(S.doneCount+(S.log?S.log.length:0))%src.length];return {qid:q.id,title:q.title,stat:questCap(q),mission:q.mission||null};}
+  return null; // pas de tâche éligible : pas de quête urgente, sinon elle serait inaccomplissable
 }
 function genUrgent(){
-  var b=pickUrgentBase(),now=Date.now();
+  var b=pickUrgentBase();if(!b)return;var now=Date.now();
   S.urgent={id:uid(),qid:b.qid,title:b.title,stat:b.stat,mission:b.mission,xp:35,penalty:15,createdTs:now,dueTs:now+44*3600*1000,status:"active",seen:false};
   log("⚠ Quête urgente imposée par le Système : "+b.title);sfx("urgent");save();
 }
@@ -941,7 +940,7 @@ function urgentTick(){
   if(urgentActive())return;
   if(!S.urgentNext){S.urgentNext=isoPlus(today(),1);save();return;}
   if(today()>=S.urgentNext){
-    if(urgentEligible().length||S.missions.length){genUrgent();S.urgentNext=isoPlus(today(),2+((S.doneCount)%2));save();}
+    if(urgentEligible().length){genUrgent();S.urgentNext=isoPlus(today(),2+((S.doneCount)%2));save();}
     else{S.urgentNext=isoPlus(today(),1);save();}
   }
 }
@@ -968,8 +967,9 @@ function urgentDot(q){
 function urgentBonus(q){ // le bonus tombe quand tu valides la tache elle-meme
   if(!urgentActive()||S.urgent.qid!==q.id)return;
   var u=S.urgent;u.status="done";
-  var r=gainXP(u.stat,u.xp,"Quête urgente accomplie : "+u.title);
-  sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[u.stat].name.toUpperCase(),"Le Système reconnaît ta réactivité."]);
+  var ck=questCap(q); // et non u.stat, fige a la creation et devine depuis le titre
+  var r=gainXP(ck,u.xp,"Quête urgente accomplie : "+u.title);
+  sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[ck].name.toUpperCase(),"Le Système reconnaît ta réactivité."]);
   flash("rank","QUÊTE ACCOMPLIE","+"+u.xp+" XP · Le Système est satisfait");
   sfx("success");afterGain(r);save();
 }
@@ -1344,7 +1344,7 @@ function initEffects(){
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var pmn=e.target.closest("[data-projman]");
-    if(pmn){openProjectManage(pmn.getAttribute("data-projman"));return;}
+    if(pmn){PROJSEL=null;openProjectManage(pmn.getAttribute("data-projman"));return;}
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");var gm=find(S.missions,objSel);view=gm?("cap:"+capOf(gm)):"cockpit";render();return;}
     var tg=e.target.closest("[data-tgroup]");
@@ -1474,7 +1474,10 @@ function openRenameTask(qId){
 var PROJSEL=null; // la capacite choisie dans la fenetre de gestion de projet
 function openProjectManage(mId){
   var m=find(S.missions,mId);if(!m)return;
-  if(!PROJSEL||PROJSEL.m!==mId)PROJSEL={m:mId,cap:capOf(m),rank:m.rank,title:m.title,note:m.note||"",theme:m.theme||""};
+  if(!PROJSEL||PROJSEL.m!==mId){
+    PROJSEL={m:mId,cap:capOf(m),rank:m.rank,title:m.title,note:m.note||"",theme:m.theme||"",themes:{}};
+    PROJSEL.themes[capOf(m)]=m.theme||"";   // le thème d'origine, retrouvé si elle revient sur cette capacité
+  }
   var cap=PROJSEL.cap,st=STATS[cap];
   var qs=S.quests.filter(function(q){return q.mission===m.id;});
   var themes=[];S.missions.forEach(function(p){var t=(p.theme||"").trim();if(t&&capOf(p)===cap&&themes.indexOf(t)<0)themes.push(t);});
@@ -1496,7 +1499,12 @@ function openProjectManage(mId){
   h+='<div class="rowbtn" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pm-save">Enregistrer</button><button class="btn ghost" id="pm-del" style="color:var(--pink);border-color:var(--pink)">Supprimer le projet</button></div>';
   openModal(h,st.col);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmcap]"),function(el){
-    el.onclick=function(){pmStash();PROJSEL.cap=el.getAttribute("data-pmcap");PROJSEL.theme="";openProjectManage(mId);};});
+    el.onclick=function(){
+      pmStash();PROJSEL.themes[PROJSEL.cap]=PROJSEL.theme;      // on garde le thème de la capacité qu'on quitte
+      var nc=el.getAttribute("data-pmcap");
+      PROJSEL.cap=nc;PROJSEL.theme=PROJSEL.themes[nc]||"";      // et on retrouve celui de la capacité d'arrivée
+      openProjectManage(mId);
+    };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmrank]"),function(el){
     el.onclick=function(){pmStash();PROJSEL.rank=el.getAttribute("data-pmrank");openProjectManage(mId);};});
   var sv=document.getElementById("pm-save");
@@ -1516,11 +1524,12 @@ function openProjectManage(mId){
   };
   var dl=document.getElementById("pm-del");
   if(dl)dl.onclick=function(){
-    var n=qs.length;
+    var n=qs.filter(function(q){return !q.pub;}).length,np=qs.length-n;
     sysConfirm("Supprimer ce projet ?",
       ["<b>« "+esc(m.title)+" »</b>","",
-       n?("Ses <b>"+n+" tâche"+(n>1?"s":"")+"</b> ne seront pas supprimées : elles resteront dans "+STATS[capOf(m)].name+", sans projet."):"Ce projet n'a aucune tâche.",
-       "Cette action est définitive."],
+       n?("Ses <b>"+n+" tâche"+(n>1?"s":"")+"</b> ne seront pas supprimées : elles resteront dans "+STATS[capOf(m)].name+", sans projet."):"Ce projet n'a aucune tâche ordinaire.",
+       (np||(m.pubDates&&m.pubDates.length))?"En revanche, <b>son planning de publication</b>"+(np?" et sa tâche « Publier »":"")+" seront supprimés.":"",
+       "Cette action est définitive."].filter(function(x){return x!=="";}),
       function(){deleteProject(m.id);});
   };
 }
@@ -1535,12 +1544,20 @@ function deleteProject(mId){
   S.quests=S.quests.filter(function(q){return !(q.pub&&q.mission===mId);});
   // Les autres sont conservées, rattachées à la capacité du projet supprimé
   var n=0;S.quests.forEach(function(q){if(q.mission===mId){q.mission=null;q.stat=cap;n++;}});
-  // Une dépendance qui pointait sur ce projet n'a plus de sens
-  S.quests.forEach(function(q){if(q.dependsOn===mId)delete q.dependsOn;});
+  // Une dépendance qui pointait sur ce projet, ou sur une de ses tâches supprimées, n'a plus de sens
+  var vivantes={};S.quests.forEach(function(x){vivantes[x.id]=1;});
+  S.quests.forEach(function(q){
+    if(!q.dependsOn)return;
+    if(q.dependsOn===mId||(!vivantes[q.dependsOn]&&!find(S.missions,q.dependsOn)))delete q.dependsOn;
+  });
   S.missions=S.missions.filter(function(x){return x.id!==mId;});
   if(objSel===mId)objSel=null;
   delete projOpen[mId];delete taskCollapse[mId];
   if(S.urgent&&S.urgent.mission===mId)S.urgent.mission=null;
+  // Sans tâche à cocher, la quête urgente serait impossible à accomplir et coûterait sa pénalité
+  if(S.urgent&&S.urgent.status==="active"&&(!S.urgent.qid||!find(S.quests,S.urgent.qid))){
+    S.urgent.status="cancelled";S.urgentNext=isoPlus(today(),1);
+  }
   PROJSEL=null;save();closeModal();
   log("Projet supprimé : "+titre);
   sysNotify("Projet supprimé",esc(titre),[n?(n+" tâche"+(n>1?"s":"")+" conservée"+(n>1?"s":"")+" dans "+STATS[cap].name):"Aucune tâche à conserver"]);
@@ -1949,9 +1966,11 @@ function projCard(pr,qs){
 function projBlock(list,qsOf){ // les projets ouverts en pleine largeur, les autres en grille
   // Peu de projets : on montre directement les tâches. Beaucoup : on montre la grille de cartes.
   var auto=list.length<=2;
-  var estOuvert=function(p){return (p.id in projOpen)?projOpen[p.id]:auto;};
-  var ouverts=list.filter(estOuvert);
-  var fermes=list.filter(function(p){return !estOuvert(p);});
+  // On fige l'etat resolu : sans ca, le premier clic sur un projet ouvert
+  // automatiquement passait de "indefini" a "vrai" et ne le repliait pas.
+  list.forEach(function(p){if(!(p.id in projOpen))projOpen[p.id]=auto;});
+  var ouverts=list.filter(function(p){return projOpen[p.id];});
+  var fermes=list.filter(function(p){return !projOpen[p.id];});
   var h=ouverts.map(function(pr){return projGroup(pr,qsOf(pr));}).join("");
   if(fermes.length)h+='<div class="pgrid">'+fermes.map(function(pr){return projCard(pr,qsOf(pr));}).join("")+'</div>';
   return h;
