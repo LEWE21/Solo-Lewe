@@ -84,6 +84,31 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 body.solo-mode{background:#010207}
 body.solo-mode .topbar{display:none}
 body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28);box-shadow:0 0 30px -14px #4db8ff}
+/* --- Tableau de bord : grille de cartes plutôt qu'une pile verticale --- */
+.ckgrid{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:11px;align-items:start}
+.ckcol{display:flex;flex-direction:column;gap:11px;min-width:0}
+@media(max-width:860px){.ckgrid{grid-template-columns:1fr}}
+.capgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:9px}
+.capmini{position:relative;cursor:pointer;padding:11px 8px 10px;border-radius:14px;text-align:center;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.012));border:1px solid rgba(127,155,208,.22);transition:transform .18s,border-color .18s,box-shadow .18s}
+.capmini:hover{transform:translateY(-2px);border-color:var(--cc)}
+.capmini.on{border-color:var(--cc);box-shadow:0 0 22px -9px var(--cc)}
+.cmic{font-size:19px;line-height:1}
+.cmn{font-family:var(--mono);font-size:8px;letter-spacing:.07em;text-transform:uppercase;color:#7f9bd0;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cml{font-family:var(--mono);font-size:11.5px;color:#dce9ff;margin-top:3px}
+.cmd{position:absolute;top:6px;right:8px;font-size:10px;color:#4a628f}
+.capmini.on .cmd{color:var(--cc)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:11px}
+.pcard{position:relative;cursor:pointer;padding:14px 14px 13px 17px;border-radius:16px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(127,155,208,.2);transition:transform .18s,border-color .18s,box-shadow .18s}
+.pcard:before{content:"";position:absolute;top:0;bottom:0;left:0;width:3px;background:var(--pc)}
+.pcard:hover{transform:translateY(-2px);border-color:var(--pc);box-shadow:0 12px 32px -18px var(--pc)}
+.pch{display:flex;align-items:flex-start;gap:8px;margin-bottom:11px;padding-right:22px}
+.pcn{font-family:var(--font);font-size:13.5px;font-weight:600;color:#e6f1ff;line-height:1.3;flex:1;min-width:0}
+.pcbar{height:6px;border-radius:4px;background:rgba(127,155,208,.16);overflow:hidden}
+.pcbar i{display:block;height:100%;border-radius:4px;background:var(--pc);transform-origin:left;transition:transform .5s}
+.pcf{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-family:var(--mono);font-size:9.5px;color:#7f9bd0}
+.pcf .nx{color:#ffcf6f}
+.pcgo{position:absolute;top:9px;right:10px;color:#4a628f;font-size:17px;line-height:1;padding:2px 6px;border-radius:8px}
+.pcgo:hover{color:#8fe6ff;background:rgba(77,184,255,.14)}
 .capstate{position:relative;text-align:center}
 .capstate .capgo{position:absolute;top:0;right:0;cursor:pointer;font-size:15px;opacity:.55}
 .capstate .capgo:hover{opacity:1}
@@ -988,6 +1013,7 @@ var jMood=3;
 /* render */
 var view="cockpit";
 var rowMenu=null; // la ligne dont les actions sont ouvertes
+var projOpen={}; // les projets deplies (fermes par defaut : on voit la grille de cartes)
 /* ---- Thème adaptatif jour (5h-18h) / nuit (18h-5h), heure locale ---- */
 function currentTheme(){try{var o=localStorage.getItem("robi_theme");if(o==="day"||o==="night")return o;}catch(e){}var h=new Date().getHours();return (h>=5&&h<18)?"day":"night";}
 function applyTheme(){document.documentElement.setAttribute("data-theme",currentTheme());}
@@ -1255,7 +1281,7 @@ function initEffects(){
     var gob=e.target.closest("[data-go-obj]");
     if(gob){objSel=gob.getAttribute("data-go-obj");var gm=find(S.missions,objSel);view=gm?("cap:"+capOf(gm)):"cockpit";render();return;}
     var tg=e.target.closest("[data-tgroup]");
-    if(tg){var gid=tg.getAttribute("data-tgroup");taskCollapse[gid]=!taskCollapse[gid];render();return;}
+    if(tg){var gid=tg.getAttribute("data-tgroup");projOpen[gid]=!projOpen[gid];taskCollapse[gid]=!taskCollapse[gid];render();return;}
     var os=e.target.closest("[data-obj-sel]");
     if(os){objSel=os.getAttribute("data-obj-sel");render();return;}
     var ob=e.target.closest("[data-obj-back]");
@@ -1714,18 +1740,49 @@ var cockTab="statut",soloTab="profil",objSel=null,OBJBUSY=false;
 /* ================= SYSTÈME UNIQUE (mode jeu) : Cockpit + un onglet par Capacité ================= */
 function projGroup(pr,qs){
   var col=(RANKS.filter(function(r){return r.r===pr.rank;})[0]||RANKS[0]).c;
-  var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=!taskCollapse[pr.id];
+  var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=true;
   var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+pr.id+'"><span class="tgchev">'+(open?"▾":"▸")+'</span><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="tgtitle">'+esc(pr.title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span><span class="tgopen" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span></div>';
   if(open)h+='<div class="tgbody">'+(qs.length?questTree(qs,{hideCap:true,hideProj:true}):'<div class="empty" style="padding:6px 0">Aucune tâche.</div>')+'</div>';
   return h+'</div>';
+}
+function projCard(pr,qs){
+  var col=(RANKS.filter(function(r){return r.r===pr.rank;})[0]||RANKS[0]).c;
+  var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length);
+  var next=qs.filter(function(q){return !q.done&&q.due;}).sort(function(a,b){return a.due<b.due?-1:1;})[0];
+  var reste=qs.length-done;
+  var right=next?('<span class="nx">⏰ '+fmtD(next.due)+'</span>'):(reste?(reste+' à faire'):'✔ tout est fait');
+  return '<div class="pcard" data-tgroup="'+pr.id+'" style="--pc:'+col+'">'+
+    '<span class="pcgo" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span>'+
+    '<div class="pch"><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="pcn">'+esc(pr.title)+'</span></div>'+
+    '<div class="pcbar"><i style="transform:scaleX('+frac+')"></i></div>'+
+    '<div class="pcf"><span>'+done+' / '+qs.length+' tâches</span>'+right+'</div></div>';
+}
+function projBlock(list,qsOf){ // les projets ouverts en pleine largeur, les autres en grille
+  // Peu de projets : on montre directement les tâches. Beaucoup : on montre la grille de cartes.
+  var auto=list.length<=2;
+  var estOuvert=function(p){return (p.id in projOpen)?projOpen[p.id]:auto;};
+  var ouverts=list.filter(estOuvert);
+  var fermes=list.filter(function(p){return !estOuvert(p);});
+  var h=ouverts.map(function(pr){return projGroup(pr,qsOf(pr));}).join("");
+  if(fermes.length)h+='<div class="pgrid">'+fermes.map(function(pr){return projCard(pr,qsOf(pr));}).join("")+'</div>';
+  return h;
+}
+function capMini(k){ // vue d'ensemble d'une capacité, pour le Cockpit
+  var m=STATS[k],tw=capTouchedThisWeek(k);
+  return '<div class="capmini'+(tw?" on":"")+'" data-go="cap:'+k+'" style="--cc:'+m.col+'">'+
+    '<span class="cmd">'+(tw?"✔":"○")+'</span><div class="cmic">'+m.ic+'</div>'+
+    '<div class="cmn">'+esc(m.name)+'</div><div class="cml">Niv '+capLevel(k)+'</div></div>';
 }
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
   var s='<div class="solo"><div class="tbar">◤ SOLO LEWE ◢<small>Système de '+esc(h.name)+'</small></div>';
   s+=urgentBanner();
+  s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">JOUEUR · '+esc(h.name)+'</div><div class="sxp"><span>NIVEAU '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+');background:linear-gradient(90deg,#7b5cff,#8fe6ff)"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
   s+='<div class="spanel"><div class="svoice"><b>⟪ Citation du jour ⟫</b> '+esc(citation)+'</div></div>';
+  s+='<div class="spanel"><div class="spl">Tes capacités</div><div class="capgrid">'+Object.keys(STATS).map(capMini).join("")+'</div></div>';
+  s+='</div><div class="ckcol">';  // ← colonne de droite
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   var focus=S.quests.filter(function(q){if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;var soon=q.due&&dayDiff(q.due,today())<=3;return soon||q.prio==="high";}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
   var list=dueList.concat(focus),todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
@@ -1736,7 +1793,9 @@ function vCockpit(){
   s+='<div class="spanel"><div class="spl">Chroniques</div>';
   s+=feed.map(function(e){return '<div class="logline"><span class="tm">'+esc((e.at||"").slice(0,10))+'</span>'+esc(e.text)+'</div>';}).join("");
   s+=S.log.length?S.log.slice(0,5).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):(feed.length?"":'<div class="empty">Aucune activité.</div>');
-  s+='</div></div>';
+  s+='</div>';        // fin Chroniques
+  s+='</div></div>';  // fin colonne droite + grille
+  s+='</div>';        // fin .solo
   return s;
 }
 function vCap(k){
@@ -1761,11 +1820,11 @@ function vCap(k){
   projs.forEach(function(p){var th=(p.theme||"").trim();if(th&&themes.indexOf(th)<0)themes.push(th);});
   themes.forEach(function(th){ // niveau intermédiaire, seulement là où il y en a un
     s+='<div class="spanel"><div class="spl">◆ '+esc(th)+'</div>';
-    s+=projs.filter(function(p){return (p.theme||"").trim()===th;}).map(function(pr){return projGroup(pr,qsOf(pr));}).join("");
+    s+=projBlock(projs.filter(function(p){return (p.theme||"").trim()===th;}),qsOf);
     s+='</div>';
   });
   var libres=projs.filter(function(p){return !(p.theme||"").trim();});
-  if(libres.length)s+='<div class="spanel">'+libres.map(function(pr){return projGroup(pr,qsOf(pr));}).join("")+'</div>';
+  if(libres.length)s+='<div class="spanel">'+projBlock(libres,qsOf)+'</div>';
   var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
   if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead" style="margin:0 0 10px">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
