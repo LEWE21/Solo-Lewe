@@ -84,12 +84,20 @@ body{margin:0;background:var(--bodybg);background-attachment:fixed;color:var(--t
 body.solo-mode{background:#010207}
 body.solo-mode .topbar{display:none}
 body.solo-mode nav{background:rgba(4,9,20,.88);border-color:rgba(77,184,255,.28);box-shadow:0 0 30px -14px #4db8ff}
+.capstate{position:relative;text-align:center}
+.capstate .capgo{position:absolute;top:0;right:0;cursor:pointer;font-size:15px;opacity:.55}
+.capstate .capgo:hover{opacity:1}
+.csbig{font-family:var(--mono);font-size:17px;letter-spacing:.1em;font-weight:700;margin:2px 0 4px}
+.capstate.ok .csbig{color:#8fe6ff;text-shadow:0 0 18px rgba(77,184,255,.45)}
+.capstate.todo .csbig{color:#ffcf6f;text-shadow:0 0 18px rgba(255,180,80,.35)}
+.cssub{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#7f9bd0;margin-bottom:12px}
 .wkstrip{display:flex;gap:5px;margin:4px 0 10px}
 .wkstrip i{flex:1;height:9px;border-radius:3px;background:rgba(77,184,255,.12);border:1px solid rgba(77,184,255,.2)}
 .wkstrip i.on{background:linear-gradient(180deg,#8fe6ff,#3ac2ff);border-color:#8fe6ff;box-shadow:0 0 10px -2px #4db8ff}
-.wkmsg{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:#7f9bd0;margin-bottom:4px}
-.wkmsg.ok{color:#8fe6ff}
-.spl .capgo{float:right;cursor:pointer;font-size:13px}
+.wkmsg{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:#7f9bd0}
+.q .more{color:var(--dim2);cursor:pointer;font-size:17px;line-height:1;padding:2px 7px;flex:none;border-radius:8px}
+.q .more:hover{color:var(--txt);background:rgba(127,155,208,.12)}
+.q .more.on{color:var(--pink)}
 body.solo-mode nav button{color:#6f8cc4}
 body.solo-mode nav button:hover{color:#dce9ff}
 body.solo-mode nav button.on{color:#fff;background:linear-gradient(120deg,#3b2fb8,#1e7fd6);box-shadow:0 0 18px -6px #4db8ff}
@@ -979,6 +987,7 @@ var jMood=3;
 
 /* render */
 var view="cockpit";
+var rowMenu=null; // la ligne dont les actions sont ouvertes
 /* ---- Thème adaptatif jour (5h-18h) / nuit (18h-5h), heure locale ---- */
 function currentTheme(){try{var o=localStorage.getItem("robi_theme");if(o==="day"||o==="night")return o;}catch(e){}var h=new Date().getHours();return (h>=5&&h<18)?"day":"night";}
 function applyTheme(){document.documentElement.setAttribute("data-theme",currentTheme());}
@@ -1255,6 +1264,8 @@ function initEffects(){
     if(pad){objAcceptProp(parseInt(pad.getAttribute("data-prop-add"),10));return;}
     var pdel=e.target.closest("[data-prop-del]");
     if(pdel){objRefuseProp(parseInt(pdel.getAttribute("data-prop-del"),10));return;}
+    var rmn=e.target.closest("[data-rowmenu]");
+    if(rmn){var rid=rmn.getAttribute("data-rowmenu");rowMenu=(rowMenu===rid)?null:rid;render();return;}
     var cv=e.target.closest("[data-convo]");
     if(cv){openConvo("task",cv.getAttribute("data-convo"));}
   });
@@ -1705,7 +1716,7 @@ function projGroup(pr,qs){
   var col=(RANKS.filter(function(r){return r.r===pr.rank;})[0]||RANKS[0]).c;
   var done=qs.filter(function(q){return q.done;}).length,frac=done/Math.max(1,qs.length),open=!taskCollapse[pr.id];
   var h='<div class="taskgroup"><div class="tghead" data-tgroup="'+pr.id+'"><span class="tgchev">'+(open?"▾":"▸")+'</span><span class="otag" style="color:'+col+'">'+pr.rank+'</span><span class="tgtitle">'+esc(pr.title)+'</span><span class="tgprog"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+col+'99,'+col+')"></i></span><span class="tgcount">'+done+'/'+qs.length+'</span><span class="tgopen" data-go-obj="'+pr.id+'" title="Ouvrir le projet">›</span></div>';
-  if(open)h+='<div class="tgbody">'+(qs.length?questTree(qs):'<div class="empty" style="padding:6px 0">Aucune tâche.</div>')+'</div>';
+  if(open)h+='<div class="tgbody">'+(qs.length?questTree(qs,{hideCap:true,hideProj:true}):'<div class="empty" style="padding:6px 0">Aucune tâche.</div>')+'</div>';
   return h+'</div>';
 }
 function vCockpit(){
@@ -1731,10 +1742,14 @@ function vCockpit(){
 function vCap(k){
   if(objSel){var mm=find(S.missions,objSel);if(mm&&capOf(mm)===k)return '<div class="solo">'+vObjDetail(mm)+'</div>';objSel=null;}
   var m=STATS[k],lvl=capLevel(k),wk=capWeeks(k),tw=capTouchedThisWeek(k);
-  var s='<div class="solo"><div class="tbar">'+m.ic+' '+m.name.toUpperCase()+'<small>Niveau '+lvl+' · '+wk.length+' semaine'+(wk.length>1?'s':'')+' active'+(wk.length>1?'s':'')+'</small></div>';
-  s+='<div class="spanel"><div class="spl">Progression<span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span></div>';
+  var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
+  var qsOf=function(pr){return S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});};
+  var s='<div class="solo"><div class="tbar">'+m.ic+' '+m.name.toUpperCase()+'<small>'+projs.length+' projet'+(projs.length>1?'s':'')+'</small></div>';
+  s+='<div class="spanel capstate '+(tw?"ok":"todo")+'"><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span>';
+  s+='<div class="csbig">'+(tw?"SEMAINE VALIDÉE":"SEMAINE À VALIDER")+'</div>';
+  s+='<div class="cssub">Niveau '+lvl+' · '+wk.length+' semaine'+(wk.length>1?'s':'')+' active'+(wk.length>1?'s':'')+'</div>';
   s+='<div class="wkstrip">'+lastWeeks(12).map(function(w){return '<i class="'+(wk.indexOf(w)>=0?"on":"")+'"></i>';}).join("")+'</div>';
-  s+='<div class="wkmsg '+(tw?"ok":"")+'">'+(tw?"✔ Touchée cette semaine. Le niveau est acquis, le reste est du bonus.":"Pas encore touchée cette semaine. Une seule tâche suffit à la faire monter.")+'</div>';
+  s+='<div class="wkmsg">'+(tw?"Le niveau est acquis. Tout le reste de la semaine est du bonus.":"Une seule tâche suffit à la faire monter d'un niveau.")+'</div>';
   var gi=capGoalInfo(k);
   if(gi){
     s+='<div class="capgoal '+gi.cls+'"><div class="cgl"><span>◈ Objectif : niveau '+gi.g.target+'</span><span>'+(gi.done?'✔ atteint':(gi.expired?'échéance passée':gi.days+' j restants'))+'</span></div>';
@@ -1742,8 +1757,6 @@ function vCap(k){
     s+='<div class="cgv">'+gi.verdict+'</div></div>';
   }
   s+='</div>';
-  var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
-  var qsOf=function(pr){return S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});};
   var themes=[];
   projs.forEach(function(p){var th=(p.theme||"").trim();if(th&&themes.indexOf(th)<0)themes.push(th);});
   themes.forEach(function(th){ // niveau intermédiaire, seulement là où il y en a un
@@ -1751,11 +1764,10 @@ function vCap(k){
     s+=projs.filter(function(p){return (p.theme||"").trim()===th;}).map(function(pr){return projGroup(pr,qsOf(pr));}).join("");
     s+='</div>';
   });
-  projs.filter(function(p){return !(p.theme||"").trim();}).forEach(function(pr){
-    s+='<div class="spanel"><div class="spl">Projet</div>'+projGroup(pr,qsOf(pr))+'</div>';
-  });
+  var libres=projs.filter(function(p){return !(p.theme||"").trim();});
+  if(libres.length)s+='<div class="spanel">'+libres.map(function(pr){return projGroup(pr,qsOf(pr));}).join("")+'</div>';
   var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
-  if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan)+'</div>';
+  if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
   if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead" style="margin:0 0 10px">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
   if(k==="physique"){s+=sleepCard();}
   s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
@@ -1811,38 +1823,45 @@ function dueBadge(q){ // badge d'échéance sur une tâche non journalière
   else{col="var(--dim)";txt="⏰ "+fmtD(q.due);}
   return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
 }
-function questRow(q,depth,compact){
-  depth=depth||0;
+function questRow(q,depth,compact,ctx){
+  depth=depth||0;ctx=ctx||{};
   if(q.pub){
     var plate=today()>q.pubDate;
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:#ff6fb5;border-color:#ff6fb555">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
-  var m=STATS[q.stat]||STATS.mental;var pc=PCOL[q.prio||"low"];
+  var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
   if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span></div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
-  var deptag=(q.dependsOn&&blk)?('<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>'):"";
+  var tags="";
+  if(!ctx.hideCap)tags+='<span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>';
+  if(q.mission&&!ctx.hideProj)tags+='<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>';
+  tags+=dueBadge(q);
+  if(q.dependsOn&&blk)tags+='<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>';
   var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+(q.mission?'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>':"")+dueBadge(q)+deptag+'</div></div><span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'</div>';
+  var acts=(rowMenu===q.id)
+    ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
+    :('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>');
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
 }
-function questTree(list){
+function questTree(list,ctx){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
   var kids={},roots=[];
   list.forEach(function(q){var pid=(q.dependsOn&&byId[q.dependsOn])?q.dependsOn:null;if(pid){(kids[pid]=kids[pid]||[]).push(q);}else{roots.push(q);}});
   function sf(a,b){if((a.done?1:0)!==(b.done?1:0))return (a.done?1:0)-(b.done?1:0);var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";if(ad!==bd)return ad<bd?-1:1;return b.base-a.base;} // échéances d'abord (la plus proche en haut), puis par XP
   var out="",seen={};
-  function emit(q,depth){if(seen[q.id]||depth>4)return;seen[q.id]=1;out+=questRow(q,depth);(kids[q.id]||[]).slice().sort(sf).forEach(function(c){emit(c,depth+1);});}
+  function emit(q,depth){if(seen[q.id]||depth>4)return;seen[q.id]=1;out+=questRow(q,depth,false,ctx);(kids[q.id]||[]).slice().sort(sf).forEach(function(c){emit(c,depth+1);});}
   roots.sort(sf).forEach(function(q){emit(q,0);});
   list.forEach(function(q){if(!seen[q.id])emit(q,0);});
   return out;
 }
 function dailyRow(q,compact){
-  var m=STATS[q.stat]||STATS.mental;var due=dueToday(q);
+  var m=STATS[questCap(q)]||STATS.mental;var due=dueToday(q);
   if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span><span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer d\'objectif">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span></div>';
+    '<span class="xpv">+'+q.base+'</span>'+((rowMenu===q.id)?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de projet">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span><span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>'):('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>'))+'</div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -1915,7 +1934,7 @@ function vObjDetail(m){
   if(pds.length)s+='<div style="margin-top:10px;display:grid;gap:8px">'+pds.map(function(d){var win=today()>=isoPlus(d,-4),late=today()>d,dd=dayDiff(d,today());return '<div class="absrow"><span style="color:'+(late?'var(--pink)':(win?'var(--gold)':'var(--cyan-b)'))+'">📅 '+fmtD(d)+' · '+(late?'tâche active (en retard)':(win?'tâche active':(dd===0?'aujourd\'hui':'dans '+dd+' j')))+'</span><span class="absx" data-pubdel="'+d+'">✕</span></div>';}).join("")+'</div>';
   else s+='<div class="empty" style="margin-top:6px">Aucune date planifiée.</div>';
   s+='<div class="plab" style="margin-top:16px">Tâches de l\'objectif</div>';
-  s+=qs.length?questTree(qs):'<div class="empty">Aucune tâche pour l\'instant.</div>';
+  s+=qs.length?questTree(qs,{hideCap:true,hideProj:true}):'<div class="empty">Aucune tâche pour l\'instant.</div>';
   s+='<div class="addrow" style="margin-top:12px"><input type="text" id="dq-title2" placeholder="Ajouter une tâche à la main..."><button class="btn ghost" id="dq-add2">Ajouter</button></div>';
   s+='</div>';
   return s;
