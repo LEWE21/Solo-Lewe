@@ -709,6 +709,23 @@ function load(){
       if(r.stats)Object.keys(STATS).forEach(function(k){r.stats[k]={level:1,xp:0,weeks:[]};});
     }
     if(r.stats)Object.keys(STATS).forEach(function(k){var st=r.stats[k]||(r.stats[k]={level:1,xp:0,weeks:[]});if(!st.weeks)st.weeks=[];st.level=st.weeks.length+1;});
+    if(!r.datesV1&&Array.isArray(r.quests)){
+      r.datesV1=1;
+      // Chaque tache a maintenant une echeance. On date celles qui n'en avaient pas,
+      // les prioritaires en premier, en etalant a trois par jour pour ne pas noyer le Cockpit.
+      var ordre={high:0,med:1,low:2};
+      var sans=r.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&!q.due;})
+        .sort(function(a,b){var d=(ordre[a.prio]||1)-(ordre[b.prio]||1);return d!==0?d:(b.base||0)-(a.base||0);});
+      var pris={};
+      r.quests.forEach(function(q){if(q.due)pris[q.due]=(pris[q.due]||0)+1;});
+      sans.forEach(function(q){
+        var depart=q.prio==="high"?0:(q.prio==="med"?1:3);
+        for(var d=depart;d<depart+60;d++){
+          var iso=isoPlus(today(),d);
+          if((pris[iso]||0)<3){q.due=iso;pris[iso]=(pris[iso]||0)+1;return;}
+        }
+      });
+    }
   }
   ensureProposals(r);
   return r;
@@ -750,7 +767,10 @@ function ingestTasks(){
       var daily=!!x.daily,mission=null;
       if(x.objective){var mm=S.missions.filter(function(m){return m.title.toLowerCase()===String(x.objective).toLowerCase()||m.id===x.objective;})[0];if(mm)mission=mm.id;}
       var q={id:uid(),title:String(x.title).slice(0,160),stat:stat,daily:daily,prio:prio,base:baseFor(prio,daily),done:false,mission:mission};
-      if(!daily&&x.due&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.due)))q.due=String(x.due); // échéance posée par Claude Code
+      if(!daily){
+        if(x.due&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.due)))q.due=String(x.due); // échéance posée par Claude Code
+        else q.due=prochaineDate(prio);                                          // sinon l'app en pose une
+      }
       if(x.after)q._after=String(x.after);
       if(x.afterObjective)q._afterObj=String(x.afterObjective);
       S.quests.push(q);created.push(q);added++;
@@ -1984,10 +2004,14 @@ function vCockpit(){
   s+='<div class="spanel"><div class="svoice"><b>⟪ Citation du jour ⟫</b> '+esc(citation)+'</div></div>';
   s+='</div><div class="ckcol">';  // ← colonne de droite
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var focus=S.quests.filter(function(q){if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;var soon=q.due&&dayDiff(q.due,today())<=3;return soon||q.prio==="high";}).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
+  var focus=S.quests.filter(function(q){
+    if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;
+    if(q.pub)return true;                                   // une publication reste jusqu'a validation
+    return !!q.due&&dayDiff(q.due,today())<=0;              // aujourd'hui, ou en retard. Rien d'autre.
+  }).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
   var list=dueList.concat(focus),todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
   s+='<div class="spanel"><div class="spl">Aujourd\'hui · '+todo+' à faire</div>';
-  s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien à faire aujourd\'hui.</div>';
+  s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
   s+='</div>';
   s+='</div></div>';  // fin colonne droite + grille
   s+='</div>';        // fin .solo
@@ -2071,6 +2095,15 @@ function vStatut(){
   todc+=wheelCard();
   todc+='</div>';
   return '<div class="cockbody">'+hero+todc+sleepCard()+'</div>';
+}
+function prochaineDate(prio){ // la premiere journee pas encore chargee, selon l'urgence
+  var depart=prio==="high"?0:(prio==="med"?1:3);
+  for(var d=depart;d<depart+45;d++){
+    var iso=isoPlus(today(),d);
+    var n=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&q.due===iso;}).length;
+    if(n<3)return iso;   // trois taches datees par jour au maximum
+  }
+  return isoPlus(today(),depart);
 }
 function dueBadge(q){ // badge d'échéance sur une tâche non journalière
   if(!q.due||q.daily)return "";
@@ -2361,7 +2394,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var qa=document.getElementById("q-add");
-  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var forced=qa.getAttribute("data-capadd");var st=(forced&&STATS[forced])?forced:c.stat;var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
+  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var forced=qa.getAttribute("data-capadd");var st=(forced&&STATS[forced])?forced:c.stat;var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};
+    if(!q.daily)q.due=prochaineDate(q.prio);S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
   var ma=document.getElementById("m-add");
   if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);var fc=ma.getAttribute("data-capadd");S.missions.push({id:uid(),title:t,rank:rk,note:nt,stat:(fc&&STATS[fc])?fc:guessProjStat(t)});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
   var ssv=document.getElementById("sleep-save");
