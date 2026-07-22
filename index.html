@@ -331,8 +331,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .jentry{padding:14px 0;border-bottom:1px solid var(--track)}
 .jh{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--dim2);margin-bottom:7px}
 .jn{font-size:13.5px;line-height:1.65;color:var(--dim)}
-.sleepbars{display:flex;align-items:flex-end;gap:5px;height:66px;margin:12px 0}
-.sleepbars i{flex:1;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--accent-2),rgba(255,159,69,.25))}
+.sleepbars{display:flex;align-items:flex-end;gap:8px;height:96px;margin:14px 0 6px}
 .wheelblock{position:relative}
 .wheelwrap{display:grid;place-items:center;gap:16px;padding:4px 0 2px}
 .wheel{position:relative;width:min(250px,72vw);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
@@ -422,16 +421,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .ibtn:hover{color:var(--txt);background:var(--panel-3)}
 
 /* Capacite : deux colonnes */
-.solo>.capgrid{flex:1;min-height:0}
-.capgrid{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:16px;align-items:stretch}
-.capcol{display:flex;flex-direction:column;gap:16px;min-width:0;min-height:0}
-.capmain{overflow-y:auto;overflow-x:hidden;margin:0 -4px;padding:0 4px;scrollbar-width:thin}
-.capmain::-webkit-scrollbar{width:8px}
-.capmain::-webkit-scrollbar-thumb{background:rgba(120,86,54,.28);border-radius:99px}
-.capside{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
-.capside::-webkit-scrollbar{width:0}
-.view-anim>.solo{flex:1;min-height:0}
-.solo:has(>.ckgrid){display:block;flex:0 0 auto}
+/* Chaque colonne prend sa hauteur naturelle : la courte ne se fait plus etirer
+   a la hauteur de la longue (c'etait ca, le vide en bas a droite). */
+.capgrid{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:16px;align-items:start}
+.capcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+
 
 /* ---------- Notifications (le canal de retour principal) ---------- */
 .ncard{background:var(--panel);border:1px solid var(--brd-hi);border-radius:var(--r-md);padding:13px 15px;
@@ -470,8 +464,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 @media(max-width:1000px){
   .capgrid{grid-template-columns:1fr;align-items:start}
   .capcol{min-height:auto}
-  .capmain,.capside{overflow:visible;margin:0;padding:0}
-  .solo>.capgrid{flex:0 0 auto}
 }
 @media(max-width:860px){
   .ckgrid{grid-template-columns:1fr}
