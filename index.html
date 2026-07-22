@@ -770,12 +770,12 @@ function load(){
       if(r.stats)Object.keys(STATS).forEach(function(k){r.stats[k]={level:1,xp:0,weeks:[]};});
     }
     if(r.stats)Object.keys(STATS).forEach(function(k){var st=r.stats[k]||(r.stats[k]={level:1,xp:0,weeks:[]});if(!st.weeks)st.weeks=[];st.level=st.weeks.length+1;});
-    if(!r.datesV1&&Array.isArray(r.quests)){
+    if(Array.isArray(r.quests)){
       r.datesV1=1;
-      // Chaque tache a maintenant une echeance. On date celles qui n'en avaient pas,
-      // les prioritaires en premier, en etalant a trois par jour pour ne pas noyer le Cockpit.
+      // Chaque tache a une echeance. A CHAQUE chargement (pas une seule fois), on date celles
+      // qui n'en ont pas, prioritaires d'abord, en etalant a trois par jour pour ne pas noyer le Cockpit.
       var ordre={high:0,med:1,low:2};
-      var sans=r.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&!q.due;})
+      var sans=r.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&!q.due&&!(q.dueDates&&q.dueDates.length);})
         .sort(function(a,b){var d=(ordre[a.prio]||1)-(ordre[b.prio]||1);return d!==0?d:(b.base||0)-(a.base||0);});
       var pris={};
       r.quests.forEach(function(q){if(q.due)pris[q.due]=(pris[q.due]||0)+1;});
@@ -869,7 +869,7 @@ function rollover(){
   S.lastDate=today();save();
   return out;
 }
-function log(text){S.log.unshift({t:new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),text:text});if(S.log.length>80)S.log.pop();}
+function log(text){var g=gameNow();S.log.unshift({t:String(g.getUTCHours()).padStart(2,"0")+":"+String(g.getUTCMinutes()).padStart(2,"0"),text:text});if(S.log.length>80)S.log.pop();}
 
 function bumpPace(statKey,gain){ // trace l'effort validé du jour, par capacité
   S.pace=S.pace||{};
@@ -1596,7 +1596,7 @@ function openModal(html,color){
   el.onclick=function(ev){if(ev.target===el)closeModal();};
 }
 var DGOPEN=null; // id de l'objectif dont la fenêtre détail est ouverte, sinon null
-function closeModal(){var el=document.getElementById("modal");if(el)el.className="";DGOPEN=null;}
+function closeModal(){var el=document.getElementById("modal");if(el){el.className="";el.innerHTML="";}DGOPEN=null;} // on vide aussi le contenu : plus de boutons fantômes encore branchés
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ ROBI</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
 function openRenameTask(qId){
   var q=find(S.quests,qId);if(!q)return;
@@ -2732,7 +2732,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-start]"),function(el){el.onclick=function(){chStart(el.getAttribute("data-ch-start"));};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ch-judge]"),function(el){el.onclick=function(){var k=el.getAttribute("data-ch-judge");var ta=document.getElementById("ch-ans-"+k);chJudge(k,ta?ta.value:"");};});
   var oss=document.getElementById("obj-send");if(oss)oss.onclick=objSendPoint;
-  var dq2=document.getElementById("dq-add2");if(dq2)dq2.onclick=function(){var t=document.getElementById("dq-title2").value.trim();if(!t||!objSel)return;var m=find(S.missions,objSel);if(!m)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:m.id});save();render();};
+  var dq2=document.getElementById("dq-add2");if(dq2)dq2.onclick=function(){var t=document.getElementById("dq-title2").value.trim();if(!t||!objSel)return;var m=find(S.missions,objSel);if(!m)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:m.id};if(!q.daily)q.due=prochaineDate(q.prio);S.quests.push(q);save();render();};
   var pba=document.getElementById("pub-add");if(pba)pba.onclick=function(){var v=(document.getElementById("pub-date")||{}).value;if(!v){toast("Choisis une date");return;}if(v<today()){toast("Choisis une date à venir");return;}var m=find(S.missions,objSel);if(!m)return;m.pubDates=m.pubDates||[];if(m.pubDates.indexOf(v)<0){m.pubDates.push(v);m.pubDates.sort();}pubTick();save();render();toast("Date de publication ajoutée");};
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-pubdel]"),function(el){el.onclick=function(){var m=find(S.missions,objSel);if(!m)return;var d=el.getAttribute("data-pubdel");m.pubDates=(m.pubDates||[]).filter(function(x){return x!==d;});pubTick();save();render();toast("Date retirée");};});
   if(document.getElementById("chatbox"))renderChat();
