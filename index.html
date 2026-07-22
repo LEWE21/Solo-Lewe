@@ -482,6 +482,59 @@ input:focus,textarea:focus,select:focus{border-color:var(--brd-hi);background:rg
   .csbig{font-size:17px}
   .movecaps{grid-template-columns:repeat(2,1fr)}
 }
+/* =========================================================================
+   Grands ecrans : sur un moniteur, l'app etait reglee pour ~1400px et
+   paraissait petite. On monte la taille du texte, des cartes et du rail.
+   ========================================================================= */
+@media(min-width:1500px){
+  :root{--rail:142px}
+  body{font-size:15.5px}
+  #app{max-width:1640px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+  .topbar{margin-bottom:18px}
+  .brand h1{font-size:19px}
+  .brand small{font-size:9.5px}
+  .icobtn{width:42px;height:42px;font-size:16px}
+  nav button{padding:13px 6px 13px 9px}
+  nav button .ni{font-size:22px}
+  nav button .nl{font-size:8.5px}
+  nav button .nlv{font-size:10px}
+  nav button .nlv b{font-size:12px}
+  .solo{gap:18px}
+  .solo .tbar{font-size:13px;padding:4px 2px}
+  .spanel,.win{padding:22px;border-radius:22px}
+  .spl{font-size:10.5px;margin-bottom:15px}
+  .srank{gap:20px}
+  .rbig{font-size:54px}
+  .srank .who{font-size:11px}
+  .sxp{font-size:11.5px}
+  .svoice{font-size:16.5px}
+  .svoice b{font-size:10.5px}
+  .q{padding:15px 4px 15px 16px}
+  .q .ttl{font-size:16px}
+  .q .xpv{font-size:12.5px}
+  .q .check{width:27px;height:27px;font-size:13px}
+  .q .more{font-size:19px}
+  .tag{font-size:10px;padding:4px 9px}
+  .capstate{padding:26px 20px 20px}
+  .csbig{font-size:24px}
+  .cssub{font-size:11px}
+  .wkstrip i{height:12px}
+  .pcn{font-size:15.5px}
+  .pcf{font-size:10.5px}
+  .btn{padding:13px 20px;font-size:11.5px}
+  input[type=text],input[type=date],input[type=number],textarea,select,.bdtext,.selin{font-size:15px;padding:13px 15px}
+  .capgrid{grid-template-columns:minmax(310px,380px) minmax(0,1fr);gap:16px}
+}
+@media(min-width:1850px){
+  :root{--rail:152px}
+  body{font-size:16.5px}
+  #app{max-width:1780px}
+  .rbig{font-size:62px}
+  .q .ttl{font-size:17px}
+  .svoice{font-size:18px}
+  .csbig{font-size:27px}
+  nav button .ni{font-size:24px}
+}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
