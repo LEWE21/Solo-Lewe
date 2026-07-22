@@ -7,7 +7,7 @@
    ========================================================================= */
 
 :root{
-  --ground:#EFE4D4;                /* fond principal, crème chaude et claire */
+  --ground:#B4C0AE;                /* fond principal, dégradé vert vers gris (voir body) */
   --panel:rgba(255,251,244,.58);   /* cartes en verre dépoli clair */
   --panel-2:rgba(255,252,246,.82); /* survol / carte en avant */
   --panel-3:rgba(120,86,54,.07);   /* creux : pistes, champs */
@@ -44,12 +44,7 @@ html{height:100%}
 body{
   margin:0;height:100dvh;overflow:hidden;color:var(--txt);
   font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;
-  background:
-    radial-gradient(1100px 760px at 12% -6%,rgba(255,206,150,.85),transparent 62%),
-    radial-gradient(1000px 720px at 94% 104%,rgba(255,168,105,.7),transparent 60%),
-    radial-gradient(820px 640px at 82% 8%,rgba(255,232,200,.8),transparent 58%),
-    radial-gradient(900px 700px at 30% 60%,rgba(238,208,175,.5),transparent 66%),
-    var(--ground);
+  background:linear-gradient(140deg,#9DBE8C 0%,#A9C29A 26%,#B7BEB7 62%,#C3C6C4 100%);
   background-attachment:fixed;
 }
 
@@ -310,7 +305,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ---------- Fenetres, confirmations, notifications ---------- */
-#boot.show{background:radial-gradient(1100px 760px at 12% -6%,rgba(255,206,150,.9),transparent 62%),radial-gradient(1000px 720px at 94% 104%,rgba(255,168,105,.75),transparent 60%),var(--ground)}
+#boot.show{background:linear-gradient(140deg,#9DBE8C,#B7BEB7 60%,#C3C6C4)}
 .lockwin{text-align:center;max-width:340px}
 .lockin{width:100%;text-align:center;font-size:26px;letter-spacing:.5em;padding:14px 10px;margin-top:16px;font-family:var(--mono)}
 .lockmsg{font-size:14.5px;color:var(--dim);margin-top:8px}
@@ -565,12 +560,12 @@ var GAME_OFFSET_MIN=660;
 function today(){var g=new Date(Date.now()+GAME_OFFSET_MIN*60000);return g.getUTCFullYear()+"-"+String(g.getUTCMonth()+1).padStart(2,"0")+"-"+String(g.getUTCDate()).padStart(2,"0");}
 
 var STATS={
-  physique:{name:"Force",ic:"💪",col:"#3ac2ff"},
-  mental:{name:"Mental",ic:"🧠",col:"#9a6cff"},
+  physique:{name:"Force",ic:"🏋️",col:"#3ac2ff"},
+  mental:{name:"Mental",ic:"🧪",col:"#9a6cff"},
   creativite:{name:"Créativité",ic:"🎨",col:"#ff6fc7"},
   business:{name:"Business",ic:"💰",col:"#ffcf4d"},
-  social:{name:"Social",ic:"🤝",col:"#3fe6a3"},
-  discipline:{name:"Discipline",ic:"🎯",col:"#ff8a4d"}
+  social:{name:"Social",ic:"👥",col:"#3fe6a3"},
+  discipline:{name:"Discipline",ic:"⚡",col:"#ff8a4d"}
 };
 var MOODS=["😔","😕","😐","🙂","😄"];
 var PCOL={high:"var(--red)",med:"var(--gold)",low:"var(--dim2)"};
