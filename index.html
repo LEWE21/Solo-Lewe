@@ -124,6 +124,14 @@ nav button.capnav.on .ni{filter:none}
 .solo .tbar{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:2px}
 .solo .tbar .tt{font-size:27px;font-weight:700;letter-spacing:-.02em;color:var(--txt)}
 .solo .tbar small{font-size:13.5px;color:var(--dim);font-weight:400}
+.solo .tbar .addbtn{margin-left:auto;padding:10px 17px;font-size:13.5px;flex:none}
+/* Les chiffres, en petit sous le profil du Cockpit */
+.dgrid.mini{grid-template-columns:repeat(3,1fr);gap:11px;margin-top:0}
+.dgrid.mini .dcard{padding:14px 12px}
+.dgrid.mini .di{width:30px;height:30px;font-size:14px;margin-bottom:10px}
+.dgrid.mini b{font-size:24px}
+.dgrid.mini .dl{font-size:12.5px;margin-top:7px}
+.dgrid.mini .ds{font-size:11px}
 .cockbody{display:flex;flex-direction:column;gap:16px}
 
 /* Bandeau (Proxy : la prochaine chose a faire) */
@@ -1383,6 +1391,8 @@ function initEffects(){
     if(stb){soloTab=stb.getAttribute("data-solotab");render();return;}
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
+    var addc=e.target.closest("[data-addcap]");
+    if(addc){openAddCap(addc.getAttribute("data-addcap"));return;}
     var pmn=e.target.closest("[data-projman]");
     if(pmn){PROJSEL=null;openProjectManage(pmn.getAttribute("data-projman"));return;}
     var gob=e.target.closest("[data-go-obj]");
@@ -1605,6 +1615,40 @@ function deleteProject(mId){
 }
 
 var MOVESEL=null; // la capacite choisie dans la fenetre de deplacement
+/* ---- Ajout de tâche / projet, reutilisable depuis un formulaire ou une modale ---- */
+function addCapTask(forced){
+  var el=document.getElementById("q-title");var t=el?el.value.trim():"";if(!t)return false;
+  var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";
+  var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);
+  var st=(forced&&STATS[forced])?forced:c.stat;
+  var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};
+  if(!q.daily)q.due=prochaineDate(q.prio);
+  S.quests.push(q);save();
+  var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";
+  sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);
+  render();return true;
+}
+function addCapProject(forced){
+  var el=document.getElementById("m-title");var t=el?el.value.trim():"";if(!t)return false;
+  var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";
+  var rk=autoRank(t);
+  S.missions.push({id:uid(),title:t,rank:rk,note:nt,stat:(forced&&STATS[forced])?forced:guessProjStat(t)});save();
+  sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);
+  render();return true;
+}
+function openAddCap(k){ // Ajouter, dans une modale : gain de place dans la vue
+  var m=STATS[k];var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
+  var h='<div class="mtag">▸ Ajouter dans '+m.ic+' '+esc(m.name)+'</div>';
+  h+='<div class="plab" style="margin-top:10px">Nouvelle tâche</div>';
+  h+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select></div>';
+  h+='<div class="rowbtn"><button class="btn" id="q-add" data-capadd="'+k+'">Ajouter la tâche</button></div>';
+  h+='<div class="plab" style="margin-top:20px">Nouveau projet</div>';
+  h+='<div class="addrow"><input type="text" id="m-title" placeholder="Nom du projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Créer</button></div>';
+  openModal(h,m.col);
+  var qa=document.getElementById("q-add");if(qa)qa.onclick=function(){if(addCapTask(k))closeModal();};
+  var ma=document.getElementById("m-add");if(ma)ma.onclick=function(){if(addCapProject(k))closeModal();};
+  var qt=document.getElementById("q-title");if(qt)qt.focus();
+}
 function openMoveQuest(qId){
   var q=find(S.quests,qId);if(!q)return;
   var actuelle=questCap(q);
@@ -2021,7 +2065,6 @@ function dcard(ic,val,label,sub,color,go){
 }
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
-  var citation=(S.quoteDate===today()&&S.quote)?S.quote:localCitation();
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   var focus=S.quests.filter(function(q){
     if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;
@@ -2032,15 +2075,13 @@ function vCockpit(){
   var caps=Object.keys(STATS),capsWk=caps.filter(capTouchedThisWeek).length;
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
-  s+='<div class="dgrid">';
-  s+=dcard('🔥',(S.streak||0),'Série',(S.streak?"jours d'affilée":"à relancer aujourd'hui"),'var(--accent)');
-  s+=dcard('◎',todo,'À faire aujourd\'hui',(todo?"c'est ton focus":"tout est prévu ✓"),'var(--blue)');
-  s+=dcard('◇',capsWk+'/'+caps.length,'Capacités touchées',(capsWk===caps.length?"semaine complète":(caps.length-capsWk)+" en attente"),'var(--mint)');
-  s+=dcard('✓',(S.doneCount||0),'Accomplies en tout','depuis le début','var(--pink)');
-  s+='</div>';
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
-  s+='<div class="spanel"><div class="svoice"><b>Citation du jour</b> '+esc(citation)+'</div></div>';
+  s+='<div class="dgrid mini">';
+  s+=dcard('🔥',(S.streak||0),'Série',(S.streak?"jours d'affilée":"à relancer"),'var(--accent)');
+  s+=dcard('◎',todo,'À faire',(todo?"aujourd'hui":"tout est prévu ✓"),'var(--blue)');
+  s+=dcard('◇',capsWk+'/'+caps.length,'Capacités',(capsWk===caps.length?"semaine ✓":(caps.length-capsWk)+" en attente"),'var(--mint)');
+  s+='</div>';
   s+='</div><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
   s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
@@ -2054,7 +2095,7 @@ function vCap(k){
   var m=STATS[k],lvl=capLevel(k),wk=capWeeks(k),tw=capTouchedThisWeek(k);
   var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
   var qsOf=function(pr){return S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});};
-  var s='<div class="solo"><div class="tbar"><span class="tt">'+m.ic+' '+esc(m.name)+'</span><small>'+projs.length+' projet'+(projs.length>1?'s':'')+'</small></div>';
+  var s='<div class="solo"><div class="tbar"><span class="tt">'+m.ic+' '+esc(m.name)+'</span><small>'+projs.length+' projet'+(projs.length>1?'s':'')+'</small><button class="btn addbtn" data-addcap="'+k+'">+ Ajouter</button></div>';
   s+='<div class="capmason">';
   // 1. L'état de la semaine
   s+='<div class="spanel capstate '+(tw?"ok":"todo")+'" style="--cc:'+m.col+'"><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span>';
@@ -2085,9 +2126,6 @@ function vCap(k){
   if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
   if(k==="physique"){s+=sleepCard();}
   if(k==="discipline"){s+=roueCard();}
-  // 4. Ajouter une tâche ou un projet
-  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
-  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
   s+='</div>';   // fin capmason
   return s+'</div>';
 }
@@ -2429,10 +2467,9 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var qa=document.getElementById("q-add");
-  if(qa)qa.onclick=function(){var t=document.getElementById("q-title").value.trim();if(!t)return;var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);var forced=qa.getAttribute("data-capadd");var st=(forced&&STATS[forced])?forced:c.stat;var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};
-    if(!q.daily)q.due=prochaineDate(q.prio);S.quests.push(q);save();var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);render();};
+  if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
   var ma=document.getElementById("m-add");
-  if(ma)ma.onclick=function(){var t=document.getElementById("m-title").value.trim();if(!t)return;var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";var rk=autoRank(t);var fc=ma.getAttribute("data-capadd");S.missions.push({id:uid(),title:t,rank:rk,note:nt,stat:(fc&&STATS[fc])?fc:guessProjStat(t)});save();sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);render();};
+  if(ma)ma.onclick=function(){addCapProject(ma.getAttribute("data-capadd"));};
   var ssv=document.getElementById("sleep-save");
   if(ssv)ssv.onclick=function(){var el=document.getElementById("sleep-h");var v=parseFloat(el?el.value:"");if(isNaN(v)||v<0||v>16){toast("Entre un nombre d'heures (0 à 16)");return;}setSleep(v);};
   var jbs=document.querySelectorAll(".jm");
