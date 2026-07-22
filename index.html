@@ -419,11 +419,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .ibtn{cursor:pointer;color:var(--dim2);padding:3px 7px;border-radius:8px;transition:.14s}
 .ibtn:hover{color:var(--txt);background:var(--panel-3)}
 
-/* Capacite : deux colonnes */
-/* Chaque colonne prend sa hauteur naturelle : la courte ne se fait plus etirer
-   a la hauteur de la longue (c'etait ca, le vide en bas a droite). */
-.capgrid{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:16px;align-items:start}
-.capcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Capacite : les cartes coulent dans des colonnes qui remplissent la largeur,
+   quel que soit le contenu (fini la colonne etroite pleine + le large vide). */
+.capmason{columns:340px;column-gap:16px}
+.capmason>*{break-inside:avoid;margin:0 0 16px}
 
 
 /* ---------- Notifications (le canal de retour principal) ---------- */
@@ -461,8 +460,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
   #app{padding-left:calc(22px + env(safe-area-inset-left,0px));padding-right:calc(22px + env(safe-area-inset-right,0px))}
 }
 @media(max-width:1000px){
-  .capgrid{grid-template-columns:1fr;align-items:start}
-  .capcol{min-height:auto}
+  .capmason{columns:2}
+}
+@media(max-width:680px){
+  .capmason{columns:1}
 }
 @media(max-width:860px){
   .ckgrid{grid-template-columns:1fr}
@@ -2054,7 +2055,8 @@ function vCap(k){
   var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
   var qsOf=function(pr){return S.quests.filter(function(q){return q.mission===pr.id&&!pubSuppressed(q);});};
   var s='<div class="solo"><div class="tbar"><span class="tt">'+m.ic+' '+esc(m.name)+'</span><small>'+projs.length+' projet'+(projs.length>1?'s':'')+'</small></div>';
-  s+='<div class="capgrid"><div class="capcol capside">';
+  s+='<div class="capmason">';
+  // 1. L'état de la semaine
   s+='<div class="spanel capstate '+(tw?"ok":"todo")+'" style="--cc:'+m.col+'"><span class="capgo" data-capgoal="'+k+'" title="Fixer une échéance">🎯</span>';
   s+='<div class="csbig">'+(tw?"Semaine validée":"Semaine à valider")+'</div>';
   s+='<div class="cssub">Niveau '+lvl+' · '+wk.length+' semaine'+(wk.length>1?'s':'')+' active'+(wk.length>1?'s':'')+'</div>';
@@ -2067,15 +2069,10 @@ function vCap(k){
     s+='<div class="cgv">'+gi.verdict+'</div></div>';
   }
   s+='</div>';
-  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
-  if(k==="physique"){s+=sleepCard();}
-  if(k==="discipline"){s+=roueCard();}
-  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
-  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
-  s+='</div><div class="capcol capmain">';   // ← colonne de droite : les projets et les tâches
+  // 2. Le travail : projets et tâches (le coeur, au plus près de l'état)
   var themes=[];
   projs.forEach(function(p){var th=(p.theme||"").trim();if(th&&themes.indexOf(th)<0)themes.push(th);});
-  themes.forEach(function(th){ // niveau intermédiaire, seulement là où il y en a un
+  themes.forEach(function(th){
     s+='<div class="spanel"><div class="spl">◆ '+esc(th)+'</div>';
     s+=projBlock(projs.filter(function(p){return (p.theme||"").trim()===th;}),qsOf);
     s+='</div>';
@@ -2084,7 +2081,14 @@ function vCap(k){
   if(libres.length)s+='<div class="spanel">'+projBlock(libres,qsOf)+'</div>';
   var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
-  s+='</div></div>';   // fin colonne droite + grille
+  // 3. Les outils propres à la capacité
+  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
+  if(k==="physique"){s+=sleepCard();}
+  if(k==="discipline"){s+=roueCard();}
+  // 4. Ajouter une tâche ou un projet
+  s+='<div class="spanel"><div class="spl">Ajouter</div><div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select><button class="btn" id="q-add" data-capadd="'+k+'">Tâche</button></div>';
+  s+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nouveau projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Projet</button></div></div>';
+  s+='</div>';   // fin capmason
   return s+'</div>';
 }
 function vStatut(){
