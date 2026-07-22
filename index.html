@@ -86,8 +86,8 @@ nav{flex:none;display:flex;flex-direction:row;gap:8px;margin-bottom:22px;padding
   -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
 nav::-webkit-scrollbar{height:0}
 nav button{position:relative;overflow:hidden;background:none;border:0;color:var(--dim);cursor:pointer;
-  padding:13px 21px;border-radius:var(--r-pill);font-family:var(--font);font-size:16px;font-weight:600;
-  display:flex;align-items:center;gap:11px;white-space:nowrap;flex:none;transition:.16s}
+  padding:13px 18px;border-radius:var(--r-pill);font-family:var(--font);font-size:16px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:11px;white-space:nowrap;flex:1 1 0;min-width:max-content;transition:.16s}
 nav button .ni{font-size:22px;line-height:1;flex:none}
 nav button .nl{flex:none}
 nav button .nlv{font-family:var(--mono);font-size:11.5px;color:var(--dim2);flex:none;display:flex;align-items:center;gap:5px}
@@ -200,6 +200,10 @@ nav button.capnav.on .ni{filter:none}
 .deptag{color:var(--gold);border-color:rgba(255,207,111,.4)}
 .q .more{color:var(--dim2);cursor:pointer;font-size:17px;line-height:1;padding:3px 8px;border-radius:8px;flex:none;transition:.14s}
 .q .more:hover{color:var(--txt);background:var(--panel-3)}
+/* La liste du jour se repartit en colonnes selon la largeur : plus de grand
+   vide au milieu de chaque ligne quand le titre est court. */
+.tcols{columns:400px;column-gap:30px}
+.tcols>.q{break-inside:avoid}
 .q .more.on{color:var(--pink)}
 .q .conv,.q .edt,.q .mv,.q .del,.q .gear,.q .lock{color:var(--dim2);cursor:pointer;font-size:15px;padding:3px 5px;flex:none;transition:.14s}
 .q .conv:hover,.q .edt:hover,.q .mv:hover,.q .gear:hover,.q .lock:hover{color:var(--accent-2)}
@@ -2085,7 +2089,7 @@ function vCockpit(){
   s+='</div>';
   s+='</div><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
-  s+=list.length?list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join(""):'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
+  s+=list.length?'<div class="tcols">'+list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
   s+='</div>';
   s+='</div></div>';
   s+='</div>';
