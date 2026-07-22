@@ -113,6 +113,10 @@ nav button.capnav.on .ni{filter:none}
 .mtag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);margin-bottom:9px}
 .mtitle{font-size:20px;font-weight:600;line-height:1.25;color:var(--txt)}
 .iri{position:relative}
+.forgecit{position:relative;padding:6px 2px 2px 4px}
+.forgecit .fq{position:absolute;top:-20px;left:-6px;font-size:64px;line-height:1;color:var(--c-physique);opacity:.32;font-family:Georgia,"Times New Roman",serif;pointer-events:none}
+.forgecit .ft{position:relative;font-size:16px;line-height:1.62;font-style:italic;color:var(--txt);text-wrap:pretty}
+.forgecit .fa{margin-top:13px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--dim2)}
 
 /* ---------- Le systeme ---------- */
 .solo{display:flex;flex-direction:column;gap:16px;padding:2px 0 22px}
@@ -150,8 +154,11 @@ nav button.capnav.on .ni{filter:none}
 .dcard .ds{font-size:12px;color:var(--dim2);margin-top:3px}
 
 /* Cockpit : deux colonnes */
-.ckgrid{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px;align-items:start}
+.ckgrid{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr) minmax(280px,360px);gap:16px;align-items:start}
 .ckcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.wkhead{cursor:pointer;user-select:none}
+.wkhead:hover .wkchev{color:var(--txt)}
+.wkchev{color:var(--dim2);font-size:12px;margin-left:8px}
 
 /* Profil */
 .srank{display:flex;align-items:center;gap:15px}
@@ -283,6 +290,22 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .btn.ghost{background:var(--panel);border:1px solid var(--brd);color:var(--dim);font-weight:500}
 .btn.ghost:hover{color:var(--txt);border-color:var(--brd-hi);background:var(--panel-2);filter:none}
 .rowbtn{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.calwrap{background:var(--panel-3);border:1px solid var(--brd);border-radius:14px;padding:12px 12px 10px}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.calmon{font-weight:600;color:var(--txt);text-transform:capitalize;font-size:14px}
+.calnav{width:30px;height:30px;border-radius:9px;border:1px solid var(--brd);background:var(--panel-2);color:var(--txt);font-size:16px;line-height:1;cursor:pointer}
+.calnav:hover{border-color:var(--brd-hi)}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.caldow{text-align:center;font-family:var(--mono);font-size:10px;color:var(--dim2);padding-bottom:2px}
+.cald{aspect-ratio:1;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--txt);font-size:13px;cursor:pointer;padding:0;font-variant-numeric:tabular-nums}
+.cald:hover:not(.past):not(.empty){background:var(--panel-2);border-color:var(--brd)}
+.cald.empty{cursor:default}
+.cald.past{color:var(--dim2);opacity:.4;cursor:default}
+.cald.tod{border-color:var(--brd-hi);font-weight:700}
+.cald.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.cald.on:hover{background:var(--accent)}
+.calsum{margin-top:10px;font-size:12.5px;color:var(--dim);line-height:1.4}
+.calsum b{color:var(--txt)}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -469,6 +492,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 }
 @media(max-width:1100px){
   .ckgrid{grid-template-columns:minmax(280px,340px) minmax(0,1fr)}
+  .ckcol.wks{grid-column:1/-1;flex-direction:row;align-items:start}
+  .ckcol.wks>.spanel{flex:1 1 0;min-width:0}
   #app{padding-left:calc(22px + env(safe-area-inset-left,0px));padding-right:calc(22px + env(safe-area-inset-right,0px))}
 }
 @media(max-width:1000px){
@@ -479,6 +504,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 }
 @media(max-width:860px){
   .ckgrid{grid-template-columns:1fr}
+  .ckcol.wks{flex-direction:column}
   .movecaps{grid-template-columns:repeat(3,1fr)}
   .ladder{grid-template-columns:repeat(3,1fr)}
 }
@@ -556,7 +582,8 @@ var KEY="systeme_mathilde_v3";
 var BKEY="systeme_mathilde_v3_bak";
 // Jour de jeu ancré sur le fuseau de Nouvelle-Calédonie (UTC+11, sans heure d'été).
 // Ainsi, changer le fuseau horaire de l'appareil (ex : Los Angeles -> Nouméa) ne décale plus le "jour" de ROBI : pas de triche par changement de fuseau.
-var GAME_OFFSET_MIN=660;
+var GAME_OFFSET_MIN=660; // Nouméa (UTC+11) : toute l'app vit à cette heure, quel que soit le réglage de l'appareil
+function gameNow(){return new Date(Date.now()+GAME_OFFSET_MIN*60000);} // à lire avec les accesseurs getUTC*
 function today(){var g=new Date(Date.now()+GAME_OFFSET_MIN*60000);return g.getUTCFullYear()+"-"+String(g.getUTCMonth()+1).padStart(2,"0")+"-"+String(g.getUTCDate()).padStart(2,"0");}
 
 var STATS={
@@ -833,6 +860,8 @@ function rollover(){
     else{S.hunter.xp=Math.max(0,S.hunter.xp-40);S.streak=0;S.combo=0;log("PÉNALITÉ : journalières non terminées (-40 XP)");out={k:"pen"};}
   }
   S.history.push({date:S.lastDate,level:S.hunter.level});if(S.history.length>120)S.history.shift();
+  // Tâches à jours choisis : on recale la prochaine échéance ; quand tous les jours sont passés, la tâche est terminée.
+  S.quests.forEach(function(q){if(isMulti(q)){var nd=nextDue(q);if(nd)q.due=nd;else q.done=true;}});
   // Les tâches normales validées la veille sont retirées (déjà comptées et tracées dans le Journal de ROBI),
   // pour que la liste reste vivante et alignée sur ta progression. Les journalières, elles, se réinitialisent.
   S.quests=S.quests.filter(function(q){return q.daily||!q.done;});
@@ -894,6 +923,28 @@ function award(q){
   sfx(q.pub?"success":"check");
   save();
 }
+/* ---- Tâches à jours choisis (dates multiples, ex. jours de réserve) ---- */
+var CALSEL={},CALMON=null;
+/* ---- Blocs semaines du Cockpit : état replié/déplié, gardé sur l'appareil ---- */
+var WKFOLD=(function(){try{return JSON.parse(localStorage.getItem("robi_wkfold")||"{}");}catch(e){return {};}})();
+function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFOLD));}catch(e){}}
+function isMulti(q){return !!(q&&q.dueDates&&q.dueDates.length);}
+function multiPending(q){var dd=q.doneDates||[];return (q.dueDates||[]).filter(function(d){return dd.indexOf(d)<0&&dayDiff(d,today())>=0;}).sort();}
+function nextDue(q){if(!isMulti(q))return q.due;var p=multiPending(q);return p.length?p[0]:null;}
+function multiActiveToday(q){return isMulti(q)&&q.dueDates.indexOf(today())>=0&&(q.doneDates||[]).indexOf(today())<0;}
+function validateTask(q){
+  if(!q||q.done)return false;
+  if(isMulti(q)){
+    var d=today();
+    if(q.dueDates.indexOf(d)<0||(q.doneDates||[]).indexOf(d)>=0)return false; // pas prévu aujourd'hui, ou déjà validé aujourd'hui
+    q.doneDates=q.doneDates||[];q.doneDates.push(d);
+    award(q);                          // XP + combo + notif, sans retirer la tâche
+    var nd=nextDue(q);
+    if(nd)q.due=nd; else q.done=true;  // il reste des jours choisis -> elle revient ; sinon terminée
+    save();return true;
+  }
+  q.done=true;award(q);return true;
+}
 /* ---- Mécanique : combo (progression) ---- */
 function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
 
@@ -929,7 +980,7 @@ function urgentTick(){
 }
 function urgentComplete(){
   if(!urgentActive())return;var u=S.urgent;
-  if(u.qid){var q=find(S.quests,u.qid);if(q&&!q.done){q.done=true;award(q);}}
+  if(u.qid){var q=find(S.quests,u.qid);if(q&&!q.done){validateTask(q);}}
   var r=gainXP(u.stat,u.xp,"Quête urgente accomplie : "+u.title);
   u.status="done";
   sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[u.stat].name,"Le Système reconnaît ta réactivité."]);
@@ -1071,7 +1122,7 @@ function toggleTheme(){var cur=document.documentElement.getAttribute("data-theme
 function initTheme(){applyTheme();var g=document.getElementById("btn-settings");if(g)g.onclick=function(){openSettings();};}
 
 /* ---- Moment de la journée (matin / journée / soir) ---- */
-function momentOf(){var h=new Date().getHours();if(h>=18||h<5)return "soir";if(h<11)return "matin";return "journee";}
+function momentOf(){var h=gameNow().getUTCHours();if(h>=18||h<5)return "soir";if(h<11)return "matin";return "journee";}
 
 /* ---- Humeur du compagnon, à partir des vraies données ---- */
 function companionMood(){
@@ -1293,7 +1344,7 @@ function wireRoue(){
       var d=document.getElementById("roue-do");
       if(d)d.onclick=function(){
         sysConfirm("Tu as fait ce ménage ?",["<b>« "+esc(q.title)+" »</b>","","Le Système ne récompense que le réel."],
-          function(){var qq=find(S.quests,q.id);if(qq&&!qq.done){qq.done=true;award(qq);}render();});
+          function(){var qq=find(S.quests,q.id);if(qq&&!qq.done){validateTask(qq);}render();});
       };
       var ag=document.getElementById("roue-again");
       if(ag)ag.onclick=function(){btn.onclick();};
@@ -1366,7 +1417,7 @@ function wireWheel(){
     if(res)res.innerHTML='<span class="nm">La roue tourne...</span>';
     setTimeout(function(){var q=elig[idx];if(!q||!res)return;
       res.innerHTML='ROBI a choisi <span class="tsk">« '+esc(q.title)+' »</span><button class="btn" id="wheel-do">Je m\'y mets</button>';
-      var d=document.getElementById("wheel-do");if(d)d.onclick=function(){sysConfirm("Tu as accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};
+      var d=document.getElementById("wheel-do");if(d)d.onclick=function(){sysConfirm("Tu as accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();});};
     },3700);
   };
 }
@@ -1413,7 +1464,7 @@ function initEffects(){
     var pdel=e.target.closest("[data-prop-del]");
     if(pdel){objRefuseProp(parseInt(pdel.getAttribute("data-prop-del"),10));return;}
     var rmn=e.target.closest("[data-rowmenu]");
-    if(rmn){var rid=rmn.getAttribute("data-rowmenu");rowMenu=(rowMenu===rid)?null:rid;render();return;}
+    if(rmn){var rid=rmn.getAttribute("data-rowmenu");rowMenu=(rowMenu===rid)?null:rid;render();if(DGOPEN&&rmn.closest("#modal"))openDungeon(DGOPEN);return;}
     var cv=e.target.closest("[data-convo]");
     if(cv){openConvo("task",cv.getAttribute("data-convo"));}
   });
@@ -1428,6 +1479,12 @@ function kpi(v,k){return '<div class="kpi"><div class="v">'+v+'</div><div class=
 function dayDiff(a,b){return Math.round((new Date(a)-new Date(b))/86400000);}
 function isoPlus(ds,n){var d=new Date(ds+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");}
 function fmtD(ds){var p=String(ds).split("-");return p.length===3?p[2]+"/"+p[1]:ds;}
+function ymd(y,m,d){return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");} // m,d de 1 à 12/31
+function firstOfMonth(iso){return iso.slice(0,7)+"-01";}
+function addMonth(iso,n){var y=+iso.slice(0,4),m=+iso.slice(5,7)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return ymd(y,m+1,1);}
+function daysInMonth(y,m){return new Date(Date.UTC(y,m,0)).getUTCDate();}                  // m sur 1-12
+function weekdayMon(iso){return (new Date(iso+"T12:00:00Z").getUTCDay()+6)%7;}             // lundi=0 ... dimanche=6
+function fmtDJ(ds){return ["lun","mar","mer","jeu","ven","sam","dim"][weekdayMon(ds)]+" "+fmtD(ds);}
 function fmtAbs(a){return a.from===a.to?("le "+fmtD(a.from)):("du "+fmtD(a.from)+" au "+fmtD(a.to));}
 function isAbsent(ds){return (S.absences||[]).some(function(a){return a.from<=ds&&ds<=a.to;});}
 function cadLabel(q){var c=q.cad;if(q.paused)return "en pause";if(!c||(!(c.days&&c.days.length)&&(!c.n||c.n<=1)))return "chaque jour";if(c.days&&c.days.length){var J=["dim","lun","mar","mer","jeu","ven","sam"];return c.days.map(function(d){return J[d];}).join("/");}return "tous les "+c.n+" jours";}
@@ -1475,6 +1532,29 @@ var LOCAL_CITS=[
  'Fais d\'abord la chose que tu repousses. C\'est elle qui te fait avancer.'
 ];
 function localCitation(){var d=today(),n=0;for(var i=0;i<d.length;i++)n+=d.charCodeAt(i);return LOCAL_CITS[n%LOCAL_CITS.length];}
+/* ---- Citations "The Forge" (Pavel Macek) — une par jour, dans la capacité Force ---- */
+var FORGE_CITS=[
+ {q:"Sème une pensée, tu récoltes une action ; sème une action, tu récoltes une habitude ; sème une habitude, tu récoltes un caractère ; sème un caractère, tu récoltes un destin.",a:"Proverbe"},
+ {q:"Nous sommes ce que nous faisons de façon répétée. L'excellence n'est donc pas un acte, mais une habitude.",a:"Will Durant, résumant Aristote — 1926"},
+ {q:"Le minerai de fer se croit torturé sans raison dans le haut-fourneau. La lame d'acier trempé, elle, se retourne et comprend.",a:"Devise de The Forge, d'après M. D. Babcock"},
+ {q:"Comment ! tu me donnes des conseils ? T'es-tu déjà redressé toi-même ? Je ne suis pas hypocrite au point d'offrir des remèdes en étant moi-même malade : je suis couché dans la même salle que toi, et je partage ce qui me soigne. Écoute-moi comme si je me parlais à moi-même.",a:"Sénèque, Lettres à Lucilius, 27"},
+ {q:"Tu n'imagines pas les progrès que je me vois faire chaque jour. Ce qui me réjouit quand j'apprends quelque chose, c'est de pouvoir l'enseigner : aucun bien n'est agréable à posséder sans compagnon.",a:"Sénèque, Lettres à Lucilius, 6"},
+ {q:"Prokoptôn : celui qui fait des progrès. Sans avoir encore la sagesse du sage, à mesure qu'il choisit mieux ses actions il commet de moins en moins d'erreurs, et il progresse.",a:"Greg Wasson, College of Stoic Philosophers"},
+ {q:"Le succès n'est pas définitif, l'échec n'est pas fatal : c'est le courage de continuer qui compte.",a:"Winston Churchill"},
+ {q:"N'aie aucune peur de la perfection : tu ne l'atteindras jamais.",a:"Salvador Dalí"},
+ {q:"Combien de temps encore vas-tu attendre avant d'exiger le meilleur de toi-même ? Souviens-toi que le combat, c'est maintenant. Tu es aux Jeux Olympiques, tu ne peux plus attendre : un seul jour, un seul acte, ruine ou préserve ton progrès.",a:"Épictète, Manuel, 51"},
+ {q:"Ne perds plus ton temps à discuter de ce que doit être un homme de bien. Sois-le.",a:"Marc Aurèle, Pensées, X, 16"},
+ {q:"Tu n'es pas encore Socrate ; mais vis comme quelqu'un qui, au moins, veut devenir Socrate.",a:"Épictète, Manuel, 51"},
+ {q:"Autrefois, les gens pratiquaient la Voie de la Vie : des exercices pour l'énergie, des repas équilibrés à heures régulières, un lever et un coucher à heures fixes, ni surmenage ni excès. Il n'est pas surprenant qu'ils aient vécu plus de cent ans.",a:"Neijing Suwen, Classique de l'Empereur Jaune"},
+ {q:"Balance tes bras pour être en bonne santé, balance tes bras pour être heureux.",a:"Dicton chinois — leçon Arm Swings"}
+];
+function forgeCitToday(){var n=Math.floor(Date.parse(today()+"T00:00:00Z")/86400000);return FORGE_CITS[((n%FORGE_CITS.length)+FORGE_CITS.length)%FORGE_CITS.length];} // une par jour, cycle complet de la liste
+function citationForgeCard(){
+  var c=forgeCitToday();
+  var s='<div class="win iri"><div class="win-h"><span class="t">Forge · Citation du jour</span><span class="ln"></span><span class="r">◆ The Forge</span></div>';
+  s+='<div class="forgecit"><span class="fq">“</span><div class="ft">'+esc(c.q)+'</div><div class="fa">— '+esc(c.a)+'</div></div>';
+  return s+'</div>';
+}
 var CITBUSY=false;
 function loadCitation(){
   if(S.quoteDate===today()&&S.quote)return;
@@ -1509,19 +1589,45 @@ function iBtn(key){return '<span class="ibtn" data-info="'+key+'" title="Explica
 /* ---- Fenêtre modale ---- */
 function openModal(html,color){
   var el=document.getElementById("modal");if(!el)return;
+  DGOPEN=null; // toute autre fenêtre remplace la fenêtre détail (openDungeon le repose juste après)
   el.innerHTML='<div class="modalwin" style="'+(color?"border-color:"+color+";box-shadow:0 0 44px "+color+"66":"")+'"><span class="mclose" id="m-close">✕</span>'+html+'</div>';
   el.className="show";
   var c=document.getElementById("m-close");if(c)c.onclick=closeModal;
   el.onclick=function(ev){if(ev.target===el)closeModal();};
 }
-function closeModal(){var el=document.getElementById("modal");if(el)el.className="";}
+var DGOPEN=null; // id de l'objectif dont la fenêtre détail est ouverte, sinon null
+function closeModal(){var el=document.getElementById("modal");if(el)el.className="";DGOPEN=null;}
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ ROBI</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
 function openRenameTask(qId){
   var q=find(S.quests,qId);if(!q)return;
-  var dateField=q.daily?"":'<div class="subhead" style="margin:16px 0 6px">Échéance (facultatif)</div><div class="addrow"><input type="date" id="rn-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="rn-duedel"'+(q.due?"":' style="display:none"')+'>Retirer</button></div>';
+  var multi=isMulti(q);
+  var dateField;
+  if(q.daily){dateField="";}
+  else if(multi){
+    CALSEL={};CALMON=null;
+    (q.dueDates||[]).forEach(function(d){if(dayDiff(d,today())>=0)CALSEL[d]=true;}); // seuls les jours à venir sont modifiables
+    dateField='<div class="subhead" style="margin:16px 0 6px">Jours choisis <span style="color:var(--dim2)">(ajoute ou retire ; les jours passés restent acquis)</span></div><div class="calwrap" id="calbox">'+calHTML()+'</div>';
+  }
+  else{dateField='<div class="subhead" style="margin:16px 0 6px">Échéance (facultatif)</div><div class="addrow"><input type="date" id="rn-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="rn-duedel"'+(q.due?"":' style="display:none"')+'>Retirer</button></div>';}
   openModal('<div class="mtag">▸ '+(q.daily?"Renommer la tâche":"Modifier la tâche")+'</div><div class="addrow" style="margin-top:12px"><input type="text" id="rn-title" maxlength="160" placeholder="Nom de la tâche..."><button class="btn" id="rn-save">Enregistrer</button></div>'+dateField);
+  if(multi)bindCal();
   var inp=document.getElementById("rn-title");if(inp){inp.value=q.title;try{inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}catch(_){}}
-  function commit(){var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);var due=document.getElementById("rn-due");if(due&&!q.daily){var dv=due.value;if(dv&&dv>=today())q.due=dv;else delete q.due;}save();closeModal();render();toast("Tâche enregistrée");}
+  function commit(){
+    var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);
+    if(q.daily){}
+    else if(multi){
+      var fut=Object.keys(CALSEL).filter(function(x){return CALSEL[x];});
+      var past=(q.dueDates||[]).filter(function(d){return dayDiff(d,today())<0;}); // occurrences passées conservées (XP déjà acquis)
+      var all=past.concat(fut).filter(function(x,i,a){return a.indexOf(x)===i;}).sort();
+      if(all.length>1){q.dueDates=all;q.doneDates=(q.doneDates||[]).filter(function(d){return all.indexOf(d)>=0;});q.due=nextDue(q)||all[all.length-1];}
+      else if(all.length===1){q.due=all[0];delete q.dueDates;delete q.doneDates;}   // un seul jour -> tâche simple datée
+      else{delete q.dueDates;delete q.doneDates;delete q.due;}                        // plus aucun jour -> tâche sans échéance
+    }
+    else{var due=document.getElementById("rn-due");if(due){var dv=due.value;
+      if(dv&&dv<today()){toast("Cette date est déjà passée. Choisis aujourd'hui ou plus tard.");return;} // on garde la fenêtre ouverte, rien n'est perdu
+      if(dv)q.due=dv;else delete q.due;}}
+    save();closeModal();render();toast("Tâche enregistrée");
+  }
   var sv=document.getElementById("rn-save");if(sv)sv.onclick=commit;
   var dd=document.getElementById("rn-duedel");if(dd)dd.onclick=function(){var due=document.getElementById("rn-due");if(due)due.value="";dd.style.display="none";};
   if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
@@ -1626,11 +1732,16 @@ function addCapTask(forced){
   var c=classifyQuest(t);var sel=document.getElementById("q-obj");var ov=sel?sel.value:"__auto";
   var mission=(ov==="__auto")?c.mission:(ov&&find(S.missions,ov)?ov:null);
   var st=(forced&&STATS[forced])?forced:c.stat;
-  var q={id:uid(),title:t,stat:st,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mission};
-  if(!q.daily)q.due=prochaineDate(q.prio);
+  var dates=Object.keys(CALSEL||{}).filter(function(x){return CALSEL[x];}).sort();
+  var daily=c.daily&&dates.length===0;   // des jours choisis priment sur "journalière"
+  var q={id:uid(),title:t,stat:st,daily:daily,prio:c.prio,base:baseFor(c.prio,daily),done:false,mission:mission};
+  if(dates.length>1){q.dueDates=dates;q.doneDates=[];q.due=nextDue(q);}
+  else if(dates.length===1){q.due=dates[0];}
+  else if(!daily){q.due=prochaineDate(q.prio);}
   S.quests.push(q);save();
   var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";
-  sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+(q.daily?"Journalière":"Priorité "+q.prio)+" · +"+q.base+" XP","Objectif : "+mn]);
+  var quand=dates.length>1?(dates.length+" jours choisis"):(dates.length===1?("le "+fmtD(dates[0])):(daily?"Journalière":"Priorité "+q.prio));
+  sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+quand+" · +"+q.base+" XP","Objectif : "+mn]);
   render();return true;
 }
 function addCapProject(forced){
@@ -1641,15 +1752,45 @@ function addCapProject(forced){
   sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);
   render();return true;
 }
+var MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function calHTML(){
+  var anchor=CALMON||firstOfMonth(today());
+  var y=+anchor.slice(0,4),M=+anchor.slice(5,7);           // M sur 1-12
+  var dim=daysInMonth(y,M),lead=weekdayMon(ymd(y,M,1)),td=today();
+  var h='<div class="calhead"><button type="button" class="calnav" data-calnav="prev">‹</button><span class="calmon">'+MOIS[M-1]+' '+y+'</span><button type="button" class="calnav" data-calnav="next">›</button></div>';
+  h+='<div class="calgrid">';
+  ["L","M","M","J","V","S","D"].forEach(function(w){h+='<span class="caldow">'+w+'</span>';});
+  for(var i=0;i<lead;i++)h+='<span class="cald empty"></span>';
+  for(var d=1;d<=dim;d++){
+    var iso=ymd(y,M,d),past=dayDiff(iso,td)<0,sel=!!CALSEL[iso],isT=iso===td;
+    h+='<button type="button" class="cald'+(sel?" on":"")+(isT?" tod":"")+(past?" past":"")+'"'+(past?" disabled":' data-calday="'+iso+'"')+'>'+d+'</button>';
+  }
+  h+='</div>';
+  var chosen=Object.keys(CALSEL).filter(function(x){return CALSEL[x];}).sort();
+  h+='<div class="calsum">'+(chosen.length?('<b>'+chosen.length+'</b> jour'+(chosen.length>1?"s":"")+" choisi"+(chosen.length>1?"s":"")+" · "+chosen.map(fmtD).join(", ")):"Aucun jour : la tâche sera datée automatiquement.")+'</div>';
+  return h;
+}
+function bindCal(){
+  var box=document.getElementById("calbox");if(!box)return;
+  function redraw(){box.innerHTML=calHTML();bindCal();}
+  Array.prototype.forEach.call(box.querySelectorAll("[data-calday]"),function(el){el.onclick=function(){var d=el.getAttribute("data-calday");if(CALSEL[d])delete CALSEL[d];else CALSEL[d]=true;redraw();};});
+  var pv=box.querySelector("[data-calnav='prev']"),nx=box.querySelector("[data-calnav='next']");
+  if(pv)pv.onclick=function(){CALMON=addMonth(CALMON||firstOfMonth(today()),-1);redraw();};
+  if(nx)nx.onclick=function(){CALMON=addMonth(CALMON||firstOfMonth(today()),1);redraw();};
+}
 function openAddCap(k){ // Ajouter, dans une modale : gain de place dans la vue
+  CALSEL={};CALMON=null;
   var m=STATS[k];var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
   var h='<div class="mtag">▸ Ajouter dans '+m.ic+' '+esc(m.name)+'</div>';
   h+='<div class="plab" style="margin-top:10px">Nouvelle tâche</div>';
   h+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select></div>';
+  h+='<div class="plab" style="margin-top:14px">Quand ? <span style="font-weight:400;color:var(--dim2)">un ou plusieurs jours, ou laisse vide</span></div>';
+  h+='<div class="calwrap" id="calbox">'+calHTML()+'</div>';
   h+='<div class="rowbtn"><button class="btn" id="q-add" data-capadd="'+k+'">Ajouter la tâche</button></div>';
   h+='<div class="plab" style="margin-top:20px">Nouveau projet</div>';
   h+='<div class="addrow"><input type="text" id="m-title" placeholder="Nom du projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Créer</button></div>';
   openModal(h,m.col);
+  bindCal();
   var qa=document.getElementById("q-add");if(qa)qa.onclick=function(){if(addCapTask(k))closeModal();};
   var ma=document.getElementById("m-add");if(ma)ma.onclick=function(){if(addCapProject(k))closeModal();};
   var qt=document.getElementById("q-title");if(qt)qt.focus();
@@ -1706,16 +1847,18 @@ function openDungeon(mId){
   h+='<div style="display:flex;justify-content:space-between;font-family:var(--font-sys);font-size:9.5px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px"><span>PROGRESSION</span><span>'+done+' / '+qs.length+'</span></div>'+bar(done,Math.max(1,qs.length));
   h+='<div style="margin:14px 0 4px"><button class="btn ghost" id="dg-convo" style="width:100%">💬 Pourquoi ces tâches, et comment avancer ? Demander à ROBI</button></div>';
   h+='<div class="subhead" style="margin:16px 0 4px">Tâches de l\'objectif</div>';
-  h+=qs.length?qs.map(questRow).join(""):'<div class="empty">Aucune tâche. Ajoutes-en une ci-dessous.</div>';
+  h+=qs.length?qs.map(function(q){return questRow(q,0,true);}).join(""):'<div class="empty">Aucune tâche. Ajoutes-en une ci-dessous.</div>';
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle tâche pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
   openModal(h,rk.c);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();openDungeon(mId);});};});
+  DGOPEN=mId; // le menu ⋯ des lignes redessine cette fenêtre au lieu de la vue derrière
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
   var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
   var a=document.getElementById("dq-add");
-  if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);S.quests.push({id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId});save();render();openDungeon(mId);};
+  if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId};if(!q.daily)q.due=prochaineDate(q.prio);S.quests.push(q);save();render();openDungeon(mId);};
 }
 
 /* ---- ROBI (chat) ---- */
@@ -1902,7 +2045,7 @@ function renderNav(){
   n.innerHTML=h;
   Array.prototype.forEach.call(n.querySelectorAll("button"),function(b){b.onclick=function(){view=b.dataset.v;objSel=null;render();};});
 }
-function setClock(){var el=document.getElementById("hud-clock");if(!el)return;var d=new Date();el.textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function setClock(){var el=document.getElementById("hud-clock");if(!el)return;var d=gameNow();el.textContent=String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0");}
 
 /* ---- Conversation ROBI contextuelle (par tâche / par objectif) ---- */
 var convoBusy=false;
@@ -2068,6 +2211,23 @@ function projBlock(list,qsOf){ // les projets ouverts en pleine largeur, les aut
 function dcard(ic,val,label,sub,color,go){
   return '<div class="dcard'+(go?" link":"")+'"'+(go?' data-go="'+go+'"':'')+' style="--dc:'+color+'"><div class="di">'+ic+'</div><b>'+val+'</b><div class="dl">'+esc(label)+'</div><div class="ds">'+esc(sub)+'</div></div>';
 }
+/* ---- Blocs "Semaine prochaine" / "La semaine d'après" du Cockpit ---- */
+function wkFirstDate(q,a,b){if(q.pub)return q.pubDate||"9999";if(isMulti(q)){var p=multiPending(q).filter(function(d){return d>=a&&d<=b;});return p[0]||"9999";}return q.due||"9999";}
+function tasksInWindow(a,b){
+  return S.quests.filter(function(q){
+    if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;
+    if(q.pub)return !!q.pubDate&&q.pubDate>=a&&q.pubDate<=b;
+    if(isMulti(q))return multiPending(q).some(function(d){return d>=a&&d<=b;});
+    return !!q.due&&q.due>=a&&q.due<=b;
+  }).sort(function(x,y){var xa=wkFirstDate(x,a,b),ya=wkFirstDate(y,a,b);return xa<ya?-1:(xa>ya?1:(y.base-x.base));});
+}
+function weekBlock(key,label,a,b){
+  var list=tasksInWindow(a,b),open=!WKFOLD[key];
+  var s='<div class="spanel"><div class="spl wkhead" data-wkfold="'+key+'" title="'+(open?"Replier":"Déplier")+'">'+label+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+fmtD(a)+'–'+fmtD(b)+' · '+list.length+'</span><span class="wkchev">'+(open?"▾":"▸")+'</span></div>';
+  if(open)s+=list.length?list.map(function(q){return questRow(q,0,true,{win:[a,b]});}).join(""):'<div class="empty">Rien de prévu cette semaine-là.</div>';
+  s+='</div>';
+  return s;
+}
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
@@ -2091,6 +2251,10 @@ function vCockpit(){
   s+='<div class="spanel"><div class="spl">Aujourd\'hui<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
   s+=list.length?'<div class="tcols">'+list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
   s+='</div>';
+  s+='</div><div class="ckcol wks">';
+  var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
+  s+=weekBlock("w1","Semaine prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
+  s+=weekBlock("w2","La semaine d\'après",isoPlus(mon0,14),isoPlus(mon0,20));
   s+='</div></div>';
   s+='</div>';
   return s;
@@ -2129,7 +2293,7 @@ function vCap(k){
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
   // 3. Les outils propres à la capacité
   if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
-  if(k==="physique"){s+=sleepCard();}
+  if(k==="physique"){s+=citationForgeCard()+sleepCard();}
   if(k==="discipline"){s+=roueCard();}
   s+='</div>';   // fin capmason
   return s+'</div>';
@@ -2178,13 +2342,29 @@ function prochaineDate(prio){ // la premiere journee pas encore chargee, selon l
   var depart=prio==="high"?0:(prio==="med"?1:3);
   for(var d=depart;d<depart+45;d++){
     var iso=isoPlus(today(),d);
-    var n=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&q.due===iso;}).length;
+    var n=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&!isMulti(q)&&q.due===iso;}).length;
     if(n<3)return iso;   // trois taches datees par jour au maximum
   }
   return isoPlus(today(),depart);
 }
-function dueBadge(q){ // badge d'échéance sur une tâche non journalière
-  if(!q.due||q.daily)return "";
+function dueBadge(q,win){ // badge d'échéance sur une tâche non journalière ; win=[du,au] pour les blocs semaine
+  if(q.daily)return "";
+  if(win){
+    if(isMulti(q)){
+      var occ=multiPending(q).filter(function(d){return d>=win[0]&&d<=win[1];});
+      return occ.length?'<span class="tag" style="color:var(--dim);border-color:var(--brd)">🔁 '+occ.map(fmtDJ).join(" · ")+'</span>':"";
+    }
+    return q.due?'<span class="tag" style="color:var(--dim);border-color:var(--brd)">⏰ '+fmtDJ(q.due)+'</span>':"";
+  }
+  if(isMulti(q)){
+    var pen=multiPending(q);if(!pen.length)return "";
+    var nd=pen[0],d2=dayDiff(nd,today()),c2,w2;
+    if(d2<=0){c2="var(--txt)";w2="aujourd'hui";}
+    else if(d2<=3){c2="var(--dim)";w2="dans "+d2+" j";}
+    else{c2="var(--dim2)";w2=fmtD(nd);}
+    return '<span class="tag" style="color:'+c2+';border-color:'+c2+'55">🔁 '+w2+(pen.length>1?' · '+pen.length+' jours':'')+'</span>';
+  }
+  if(!q.due)return "";
   var dd=dayDiff(q.due,today()),col,txt;
   if(dd<0){col="var(--pink)";txt="⏰ en retard ("+fmtD(q.due)+")";}
   else if(dd===0){col="var(--txt)";txt="⏰ aujourd'hui";}
@@ -2207,7 +2387,9 @@ function questRow(q,depth,compact,ctx){
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:var(--pink);border-color:rgba(255,107,138,.35)">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  if(compact){var db=dueBadge(q);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
+  var mact=!isMulti(q)||multiActiveToday(q); // un jour non prévu : la case n'est pas cochable
+  var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
+  if(compact){var db=dueBadge(q,ctx.win);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -2219,7 +2401,7 @@ function questRow(q,depth,compact,ctx){
   var acts=(rowMenu===q.id)
     ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
     :('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>');
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
 }
 function questTree(list,ctx){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -2481,13 +2663,14 @@ function vEvolution(){
 }
 
 function bind(){
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){q.done=true;award(q);render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){validateTask(q);render();});};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
   var ma=document.getElementById("m-add");
