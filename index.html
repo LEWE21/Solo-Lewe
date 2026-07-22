@@ -310,6 +310,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ---------- Fenetres, confirmations, notifications ---------- */
+#boot.show{background:radial-gradient(1100px 760px at 12% -6%,rgba(255,206,150,.9),transparent 62%),radial-gradient(1000px 720px at 94% 104%,rgba(255,168,105,.75),transparent 60%),var(--ground)}
+.lockwin{text-align:center;max-width:340px}
+.lockin{width:100%;text-align:center;font-size:26px;letter-spacing:.5em;padding:14px 10px;margin-top:16px;font-family:var(--mono)}
+.lockmsg{font-size:14.5px;color:var(--dim);margin-top:8px}
+.lockmsg.err{color:var(--red)}
 #modal,#ask,#secret,#boot,#flash{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
   padding:22px;background:rgba(70,44,20,.42);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
 #modal.show,#ask.show,#secret.show,#boot.show,#flash.show{display:flex}
@@ -2384,6 +2389,21 @@ function settChroniques(){ // l'historique complet, hors du chemin quotidien
   s+=S.log.length?S.log.slice(0,40).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité enregistrée.</div>';
   return s;
 }
+function settSecurite(){
+  var has=!!robiPass();
+  var s='<div class="mtitle">Sécurité</div>';
+  s+='<div class="subhead" style="margin:6px 0 14px">Un code protège l\'accès à ROBI sur cet appareil. C\'est un verrou de confidentialité : tes données restent en local, ce n\'est pas un chiffrement fort.</div>';
+  if(has){
+    s+='<div class="sysrow" style="margin-bottom:14px"><span>🔒 Un code d\'accès est actif.</span></div>';
+    s+='<div class="plab">Changer le code</div>';
+    s+='<div class="addrow"><input type="password" inputmode="numeric" id="sec-new" placeholder="Nouveau code (4 caractères min)"><button class="btn" id="sec-set">Enregistrer</button></div>';
+    s+='<div class="rowbtn"><button class="btn ghost" id="sec-clear" style="color:var(--pink);border-color:var(--pink)">Retirer le code</button></div>';
+  }else{
+    s+='<div class="plab">Définir un code d\'accès</div>';
+    s+='<div class="addrow"><input type="password" inputmode="numeric" id="sec-new" placeholder="Ton code (4 caractères min)"><button class="btn" id="sec-set">Activer le code</button></div>';
+  }
+  return s;
+}
 function settAbsences(){
   var absences=(S.absences||[]).slice().sort(function(a,b){return a.from<b.from?-1:(a.from>b.from?1:0);});
   var s='<div class="mtitle">Absences</div><div class="subhead">Planifie une absence (voyage, service). Pendant une absence : pas de pénalité de journalières, série préservée.</div>';
@@ -2414,11 +2434,11 @@ function settEntries(){
 }
 function openSettings(tab){
   tab=tab||"absences";
-  var tabs=[["absences","Absences"],["liaison","Liaison"],["entrees","Entrées"],["chroniques","Chroniques"]];
+  var tabs=[["securite","Sécurité"],["absences","Absences"],["liaison","Liaison"],["entrees","Entrées"],["chroniques","Chroniques"]];
   var h='<div class="mtag">▸ Paramètres</div>';
   h+='<div style="display:flex;justify-content:flex-end;margin:-2px 0 8px"><button class="btn ghost" id="set-sound">'+(soundOn()?"🔊 Sons activés":"🔇 Sons coupés")+'</button></div>';
   h+='<div class="settabs">'+tabs.map(function(t){return '<button class="settab'+(t[0]===tab?" on":"")+'" data-settab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div><div class="setbody">';
-  h+=tab==="chroniques"?settChroniques():(tab==="liaison"?settLiaison():(tab==="entrees"?settEntries():settAbsences()));
+  h+=tab==="securite"?settSecurite():(tab==="chroniques"?settChroniques():(tab==="liaison"?settLiaison():(tab==="entrees"?settEntries():settAbsences())));
   h+='</div>';
   openModal(h);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-settab]"),function(el){el.onclick=function(){openSettings(el.dataset.settab);};});
@@ -2427,6 +2447,8 @@ function openSettings(tab){
 function wireSettings(tab){
   function refresh(){openSettings(tab);}
   var sb=document.getElementById("set-sound");if(sb)sb.onclick=function(){S.sound=!soundOn();save();initAudio();if(soundOn())sfx("check");refresh();};
+  var scset=document.getElementById("sec-set");if(scset)scset.onclick=function(){var v=(document.getElementById("sec-new")||{}).value||"";if(v.replace(/\s/g,"").length<4){toast("Choisis un code d’au moins 4 caractères");return;}hashPass(v).then(function(hx){setRobiPass(hx);BOOT_UNLOCKED=true;toast("Code d’accès activé");openSettings("securite");});};
+  var scclr=document.getElementById("sec-clear");if(scclr)scclr.onclick=function(){sysConfirm("Retirer le code d'accès ?",["ROBI s'ouvrira sans code sur cet appareil."],function(){setRobiPass("");toast("Code retiré");openSettings("securite");});};
   function addAbs(from,to){if(to<from){var t=from;from=to;to=t;}if(to<today()){toast("Choisis des dates à venir");return;}S.absences=S.absences||[];S.absences.push({from:from,to:to});save();sysNotify("Absence planifiée",fmtAbs({from:from,to:to}),["Pénalités suspendues"]);refresh();}
   var e;
   e=document.getElementById("set-ab-day");if(e)e.onclick=function(){addAbs(today(),today());};
@@ -2547,34 +2569,47 @@ document.getElementById("file-import").onchange=function(e){var f=e.target.files
 /* ---- Écran d'accueil de ROBI (ouverture façon Iron Man / JARVIS) ---- */
 var BOOT_GREETS=["À votre service, quand vous le souhaitez.","Tout est prêt, je vous laisse commencer.","Je reste à votre entière disposition.","Prenez votre temps, je m'occupe du reste."];
 var bootTimer=null;
+/* ---- Code d'accès (verrou de confidentialité, local à l'appareil) ---- */
+var BOOT_UNLOCKED=false;
+function robiPass(){try{return localStorage.getItem("robi_pass")||"";}catch(e){return "";}}
+function setRobiPass(hx){try{if(hx)localStorage.setItem("robi_pass",hx);else localStorage.removeItem("robi_pass");}catch(e){}}
+function hashPass(code){
+  code=String(code||"");
+  try{
+    if(window.crypto&&crypto.subtle&&crypto.subtle.digest&&window.TextEncoder){
+      var data=new TextEncoder().encode("robi:"+code);
+      return crypto.subtle.digest("SHA-256",data).then(function(buf){
+        return Array.prototype.map.call(new Uint8Array(buf),function(b){return b.toString(16).padStart(2,"0");}).join("");
+      });
+    }
+  }catch(e){}
+  var h=5381;for(var i=0;i<code.length;i++)h=((h<<5)+h+code.charCodeAt(i))>>>0; // repli si SubtleCrypto indisponible
+  return Promise.resolve("s"+h.toString(16));
+}
 function showBoot(){
   var el=document.getElementById("boot");if(!el)return;
   applyTheme();
-  var h=S.hunter,rk=rankOf(h.level),mood=companionMood();
-  var cached=(S.greetDate===today()&&S.greetLine);
-  var todo=0;
-  var mo=momentOf();
-  var hello=mo==="matin"?"Bonjour":(mo==="soir"?"Bonsoir":"Bon retour");
-  var brief=hello+" "+esc(h.name)+".";
-  var greet=cached?S.greetLine:brief;
-  el.innerHTML='<div class="bootwin">'+
-    '<div class="bmk">'+robiAvatar(rk.r,mood,60)+'</div>'+
+  var pass=robiPass();
+  // Plus de message de bonjour : sans code on entre directement, avec code on demande le code.
+  if(!pass||BOOT_UNLOCKED){el.className="";el.innerHTML="";return;}
+  el.innerHTML='<div class="bootwin lockwin">'+
+    '<div class="bmk">'+robiAvatar(rankOf(S.hunter.level).r,"neutre",60)+'</div>'+
     '<div class="bsys">ROBI</div>'+
-    '<div class="bbig">'+hello+'</div>'+
-    '<div class="bstats"><span>Niv <b>'+h.level+'</b></span><span>Palier <b>'+rk.r+'</b></span><span>Série <b>'+(S.streak||0)+' j</b></span></div>'+
-    '<div class="bbar"><i></i></div>'+
-    '<div class="bgreet" id="boot-greet"><span class="who">ROBI</span>'+esc(greet)+'</div>'+
-    '<div class="benter">Toucher pour entrer</div>'+
+    '<div class="lockmsg" id="lock-msg">Entre ton code d\'accès</div>'+
+    '<input type="password" inputmode="numeric" id="lock-in" class="lockin" autocomplete="off" placeholder="••••">'+
+    '<button class="btn" id="lock-go" style="width:100%;margin-top:14px">Déverrouiller</button>'+
   '</div>';
   el.className="show";
-  var closed=false;
-  function closeBoot(){if(closed)return;closed=true;el.className="";el.onclick=null;}
-  el.onclick=closeBoot;
-  if(!cached){
-    gm("greeting",{state:apiState(),todo:todo}).then(function(r){
-      if(r&&r.line){S.greetDate=today();S.greetLine=r.line;save();var g=document.getElementById("boot-greet");if(g&&el.className==="show")g.innerHTML='<span class="who">ROBI</span>'+esc(r.line);}
-    }).catch(function(){});
+  var inp=document.getElementById("lock-in");if(inp){try{inp.focus();}catch(e){}}
+  function tryUnlock(){
+    var v=(document.getElementById("lock-in")||{}).value||"";
+    hashPass(v).then(function(hx){
+      if(hx===robiPass()){BOOT_UNLOCKED=true;el.className="";el.innerHTML="";}
+      else{var mm=document.getElementById("lock-msg");if(mm){mm.textContent="Code incorrect. Réessaie.";mm.className="lockmsg err";}var i2=document.getElementById("lock-in");if(i2){i2.value="";try{i2.focus();}catch(e){}}sfx("penalty");}
+    });
   }
+  var go=document.getElementById("lock-go");if(go)go.onclick=tryUnlock;
+  if(inp)inp.onkeydown=function(e){if(e.key==="Enter")tryUnlock();};
 }
 function afterSync(){
   var ro=rollover();
