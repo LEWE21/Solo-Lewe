@@ -44,7 +44,6 @@ html{height:100%}
 body{
   margin:0;height:100dvh;overflow:hidden;color:var(--txt);
   font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;
-  padding-left:var(--rail);
   background:
     radial-gradient(1100px 760px at 12% -6%,rgba(255,206,150,.85),transparent 62%),
     radial-gradient(1000px 720px at 94% 104%,rgba(255,168,105,.7),transparent 60%),
@@ -81,23 +80,23 @@ body{
 .ubadge{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 9px var(--red)}
 
 /* ---------- Rail lateral ---------- */
-nav{position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:30;display:flex;flex-direction:column;gap:4px;
-  padding:calc(18px + env(safe-area-inset-top,0px)) 12px calc(18px + env(safe-area-inset-bottom,0px));
-  overflow-y:auto;overflow-x:hidden;background:var(--panel);border-right:1px solid var(--brd);
+nav{flex:none;display:flex;flex-direction:row;gap:6px;margin-bottom:18px;padding:6px;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  background:var(--panel);border:1px solid var(--brd);border-radius:var(--r-pill);
   -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-nav::-webkit-scrollbar{width:0}
+nav::-webkit-scrollbar{height:0}
 nav button{position:relative;overflow:hidden;background:none;border:0;color:var(--dim);cursor:pointer;
-  padding:11px 12px;border-radius:12px;font-family:var(--font);font-size:13.5px;font-weight:500;
-  display:flex;align-items:center;gap:11px;text-align:left;white-space:nowrap;transition:.16s}
-nav button .ni{font-size:19px;line-height:1;flex:none;width:22px;text-align:center}
-nav button .nl{flex:1;min-width:0}
-nav button .nlv{font-family:var(--mono);font-size:10.5px;color:var(--dim2);flex:none;display:flex;align-items:center;gap:5px}
-nav button .nlv b{font-weight:600;font-size:11px;color:var(--dim2)}
+  padding:9px 15px;border-radius:var(--r-pill);font-family:var(--font);font-size:13.5px;font-weight:500;
+  display:flex;align-items:center;gap:9px;white-space:nowrap;flex:none;transition:.16s}
+nav button .ni{font-size:17px;line-height:1;flex:none}
+nav button .nl{flex:none}
+nav button .nlv{font-family:var(--mono);font-size:10px;color:var(--dim2);flex:none;display:flex;align-items:center;gap:4px}
+nav button .nlv b{font-weight:600;font-size:12px;color:var(--dim2)}
 nav button:hover{background:var(--panel-2);color:var(--txt)}
-nav button.on{background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff}
+nav button.on{background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;box-shadow:0 6px 16px -8px var(--accent-deep)}
 nav button.on .nl{color:#fff}
-nav button.on .nlv,nav button.on .nlv b{color:rgba(255,255,255,.8)}
-nav button.capnav .ni{filter:drop-shadow(0 0 7px var(--cc))}
+nav button.on .nlv,nav button.on .nlv b{color:rgba(255,255,255,.85)}
+nav button.capnav .ni{filter:drop-shadow(0 0 6px var(--cc))}
 nav button.capnav.wk .nlv b{color:var(--cc)}
 nav button.capnav.on .ni{filter:none}
 
@@ -471,16 +470,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
   .ladder{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:700px){
-  :root{--rail:0px}
-  body{padding-left:0}
-  nav{left:50%;top:auto;bottom:calc(13px + env(safe-area-inset-bottom,0px));width:auto;max-width:calc(100vw - 16px);
-    transform:translateX(-50%);flex-direction:row;overflow-x:auto;overflow-y:hidden;border:1px solid var(--brd);
-    border-radius:var(--r-pill);padding:6px;gap:2px;box-shadow:var(--shadow-lg)}
-  nav button{border-radius:var(--r-pill);padding:9px 11px;flex-direction:column;gap:5px;font-size:8px;min-width:52px}
-  nav button .ni{width:auto}
-  nav button .nl{flex:none}
-  nav button .nlv{display:none}
-  #view{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  nav button{padding:9px 12px}
+  nav button .nlv{display:none}   /* sur téléphone, l'onglet garde juste icône + nom */
   .todaycols{grid-template-columns:1fr;gap:6px}
   .pgrid{grid-template-columns:1fr}
   .dgrid{grid-template-columns:repeat(2,1fr)}
@@ -532,10 +523,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
       <input type="file" id="file-import" accept="application/json" hidden>
     </div>
   </div>
+  <nav id="nav"></nav>
   <div id="view"></div>
 </div>
-
-<nav id="nav"></nav>
 
 <div id="nstack"></div>
 <div id="flash"></div>
