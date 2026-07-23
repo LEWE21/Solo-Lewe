@@ -2197,11 +2197,8 @@ function projCard(pr,qs){
     '<div class="pcf"><span>'+done+' / '+qs.length+' tâches</span>'+right+'</div></div>';
 }
 function projBlock(list,qsOf){ // les projets ouverts en pleine largeur, les autres en grille
-  // Peu de projets : on montre directement les tâches. Beaucoup : on montre la grille de cartes.
-  var auto=list.length<=2;
-  // On fige l'etat resolu : sans ca, le premier clic sur un projet ouvert
-  // automatiquement passait de "indefini" a "vrai" et ne le repliait pas.
-  list.forEach(function(p){if(!(p.id in projOpen))projOpen[p.id]=auto;});
+  // Tous les projets sont repliés d'office (grille de cartes) : on déplie ce qu'on veut, le temps de la session.
+  list.forEach(function(p){if(!(p.id in projOpen))projOpen[p.id]=false;});
   var ouverts=list.filter(function(p){return projOpen[p.id];});
   var fermes=list.filter(function(p){return !projOpen[p.id];});
   var h=ouverts.map(function(pr){return projGroup(pr,qsOf(pr));}).join("");
@@ -2248,11 +2245,13 @@ function vCockpit(){
   s+=dcard('◇',capsWk+'/'+caps.length,'Capacités',(capsWk===caps.length?"semaine ✓":(caps.length-capsWk)+" en attente"),'var(--mint)');
   s+='</div>';
   s+='</div><div class="ckcol">';
-  s+='<div class="spanel"><div class="spl">Aujourd\'hui<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
   s+=list.length?'<div class="tcols">'+list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
   s+='</div>';
   s+='</div><div class="ckcol wks">';
   var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
+  var cwA=isoPlus(today(),1),cwB=isoPlus(mon0,6); // de demain à dimanche : le jour même vit dans Aujourd'hui
+  if(cwA<=cwB)s+=weekBlock("w0","Cette semaine",cwA,cwB); // le dimanche, il n'y a plus de "reste de semaine"
   s+=weekBlock("w1","Semaine prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
   s+=weekBlock("w2","La semaine d\'après",isoPlus(mon0,14),isoPlus(mon0,20));
   s+='</div></div>';
