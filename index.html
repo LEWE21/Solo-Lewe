@@ -159,6 +159,13 @@ nav button.capnav.on .ni{filter:none}
 .wkhead{cursor:pointer;user-select:none}
 .wkhead:hover .wkchev{color:var(--txt)}
 .wkchev{color:var(--dim2);font-size:12px;margin-left:8px}
+.habtabs{display:flex;gap:6px;margin:2px 0 12px;background:var(--panel-3);border-radius:12px;padding:4px}
+.habtab{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;border:none;background:transparent;color:var(--dim);font-size:13px;font-weight:600;border-radius:9px;cursor:pointer;transition:.14s}
+.habtab .hti{font-size:14px}
+.habtab .htn{font-family:var(--mono);font-size:10px;background:var(--brd);color:var(--txt);border-radius:20px;padding:1px 6px}
+.habtab:hover{color:var(--txt)}
+.habtab.on{background:var(--panel-2);color:var(--txt);box-shadow:var(--inset)}
+.habtab.on .htn{background:var(--accent);color:#fff}
 
 /* Profil */
 .srank{display:flex;align-items:center;gap:15px}
@@ -491,8 +498,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 }
 @media(max-width:1100px){
   .ckgrid{grid-template-columns:minmax(280px,340px) minmax(0,1fr)}
-  .ckcol.wks{grid-column:1/-1;flex-direction:row;align-items:start}
-  .ckcol.wks>.spanel{flex:1 1 0;min-width:0}
+  .ckcol.wks{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:start}
+  .ckcol.wks>.spanel{flex:1 1 240px;min-width:0}
   #app{padding-left:calc(22px + env(safe-area-inset-left,0px));padding-right:calc(22px + env(safe-area-inset-right,0px))}
 }
 @media(max-width:1000px){
@@ -927,6 +934,16 @@ var CALSEL={},CALMON=null;
 /* ---- Blocs semaines du Cockpit : état replié/déplié, gardé sur l'appareil ---- */
 var WKFOLD=(function(){try{return JSON.parse(localStorage.getItem("robi_wkfold")||"{}");}catch(e){return {};}})();
 function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFOLD));}catch(e){}}
+/* ---- Habitudes du jour : moment (matin / midi / soir) d'une journalière, et onglet actif ---- */
+var habTab=null;
+function taskMoment(q){
+  if(q&&/^(matin|midi|soir)$/.test(q.moment||""))return q.moment;
+  var t=((q&&q.title)||"").toLowerCase();
+  if(/matin|matinal|r[ée]veil|petit[- ]d[ée]j/.test(t))return "matin";
+  if(/midi|d[ée]jeuner|pause d[ée]j/.test(t))return "midi";
+  if(/soir|coucher|nuit|dodo|avant de dormir/.test(t))return "soir";
+  return "matin"; // par défaut, le matin
+}
 function isMulti(q){return !!(q&&q.dueDates&&q.dueDates.length);}
 function multiPending(q){var dd=q.doneDates||[];return (q.dueDates||[]).filter(function(d){return dd.indexOf(d)<0&&dayDiff(d,today())>=0;}).sort();}
 function nextDue(q){if(!isMulti(q))return q.due;var p=multiPending(q);return p.length?p[0]:null;}
@@ -1266,7 +1283,10 @@ function openTaskSet(qId){
     h+='<div class="plab" style="margin-top:16px">Quels jours de la semaine</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
     order.forEach(function(d){var on=isDays?((c.days||[]).indexOf(d)>=0):true;h+='<button class="cbtn'+(on?" on":"")+'" data-tsday="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
     h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
-    h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
+    h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+    [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    h+='</div>';
+    h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
   }else if(multi){
     CALSEL={};CALMON=null;
     (q.dueDates||[]).forEach(function(d){if(dayDiff(d,today())>=0)CALSEL[d]=true;});
@@ -1310,6 +1330,7 @@ function openTaskSet(qId){
     q.paused=false;reopen();
   };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tspause]"),function(el){el.onclick=function(){q.paused=el.getAttribute("data-tspause")==="1";reopen();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsmoment]"),function(el){el.onclick=function(){q.moment=el.getAttribute("data-tsmoment");reopen();};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tscap]"),function(el){el.onclick=function(){TSETCAP=el.getAttribute("data-tscap");openTaskSet(qId);};});
   var dd=document.getElementById("ts-duedel");if(dd)dd.onclick=function(){var e2=document.getElementById("ts-due");if(e2)e2.value="";};
   var del=document.getElementById("ts-del");if(del)del.onclick=function(){
@@ -2206,6 +2227,37 @@ function weekBlock(key,label,a,b){
   s+='</div>';
   return s;
 }
+/* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
+function habCard(){
+  var due=S.quests.filter(function(q){return q.daily&&dueToday(q);});
+  var ht=habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");
+  var moments=[["matin","Matin","☀️"],["midi","Midi","🍽️"],["soir","Soir","🌙"]];
+  var s='<div class="spanel"><div class="spl">Habitudes du jour</div>';
+  s+='<div class="habtabs">';
+  moments.forEach(function(mo){
+    var n=due.filter(function(q){return taskMoment(q)===mo[0];}).length;
+    s+='<button class="habtab'+(ht===mo[0]?" on":"")+'" data-habtab="'+mo[0]+'"><span class="hti">'+mo[2]+'</span>'+mo[1]+(n?' <span class="htn">'+n+'</span>':'')+'</button>';
+  });
+  s+='</div>';
+  var moc=due.filter(function(q){return taskMoment(q)===ht;});
+  s+=moc.length?moc.map(function(q){return dailyRow(q,true);}).join(""):'<div class="empty">Aucune habitude pour ce moment.</div>';
+  s+='</div>';
+  return s;
+}
+/* ---- Carte "Tâches terminées" : ce que tu as validé aujourd'hui, avant le passage de minuit ---- */
+function doneTodayList(){
+  return S.quests.filter(function(q){
+    if(isMulti(q))return (q.doneDates||[]).indexOf(today())>=0; // occurrence du jour validée
+    return !!q.done;                                            // journalière ou tâche validée aujourd'hui
+  });
+}
+function doneBlock(){
+  var list=doneTodayList(),open=!WKFOLD.wdone;
+  var s='<div class="spanel"><div class="spl wkhead" data-wkfold="wdone" title="'+(open?"Replier":"Déplier")+'">Tâches terminées<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span><span class="wkchev">'+(open?"▾":"▸")+'</span></div>';
+  if(open)s+=list.length?list.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';}).join(""):'<div class="empty">Rien de terminé aujourd\'hui pour l\'instant.</div>';
+  s+='</div>';
+  return s;
+}
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
@@ -2214,7 +2266,7 @@ function vCockpit(){
     if(q.pub)return true;
     return !!q.due&&dayDiff(q.due,today())<=0;
   }).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
-  var list=dueList.concat(focus),todo=dueList.filter(function(q){return !q.done;}).length+focus.length;
+  var todo=dueList.filter(function(q){return !q.done;}).length+focus.length; // journalières + tâches datées, restant à faire
   var caps=Object.keys(STATS),capsWk=caps.filter(capTouchedThisWeek).length;
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
@@ -2225,16 +2277,18 @@ function vCockpit(){
   s+=dcard('◎',todo,'À faire',(todo?"aujourd'hui":"tout est prévu ✓"),'var(--blue)');
   s+=dcard('◇',capsWk+'/'+caps.length,'Capacités',(capsWk===caps.length?"semaine ✓":(caps.length-capsWk)+" en attente"),'var(--mint)');
   s+='</div>';
+  s+=habCard();   // les habitudes du jour, à gauche des tâches d'aujourd'hui
   s+='</div><div class="ckcol">';
-  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todo+' à faire</span></div>';
-  s+=list.length?'<div class="tcols">'+list.map(function(q){return q.daily?dailyRow(q,true):questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de prévu aujourd\'hui. Tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+focus.length+' à faire</span></div>';
+  s+=focus.length?'<div class="tcols">'+focus.map(function(q){return questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de daté aujourd\'hui. Tes habitudes sont à gauche, tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
   s+='</div>';
   s+='</div><div class="ckcol wks">';
   var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
   var cwA=isoPlus(today(),1),cwB=isoPlus(mon0,6); // de demain à dimanche : le jour même vit dans Aujourd'hui
-  if(cwA<=cwB)s+=weekBlock("w0","Cette semaine",cwA,cwB); // le dimanche, il n'y a plus de "reste de semaine"
-  s+=weekBlock("w1","Semaine prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
-  s+=weekBlock("w2","La semaine d\'après",isoPlus(mon0,14),isoPlus(mon0,20));
+  if(cwA<=cwB)s+=weekBlock("w0","Semaine",cwA,cwB); // le dimanche, il n'y a plus de "reste de semaine"
+  s+=weekBlock("w1","Semaine Prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
+  s+=weekBlock("w2","Semaine Suivante",isoPlus(mon0,14),isoPlus(mon0,20));
+  s+=doneBlock();  // sous Semaine Suivante : ce qui a été terminé aujourd'hui
   s+='</div></div>';
   s+='</div>';
   return s;
@@ -2640,6 +2694,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
   var ma=document.getElementById("m-add");
