@@ -2246,9 +2246,10 @@ function weekBlock(key,label,a,b){
   return s;
 }
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
-function habCard(){
+function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
+function habCard(ht){
   var due=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var ht=habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");
+  ht=ht||cockMoment();
   var moments=[["matin","Matin","☀️"],["midi","Midi","🍽️"],["soir","Soir","🌙"]];
   var s='<div class="spanel"><div class="spl">Habitudes du jour</div>';
   s+='<div class="habtabs">';
@@ -2295,7 +2296,10 @@ function vCockpit(){
   s+=dcard('◎',todo,'À faire',(todo?"aujourd'hui":"tout est prévu ✓"),'var(--blue)');
   s+=dcard('◇',capsWk+'/'+caps.length,'Capacités',(capsWk===caps.length?"semaine ✓":(caps.length-capsWk)+" en attente"),'var(--mint)');
   s+='</div>';
-  s+=habCard();   // les habitudes du jour, à gauche des tâches d'aujourd'hui
+  var ht=cockMoment();
+  s+=moodCard();     // humeur du jour, au-dessus des habitudes
+  s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
+  if(ht==="soir")s+=defiCard("epictete")+defiCard("journal"); // le soir : défi d'Épictète + point du jour
   s+='</div><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+focus.length+' à faire</span></div>';
   s+=focus.length?'<div class="tcols">'+focus.map(function(q){return questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de daté aujourd\'hui. Tes habitudes sont à gauche, tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
@@ -2344,7 +2348,7 @@ function vCap(k){
   var orphan=S.quests.filter(function(q){return !q.mission&&q.stat===k&&!pubSuppressed(q);});
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
   // 3. Les outils propres à la capacité
-  if(k==="mental"){s+=defiCard("epictete")+'<div class="spanel"><div class="spl">Journal</div><div class="subhead">Vide-toi la tête. Ça compte pour ton Mental.</div></div>'+vJournal();}
+  if(k==="mental"){s+=defiCard("epictete")+vJournal();}
   if(k==="physique"){s+=citationForgeCard()+sleepCard();}
   if(k==="discipline"){s+=roueCard();}
   s+='</div>';   // fin capmason
@@ -2592,14 +2596,14 @@ function sleepCard(){
   }
   return s+'</div>';
 }
-function vJournal(){
+function moodCard(){ // "Humeur du jour" : réutilisée dans Mental et dans le Cockpit
   var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
   s+='<div style="display:flex;gap:8px">';
   for(var i=1;i<=5;i++){s+='<button type="button" class="btn ghost jm'+(jMood===i?" sel":"")+'" data-m="'+i+'" style="flex:1;font-size:20px;padding:10px">'+MOODS[i-1]+'</button>';}
   s+='</div></div>';
-  s+=defiCard("journal");
   return s;
 }
+function vJournal(){ return moodCard()+defiCard("journal"); }
 /* ---- Paramètres (roue crantée) : absences, liaison & synchro, entrées ---- */
 function settChroniques(){ // l'historique complet, hors du chemin quotidien
   var feed=(syncOn()&&ROBI_FEED.length)?ROBI_FEED.slice(0,10):[];
