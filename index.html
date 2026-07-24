@@ -200,15 +200,14 @@ nav button.capnav.on .ni{filter:none}
 .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:3px 9px;border-radius:7px;
   border:1px solid var(--brd);color:var(--dim);white-space:nowrap}
 .deptag{color:var(--gold);border-color:rgba(255,207,111,.4)}
-.q .more{color:var(--dim2);cursor:pointer;font-size:17px;line-height:1;padding:3px 8px;border-radius:8px;flex:none;transition:.14s}
-.q .more:hover{color:var(--txt);background:var(--panel-3)}
 /* La liste du jour se repartit en colonnes selon la largeur : plus de grand
    vide au milieu de chaque ligne quand le titre est court. */
 .tcols{columns:400px;column-gap:30px}
 .tcols>.q{break-inside:avoid}
-.q .more.on{color:var(--pink)}
-.q .conv,.q .edt,.q .mv,.q .del,.q .gear,.q .lock{color:var(--dim2);cursor:pointer;font-size:15px;padding:3px 5px;flex:none;transition:.14s}
-.q .conv:hover,.q .edt:hover,.q .mv:hover,.q .gear:hover,.q .lock:hover{color:var(--accent-2)}
+.q .edt,.q .mv,.q .del,.q .gear,.q .lock{color:var(--dim2);cursor:pointer;font-size:15px;padding:3px 5px;flex:none;transition:.14s}
+.q .edt:hover,.q .mv:hover,.q .gear:hover,.q .lock:hover{color:var(--accent-2)}
+.q .gear{font-size:16px;padding:4px 7px;border-radius:8px}
+.q .gear:hover{background:var(--panel-3)}
 .q .del:hover{color:var(--pink)}
 .q .lock.on{color:var(--gold)}
 .q.blkrow{opacity:.6}
@@ -1113,7 +1112,6 @@ var jMood=3;
 
 /* render */
 var view="cockpit";
-var rowMenu=null; // la ligne dont les actions sont ouvertes
 var projOpen={}; // les projets deplies (fermes par defaut : on voit la grille de cartes)
 /* ---- Thème adaptatif jour (5h-18h) / nuit (18h-5h), heure locale ---- */
 function currentTheme(){return "night";} // le Système est sombre, toujours
@@ -1243,42 +1241,104 @@ function openDepend(qId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dep]"),function(el){el.onclick=function(){q.dependsOn=el.dataset.dep||null;q.blocked=false;save();closeModal();render();};});
 }
 /* ---- Réglage direct d'une tâche journalière (sans chat) ---- */
-function openDailyEdit(qId){
-  var q=find(S.quests,qId);if(!q||!q.daily)return;
-  var c=q.cad||{};
-  var isDays=!!(c.days&&c.days.length);
-  var isEveryN=!!(c.n&&c.n>1)&&!isDays;
-  var isDaily=!isEveryN&&!isDays;
+/* ---- Réglage d'une tâche : une seule fenêtre pour tout (nom, échéance, répétition, déplacement) ---- */
+var TSETCAP=null; // capacité choisie dans la fenêtre, le temps de la manip
+function openTaskSet(qId){
+  var q=find(S.quests,qId);if(!q)return;
+  var multi=isMulti(q),cap=TSETCAP||questCap(q),m=STATS[cap]||STATS.mental;
   var order=[1,2,3,4,5,6,0],lbl={1:"L",2:"M",3:"M",4:"J",5:"V",6:"S",0:"D"};
-  var h='<div class="mtag">▸ Tâche journalière</div><div class="mtitle">'+esc(q.title)+'</div>';
-  h+='<div class="subhead" style="margin:6px 0 12px">Rythme actuel : <b style="color:var(--amber)">'+cadLabel(q)+'</b></div>';
-  h+='<div class="subhead" style="margin:0 0 6px">Fréquence</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-  h+='<button class="btn'+((isDaily&&!q.paused)?"":" ghost")+'" data-cad="daily">Tous les jours</button>';
-  h+='<button class="btn'+((isEveryN&&!q.paused)?"":" ghost")+'" data-cad="everyN">Un jour sur deux</button>';
-  h+='<button class="btn'+((isDays&&!q.paused)?"":" ghost")+'" data-cad="days">Jours précis</button>';
+  var c=q.cad||{},isDays=!!(c.days&&c.days.length);
+
+  var h='<div class="mtag">▸ Réglages de la tâche</div>';
+  // 1. Le nom
+  h+='<div class="plab" style="margin-top:12px">Nom</div>';
+  h+='<div class="addrow"><input type="text" id="ts-title" maxlength="160" placeholder="Nom de la tâche..."></div>';
+
+  // 2. Répétition : ponctuelle, jours choisis, ou chaque semaine
+  h+='<div class="plab" style="margin-top:16px">Répétition</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  h+='<button class="btn'+((!q.daily&&!multi)?"":" ghost")+'" data-tsrep="once">Une seule fois</button>';
+  h+='<button class="btn'+(multi?"":" ghost")+'" data-tsrep="days">Jours choisis</button>';
+  h+='<button class="btn'+(q.daily?"":" ghost")+'" data-tsrep="weekly">Chaque semaine</button>';
   h+='</div>';
-  if(isDays&&!q.paused){
-    h+='<div class="subhead" style="margin:12px 0 6px">Quels jours</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-    order.forEach(function(d){var on=(c.days||[]).indexOf(d)>=0;h+='<button class="cbtn'+(on?" on":"")+'" data-day="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
-    h+='</div>';
+
+  // 3. La date, selon le mode choisi
+  if(q.daily){
+    h+='<div class="plab" style="margin-top:16px">Quels jours de la semaine</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+    order.forEach(function(d){var on=isDays?((c.days||[]).indexOf(d)>=0):true;h+='<button class="cbtn'+(on?" on":"")+'" data-tsday="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
+    h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
+    h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
+  }else if(multi){
+    CALSEL={};CALMON=null;
+    (q.dueDates||[]).forEach(function(d){if(dayDiff(d,today())>=0)CALSEL[d]=true;});
+    h+='<div class="plab" style="margin-top:16px">Jours choisis <span style="font-weight:400;color:var(--dim2)">(les jours passés restent acquis)</span></div>';
+    h+='<div class="calwrap" id="calbox">'+calHTML()+'</div>';
+  }else{
+    h+='<div class="plab" style="margin-top:16px">Échéance</div>';
+    h+='<div class="addrow"><input type="date" id="ts-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="ts-duedel">Retirer</button></div>';
   }
-  h+='<div class="subhead" style="margin:16px 0 6px">Autres</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-  h+=q.paused?'<button class="btn" data-cad="resume">Réactiver</button>':'<button class="btn ghost" data-cad="pause">Mettre en pause</button>';
-  h+='<button class="btn ghost" data-cad="remove" style="color:var(--pink)">Retirer</button></div>';
-  openModal(h);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-cad]"),function(el){el.onclick=function(){
-    var op=el.dataset.cad;
-    if(op==="daily"){q.cad=null;q.paused=false;}
-    else if(op==="everyN"){q.cad={n:2,anchor:today()};q.paused=false;}
-    else if(op==="days"){if(!(q.cad&&q.cad.days&&q.cad.days.length))q.cad={days:[1,3,5]};q.paused=false;}
-    else if(op==="pause"){q.paused=true;}
-    else if(op==="resume"){q.paused=false;}
-    else if(op==="remove"){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();closeModal();render();toast("Journalière retirée");return;}
-    save();render();openDailyEdit(qId);
+
+  // 4. Déplacer : capacité puis projet
+  h+='<div class="plab" style="margin-top:18px">Déplacer</div>';
+  h+='<div class="movecaps">';
+  Object.keys(STATS).forEach(function(k){var st=STATS[k];h+='<button class="movecap'+(k===cap?" on":"")+'" data-tscap="'+k+'" style="--cc:'+st.col+'"><span class="mci">'+st.ic+'</span><span class="mcn">'+esc(st.name)+'</span></button>';});
+  h+='</div>';
+  var projs=S.missions.filter(function(x){return capOf(x)===cap;}).sort(byRankDesc);
+  h+='<div class="subhead" style="margin:12px 0 6px">Projet · '+m.ic+' '+esc(m.name)+'</div><select id="ts-proj" class="selin" style="max-width:100%;width:100%">';
+  h+='<option value=""'+(!q.mission?" selected":"")+'>Sans projet</option>';
+  projs.forEach(function(p){h+='<option value="'+p.id+'"'+(q.mission===p.id?" selected":"")+'>'+esc(p.title)+' · rang '+p.rank+'</option>';});
+  h+='</select>';
+
+  h+='<div class="rowbtn"><button class="btn" id="ts-save">Enregistrer</button><button class="btn ghost" id="ts-del" style="color:var(--pink)">Supprimer la tâche</button></div>';
+  openModal(h,m.col);
+  if(multi)bindCal();
+  var ti=document.getElementById("ts-title");if(ti){ti.value=q.title;try{ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);}catch(_){}}
+
+  function reopen(){save();render();openTaskSet(qId);}
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsrep]"),function(el){el.onclick=function(){
+    var mode=el.getAttribute("data-tsrep");
+    if(mode==="once"){q.daily=false;delete q.cad;delete q.paused;delete q.dueDates;delete q.doneDates;if(!q.due)q.due=prochaineDate(q.prio);}
+    else if(mode==="days"){q.daily=false;delete q.cad;delete q.paused;if(!isMulti(q)){q.dueDates=[q.due||today(),isoPlus(q.due||today(),1)];q.doneDates=[];q.due=nextDue(q);}}
+    else{q.daily=true;delete q.dueDates;delete q.doneDates;delete q.due;}
+    q.base=baseFor(q.prio,q.daily);
+    reopen();
   };});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-day]"),function(el){el.onclick=function(){
-    var d=parseInt(el.dataset.day,10);if(!(q.cad&&q.cad.days))q.cad={days:[]};var i=q.cad.days.indexOf(d);if(i>=0)q.cad.days.splice(i,1);else q.cad.days.push(d);q.paused=false;save();render();openDailyEdit(qId);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsday]"),function(el){el.onclick=function(){
+    var d=parseInt(el.getAttribute("data-tsday"),10);
+    if(!(q.cad&&q.cad.days))q.cad={days:[1,2,3,4,5,6,0]};        // "tous les jours" devient une liste qu'on peut décocher
+    var i=q.cad.days.indexOf(d);if(i>=0)q.cad.days.splice(i,1);else q.cad.days.push(d);
+    if(!q.cad.days.length)q.cad=null;                             // plus aucun jour coché : on revient à tous les jours
+    q.paused=false;reopen();
   };});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tspause]"),function(el){el.onclick=function(){q.paused=el.getAttribute("data-tspause")==="1";reopen();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tscap]"),function(el){el.onclick=function(){TSETCAP=el.getAttribute("data-tscap");openTaskSet(qId);};});
+  var dd=document.getElementById("ts-duedel");if(dd)dd.onclick=function(){var e2=document.getElementById("ts-due");if(e2)e2.value="";};
+  var del=document.getElementById("ts-del");if(del)del.onclick=function(){
+    sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){
+      S.quests=S.quests.filter(function(x){return x.id!==q.id;});TSETCAP=null;save();closeModal();render();toast("Tâche supprimée");});
+  };
+  function commit(){
+    var v=(document.getElementById("ts-title").value||"").trim();if(!v){toast("Écris un nom");return;}
+    q.title=v.slice(0,160);
+    if(isMulti(q)){
+      var fut=Object.keys(CALSEL).filter(function(x){return CALSEL[x];});
+      var past=(q.dueDates||[]).filter(function(d){return dayDiff(d,today())<0;});
+      var all=past.concat(fut).filter(function(x,i,a){return a.indexOf(x)===i;}).sort();
+      if(all.length>1){q.dueDates=all;q.doneDates=(q.doneDates||[]).filter(function(d){return all.indexOf(d)>=0;});q.due=nextDue(q)||all[all.length-1];}
+      else if(all.length===1){q.due=all[0];delete q.dueDates;delete q.doneDates;}
+      else{delete q.dueDates;delete q.doneDates;delete q.due;}
+    }else if(!q.daily){
+      var de=document.getElementById("ts-due");
+      if(de){var dv=de.value;
+        if(dv&&dv<today()){toast("Cette date est déjà passée. Choisis aujourd'hui ou plus tard.");return;}
+        if(dv)q.due=dv;else delete q.due;}
+    }
+    var sel=document.getElementById("ts-proj"),dest=sel?(sel.value||null):null;
+    q.mission=dest;
+    q.stat=dest?capOf(find(S.missions,dest)):(TSETCAP||q.stat);
+    TSETCAP=null;save();closeModal();render();toast("Tâche enregistrée");
+  }
+  var sv=document.getElementById("ts-save");if(sv)sv.onclick=commit;
+  if(ti)ti.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
 }
 function wheelEligible(){return S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!q.pub&&!pubSuppressed(q);});}
 function statCol(k){return (STATS[k]&&STATS[k].col)||"#7b5cff";}
@@ -1463,10 +1523,8 @@ function initEffects(){
     if(pad){objAcceptProp(parseInt(pad.getAttribute("data-prop-add"),10));return;}
     var pdel=e.target.closest("[data-prop-del]");
     if(pdel){objRefuseProp(parseInt(pdel.getAttribute("data-prop-del"),10));return;}
-    var rmn=e.target.closest("[data-rowmenu]");
-    if(rmn){var rid=rmn.getAttribute("data-rowmenu");rowMenu=(rowMenu===rid)?null:rid;render();if(DGOPEN&&rmn.closest("#modal"))openDungeon(DGOPEN);return;}
-    var cv=e.target.closest("[data-convo]");
-    if(cv){openConvo("task",cv.getAttribute("data-convo"));}
+    var ts=e.target.closest("[data-tset]");
+    if(ts){TSETCAP=null;openTaskSet(ts.getAttribute("data-tset"));return;}
   });
 }
 
@@ -1598,40 +1656,6 @@ function openModal(html,color){
 var DGOPEN=null; // id de l'objectif dont la fenêtre détail est ouverte, sinon null
 function closeModal(){var el=document.getElementById("modal");if(el){el.className="";el.innerHTML="";}DGOPEN=null;} // on vide aussi le contenu : plus de boutons fantômes encore branchés
 function showInfo(key){var it=INFO[key];if(!it)return;openModal('<div class="mtag">▸ ROBI</div><div class="mtitle">'+it.t+'</div><div class="mbody">'+it.d+'</div>');}
-function openRenameTask(qId){
-  var q=find(S.quests,qId);if(!q)return;
-  var multi=isMulti(q);
-  var dateField;
-  if(q.daily){dateField="";}
-  else if(multi){
-    CALSEL={};CALMON=null;
-    (q.dueDates||[]).forEach(function(d){if(dayDiff(d,today())>=0)CALSEL[d]=true;}); // seuls les jours à venir sont modifiables
-    dateField='<div class="subhead" style="margin:16px 0 6px">Jours choisis <span style="color:var(--dim2)">(ajoute ou retire ; les jours passés restent acquis)</span></div><div class="calwrap" id="calbox">'+calHTML()+'</div>';
-  }
-  else{dateField='<div class="subhead" style="margin:16px 0 6px">Échéance (facultatif)</div><div class="addrow"><input type="date" id="rn-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="rn-duedel"'+(q.due?"":' style="display:none"')+'>Retirer</button></div>';}
-  openModal('<div class="mtag">▸ '+(q.daily?"Renommer la tâche":"Modifier la tâche")+'</div><div class="addrow" style="margin-top:12px"><input type="text" id="rn-title" maxlength="160" placeholder="Nom de la tâche..."><button class="btn" id="rn-save">Enregistrer</button></div>'+dateField);
-  if(multi)bindCal();
-  var inp=document.getElementById("rn-title");if(inp){inp.value=q.title;try{inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}catch(_){}}
-  function commit(){
-    var v=(document.getElementById("rn-title").value||"").trim();if(!v){toast("Écris un nom");return;}q.title=v.slice(0,160);
-    if(q.daily){}
-    else if(multi){
-      var fut=Object.keys(CALSEL).filter(function(x){return CALSEL[x];});
-      var past=(q.dueDates||[]).filter(function(d){return dayDiff(d,today())<0;}); // occurrences passées conservées (XP déjà acquis)
-      var all=past.concat(fut).filter(function(x,i,a){return a.indexOf(x)===i;}).sort();
-      if(all.length>1){q.dueDates=all;q.doneDates=(q.doneDates||[]).filter(function(d){return all.indexOf(d)>=0;});q.due=nextDue(q)||all[all.length-1];}
-      else if(all.length===1){q.due=all[0];delete q.dueDates;delete q.doneDates;}   // un seul jour -> tâche simple datée
-      else{delete q.dueDates;delete q.doneDates;delete q.due;}                        // plus aucun jour -> tâche sans échéance
-    }
-    else{var due=document.getElementById("rn-due");if(due){var dv=due.value;
-      if(dv&&dv<today()){toast("Cette date est déjà passée. Choisis aujourd'hui ou plus tard.");return;} // on garde la fenêtre ouverte, rien n'est perdu
-      if(dv)q.due=dv;else delete q.due;}}
-    save();closeModal();render();toast("Tâche enregistrée");
-  }
-  var sv=document.getElementById("rn-save");if(sv)sv.onclick=commit;
-  var dd=document.getElementById("rn-duedel");if(dd)dd.onclick=function(){var due=document.getElementById("rn-due");if(due)due.value="";dd.style.display="none";};
-  if(inp)inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();commit();}};
-}
 var PROJSEL=null; // la capacite choisie dans la fenetre de gestion de projet
 function openProjectManage(mId){
   var m=find(S.missions,mId);if(!m)return;
@@ -1725,7 +1749,6 @@ function deleteProject(mId){
   render();
 }
 
-var MOVESEL=null; // la capacite choisie dans la fenetre de deplacement
 /* ---- Ajout de tâche / projet, reutilisable depuis un formulaire ou une modale ---- */
 function addCapTask(forced){
   var el=document.getElementById("q-title");var t=el?el.value.trim():"";if(!t)return false;
@@ -1795,46 +1818,6 @@ function openAddCap(k){ // Ajouter, dans une modale : gain de place dans la vue
   var ma=document.getElementById("m-add");if(ma)ma.onclick=function(){if(addCapProject(k))closeModal();};
   var qt=document.getElementById("q-title");if(qt)qt.focus();
 }
-function openMoveQuest(qId){
-  var q=find(S.quests,qId);if(!q)return;
-  var actuelle=questCap(q);
-  if(!MOVESEL||MOVESEL.q!==qId)MOVESEL={q:qId,cap:actuelle};
-  var cap=MOVESEL.cap,m=STATS[cap];
-  var h='<div class="mtag">▸ Déplacer la tâche</div><div class="mtitle">'+esc(q.title)+'</div>';
-  h+='<div class="subhead" style="margin:6px 0 10px">Une tâche rangée dans un projet prend la capacité de ce projet. Sans projet, elle garde la capacité que tu choisis ici.</div>';
-  // 1. La capacite
-  h+='<div class="plab">Capacité</div><div class="movecaps">';
-  Object.keys(STATS).forEach(function(k){
-    var st=STATS[k];
-    h+='<button class="movecap'+(k===cap?" on":"")+'" data-movecap="'+k+'" style="--cc:'+st.col+'"><span class="mci">'+st.ic+'</span><span class="mcn">'+esc(st.name)+'</span></button>';
-  });
-  h+='</div>';
-  // 2. Le projet, parmi ceux de cette capacite
-  var projs=S.missions.filter(function(x){return capOf(x)===cap;}).sort(byRankDesc);
-  h+='<div class="plab" style="margin-top:16px">Projet · '+m.ic+' '+esc(m.name)+'</div><div style="display:grid;gap:8px">';
-  h+='<button class="btn ghost" data-dest="" style="text-align:left">Sans projet'+((!q.mission&&cap===actuelle)?' ✓':'')+'</button>';
-  if(projs.length)projs.forEach(function(p){
-    var rk=(RANKS.filter(function(r){return r.r===p.rank;})[0]||RANKS[0]);
-    h+='<button class="btn ghost" data-dest="'+p.id+'" style="text-align:left;border-color:'+rk.c+'55">'+esc(p.title)+' · rang '+p.rank+(q.mission===p.id?' ✓':'')+'</button>';
-  });
-  else h+='<div class="empty">Aucun projet dans cette capacité. La tâche y sera rangée sans projet.</div>';
-  h+='</div>';
-  openModal(h,m.col);
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-movecap]"),function(el){
-    el.onclick=function(){MOVESEL.cap=el.getAttribute("data-movecap");openMoveQuest(qId);};
-  });
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-dest]"),function(el){
-    el.onclick=function(){
-      var dest=el.getAttribute("data-dest")||null;
-      q.mission=dest;
-      q.stat=dest?capOf(find(S.missions,dest)):MOVESEL.cap; // le projet decide, sinon la capacite choisie
-      var fin=STATS[questCap(q)];
-      MOVESEL=null;save();closeModal();
-      sysNotify("Tâche déplacée",esc(q.title),[fin.ic+" "+fin.name,dest?("Projet : "+((find(S.missions,dest)||{}).title||"")):"Sans projet"]);
-      render();
-    };
-  });
-}
 
 /* ---- Objectif : fenêtre détaillée ---- */
 function openDungeon(mId){
@@ -1853,9 +1836,7 @@ function openDungeon(mId){
   DGOPEN=mId; // le menu ⋯ des lignes redessine cette fenêtre au lieu de la vue derrière
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
   var a=document.getElementById("dq-add");
   if(a)a.onclick=function(){var t=document.getElementById("dq-title").value.trim();if(!t)return;var c=classifyQuest(t);var q={id:uid(),title:t,stat:c.stat,daily:c.daily,prio:c.prio,base:baseFor(c.prio,c.daily),done:false,mission:mId};if(!q.daily)q.due=prochaineDate(q.prio);S.quests.push(q);save();render();openDungeon(mId);};
@@ -2371,13 +2352,8 @@ function dueBadge(q,win){ // badge d'échéance sur une tâche non journalière 
   else{col="var(--dim2)";txt="⏰ "+fmtD(q.due);}
   return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
 }
-function rowActs(q){ // les memes actions partout : le Cockpit en etait prive
-  if(rowMenu!==q.id)return '<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>';
-  return '<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span>'
-   +'<span class="edt" data-edit="'+q.id+'" title="Renommer ou dater">✎</span>'
-   +'<span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span>'
-   +(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':'<span class="del" data-del="'+q.id+'">✕</span>')
-   +'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>';
+function rowActs(q){ // une seule roue crantée par tâche : tout se règle dans sa fenêtre
+  return '<span class="gear" data-tset="'+q.id+'" title="Régler la tâche">⚙</span>';
 }
 function questRow(q,depth,compact,ctx){
   depth=depth||0;ctx=ctx||{};
@@ -2396,11 +2372,7 @@ function questRow(q,depth,compact,ctx){
   if(q.mission&&!ctx.hideProj)tags+='<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>';
   tags+=dueBadge(q);
   if(q.dependsOn&&blk)tags+='<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>';
-  var depctrl=blk?('<span class="lock on" data-lock="'+q.id+'" title="Changer la dépendance">🔒</span>'):(sib>0?('<span class="lock" data-lock="'+q.id+'" title="Lier à une tâche de cet objectif">🔗</span>'):"");
-  var acts=(rowMenu===q.id)
-    ?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Modifier / échéance">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span>'+(q.daily?'<span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span>':depctrl+'<span class="del" data-del="'+q.id+'">✕</span>')+'<span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>')
-    :('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>');
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+acts+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
 }
 function questTree(list,ctx){
   var byId={};list.forEach(function(q){byId[q.id]=q;});
@@ -2419,7 +2391,7 @@ function dailyRow(q,compact){
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span>'+((rowMenu===q.id)?('<span class="conv" data-convo="'+q.id+'" title="En parler à ROBI">💬</span><span class="edt" data-edit="'+q.id+'" title="Renommer">✎</span><span class="mv" data-move="'+q.id+'" title="Changer de capacité ou de projet">⇄</span><span class="gear" data-manage="'+q.id+'" title="Régler la fréquence">⚙</span><span class="more on" data-rowmenu="'+q.id+'" title="Fermer">×</span>'):('<span class="more" data-rowmenu="'+q.id+'" title="Actions">⋯</span>'))+'</div>';
+    '<span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -2666,9 +2638,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-manage]"),function(el){el.onclick=function(){openDailyEdit(el.dataset.manage);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-move]"),function(el){el.onclick=function(){openMoveQuest(el.dataset.move);};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-edit]"),function(el){el.onclick=function(){openRenameTask(el.dataset.edit);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
