@@ -10,6 +10,7 @@
   --ground:#C7D2E0;                /* fond : dégradé lavande vers menthe (voir body) */
   --panel:rgba(255,255,255,.52);   /* cartes en verre dépoli clair */
   --panel-2:rgba(255,255,255,.78); /* survol / carte en avant */
+  --modal-bg:rgba(255,255,255,.96); /* fenêtres qui s'ouvrent : presque opaques, on ne voit plus au travers */
   --panel-3:rgba(58,64,90,.06);    /* creux : pistes, champs */
   --brd:rgba(58,64,90,.13);
   --brd-hi:rgba(58,64,90,.26);
@@ -310,6 +311,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .cald.tod{border-color:var(--brd-hi);font-weight:700}
 .cald.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
 .cald.on:hover{background:var(--accent)}
+.calrange{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--brd)}
+.calrange .crl{font-size:12px;color:var(--dim);width:100%}
+.calrange input[type=date]{max-width:150px;padding:9px 11px;font-size:14px}
+.calrange .cra{color:var(--dim2)}
+.calrange .cr-add{padding:9px 15px}
 .calsum{margin-top:10px;font-size:12.5px;color:var(--dim);line-height:1.4}
 .calsum b{color:var(--txt)}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
@@ -343,7 +349,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
   padding:22px;background:rgba(70,44,20,.42);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
 #modal.show,#ask.show,#secret.show,#boot.show,#flash.show{display:flex}
 .modalwin,.askwin,.secretwin,.bootwin,.flashwin{width:100%;max-width:520px;max-height:86dvh;overflow-y:auto;
-  border-radius:var(--r-card);padding:22px;box-shadow:var(--shadow-lg)}
+  border-radius:var(--r-card);padding:22px;box-shadow:var(--shadow-lg);background:var(--modal-bg)}
 .mclose{position:absolute;top:15px;right:17px;cursor:pointer;color:var(--dim2);font-size:17px;padding:3px 7px;border-radius:8px;transition:.14s}
 .mclose:hover{color:var(--txt);background:var(--panel-3)}
 .mbody{margin-top:12px}
@@ -929,8 +935,8 @@ function award(q){
   sfx(q.pub?"success":"check");
   save();
 }
-/* ---- Tâches à jours choisis (dates multiples, ex. jours de réserve) ---- */
-var CALSEL={},CALMON=null;
+/* ---- Tâches à jours choisis (dates multiples, ex. jours de réserve, JDC d'une semaine) ---- */
+var CALSEL={},CALMON=null,CRANGE={from:"",to:""};
 /* ---- Blocs semaines du Cockpit : état replié/déplié, gardé sur l'appareil ---- */
 var WKFOLD=(function(){try{return JSON.parse(localStorage.getItem("robi_wkfold")||"{}");}catch(e){return {};}})();
 function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFOLD));}catch(e){}}
@@ -1288,7 +1294,7 @@ function openTaskSet(qId){
     h+='</div>';
     h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
   }else if(multi){
-    CALSEL={};CALMON=null;
+    CALSEL={};CALMON=null;CRANGE={from:"",to:""};
     (q.dueDates||[]).forEach(function(d){if(dayDiff(d,today())>=0)CALSEL[d]=true;});
     h+='<div class="plab" style="margin-top:16px">Jours choisis <span style="font-weight:400;color:var(--dim2)">(les jours passés restent acquis)</span></div>';
     h+='<div class="calwrap" id="calbox">'+calHTML()+'</div>';
@@ -1317,7 +1323,7 @@ function openTaskSet(qId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsrep]"),function(el){el.onclick=function(){
     var mode=el.getAttribute("data-tsrep");
     if(mode==="once"){q.daily=false;delete q.cad;delete q.paused;delete q.dueDates;delete q.doneDates;if(!q.due)q.due=prochaineDate(q.prio);}
-    else if(mode==="days"){q.daily=false;delete q.cad;delete q.paused;if(!isMulti(q)){q.dueDates=[q.due||today(),isoPlus(q.due||today(),1)];q.doneDates=[];q.due=nextDue(q);}}
+    else if(mode==="days"){q.daily=false;delete q.cad;delete q.paused;if(!isMulti(q)){q.dueDates=[q.due||today()];q.doneDates=[];q.due=nextDue(q);}}  // le jour déjà choisi devient le 1er ; on ajoute les autres au calendrier
     else{q.daily=true;delete q.dueDates;delete q.doneDates;delete q.due;}
     q.base=baseFor(q.prio,q.daily);
     reopen();
@@ -1811,6 +1817,7 @@ function calHTML(){
   }
   h+='</div>';
   var chosen=Object.keys(CALSEL).filter(function(x){return CALSEL[x];}).sort();
+  h+='<div class="calrange"><span class="crl">Une période d\'un coup :</span><input type="date" class="cr-from" min="'+td+'" value="'+CRANGE.from+'"><span class="cra">→</span><input type="date" class="cr-to" min="'+td+'" value="'+CRANGE.to+'"><button type="button" class="btn ghost cr-add">Ajouter</button></div>';
   h+='<div class="calsum">'+(chosen.length?('<b>'+chosen.length+'</b> jour'+(chosen.length>1?"s":"")+" choisi"+(chosen.length>1?"s":"")+" · "+chosen.map(fmtD).join(", ")):"Aucun jour : la tâche sera datée automatiquement.")+'</div>';
   return h;
 }
@@ -1821,9 +1828,20 @@ function bindCal(){
   var pv=box.querySelector("[data-calnav='prev']"),nx=box.querySelector("[data-calnav='next']");
   if(pv)pv.onclick=function(){CALMON=addMonth(CALMON||firstOfMonth(today()),-1);redraw();};
   if(nx)nx.onclick=function(){CALMON=addMonth(CALMON||firstOfMonth(today()),1);redraw();};
+  // sélection d'une période entière (ex. une JDC qui dure une semaine) : du... au...
+  var rf=box.querySelector(".cr-from"),rt=box.querySelector(".cr-to"),ra=box.querySelector(".cr-add");
+  if(rf)rf.oninput=function(){CRANGE.from=rf.value;};
+  if(rt)rt.oninput=function(){CRANGE.to=rt.value;};
+  if(ra)ra.onclick=function(){
+    var a=CRANGE.from,b=CRANGE.to;if(!a||!b){toast("Choisis un début et une fin");return;}
+    if(a>b){var tmp=a;a=b;b=tmp;}
+    var d=(a<today())?today():a,guard=0;
+    while(d<=b&&guard<370){CALSEL[d]=true;d=isoPlus(d,1);guard++;}
+    CRANGE={from:"",to:""};redraw();
+  };
 }
 function openAddCap(k){ // Ajouter, dans une modale : gain de place dans la vue
-  CALSEL={};CALMON=null;
+  CALSEL={};CALMON=null;CRANGE={from:"",to:""};
   var m=STATS[k];var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
   var h='<div class="mtag">▸ Ajouter dans '+m.ic+' '+esc(m.name)+'</div>';
   h+='<div class="plab" style="margin-top:10px">Nouvelle tâche</div>';
