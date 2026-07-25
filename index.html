@@ -2297,13 +2297,18 @@ function planActive(){return (S.plan&&S.plan.date===today())?S.plan:null;}
 function planIds(){var p=planActive();return p?(p.ids||[]):[];}
 function isPlan(q){return !!q&&planIds().indexOf(q.id)>=0;}
 function planTasks(){return planIds().map(function(id){return find(S.quests,id);}).filter(function(q){return q&&!q.done;});}
-function urgencyRank(){ // tâches actionnables à prioriser : retards, puis aujourd'hui, puis prioritaires sans date
+function objWeight(q){ // importance de l'objectif (projet) de la tâche : rang S=0 (prioritaire) ... E=5, sans objectif=6
+  if(!q.mission)return 6;
+  var m=find(S.missions,q.mission);
+  return m?(5-rankOrder(m.rank)):6;
+}
+function urgencyRank(){ // tâches actionnables à prioriser : retards, puis aujourd'hui, puis prioritaires sans date ; à urgence égale, l'objectif le plus important d'abord
   var pool=S.quests.filter(function(q){
     if(q.daily||q.done||isBlocked(q)||q.pub||pubSuppressed(q))return false;
     if(q.due)return dayDiff(q.due,today())<=0;
     return q.prio==="high";
   });
-  function key(q){var d=q.due?dayDiff(q.due,today()):50;var bucket=d<0?0:(d===0?1:2);var prio={high:0,med:1,low:2}[q.prio||"med"];return bucket*1000+prio*100+Math.min(60,Math.max(0,d<0?0:d));}
+  function key(q){var d=q.due?dayDiff(q.due,today()):50;var bucket=d<0?0:(d===0?1:2);var prio={high:0,med:1,low:2}[q.prio||"med"];return bucket*10000+prio*1000+objWeight(q)*100+Math.min(60,Math.max(0,d<0?0:d));}
   return pool.slice().sort(function(a,b){var ka=key(a),kb=key(b);return ka!==kb?ka-kb:(b.base-a.base);});
 }
 function suggestPlan(n){ // proposition de ROBI : varie les objectifs pour ne pas tout mettre sur un seul
@@ -2317,7 +2322,7 @@ function openPlan(){
   var cand=urgencyRank();
   if(PLANSEL===null)PLANSEL=planIds().length?planIds().filter(function(id){var q=find(S.quests,id);return q&&!q.done;}):suggestPlan(PLAN_MAX);
   var h='<div class="mtag">▸ Mon pacte du jour</div>';
-  h+='<div class="subhead" style="margin:8px 0 12px">Coche au maximum '+PLAN_MAX+' tâches à faire aujourd\'hui. ROBI a pré-choisi pour toi (retards et priorités d\'abord). Ajuste comme tu veux, le reste devient du bonus.</div>';
+  h+='<div class="subhead" style="margin:8px 0 12px">Coche au maximum '+PLAN_MAX+' tâches à faire aujourd\'hui. ROBI a pré-choisi pour toi : retards et priorités d\'abord, puis tes objectifs les plus importants. Ajuste comme tu veux, le reste devient du bonus.</div>';
   if(!cand.length)h+='<div class="empty">Aucune tâche en retard ou datée à prioriser. Ajoute des tâches, ou profite de ta journée.</div>';
   h+=cand.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var on=PLANSEL.indexOf(q.id)>=0;return '<div class="planopt'+(on?" on":"")+'" data-planpick="'+q.id+'"><span class="pkbox">'+(on?"✓":"")+'</span><div class="body" style="flex:1;min-width:0"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div></div>';}).join("");
   h+='<div class="rowbtn"><button class="btn" id="plan-save">Valider mon pacte ('+PLANSEL.length+'/'+PLAN_MAX+')</button><button class="btn ghost" id="plan-robi">💬 En parler à ROBI</button></div>';
@@ -2332,7 +2337,7 @@ function openPlan(){
   var ps=document.getElementById("plan-save");if(ps)ps.onclick=function(){S.plan={date:today(),ids:PLANSEL.slice()};PLANSEL=null;save();closeModal();render();toast("Pacte du jour posé. Une chose à la fois.");};
   var pr=document.getElementById("plan-robi");if(pr)pr.onclick=function(){PLANSEL=null;planWithRobi();};
 }
-function planTaskList(n){var cand=urgencyRank().slice(0,n||10);return cand.map(function(q,i){var late=q.due&&dayDiff(q.due,today())<0;return (i+1)+". "+q.title+" ["+((STATS[questCap(q)]||{}).name||"")+(q.due?(late?", EN RETARD":", aujourd'hui"):", priorité haute")+"]";}).join("\n");}
+function planTaskList(n){var cand=urgencyRank().slice(0,n||10);return cand.map(function(q,i){var late=q.due&&dayDiff(q.due,today())<0;var obj=q.mission?((find(S.missions,q.mission)||{}).title||""):"";return (i+1)+". "+q.title+" ["+((STATS[questCap(q)]||{}).name||"")+(obj?", objectif "+obj:", sans objectif")+(q.due?(late?", EN RETARD":", aujourd'hui"):", priorité haute")+"]";}).join("\n");}
 function planWithRobi(){ // idée 3 + Ray Dalio : trier la journée avec la méthode en 5 étapes
   var list=planTaskList(10);
   view="maitre";render();
