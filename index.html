@@ -318,6 +318,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .calrange .cr-add{padding:9px 15px}
 .calsum{margin-top:10px;font-size:12.5px;color:var(--dim);line-height:1.4}
 .calsum b{color:var(--txt)}
+.okrow{background:rgba(63,201,160,.14);border:1px solid rgba(63,201,160,.4);color:var(--txt);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:10px;line-height:1.45}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -937,6 +938,7 @@ function award(q){
 }
 /* ---- Tâches à jours choisis (dates multiples, ex. jours de réserve, JDC d'une semaine) ---- */
 var CALSEL={},CALMON=null,CRANGE={from:"",to:""};
+var ADDPROJ=null; // dans la modale Ajouter+ : dernier projet créé, présélectionné pour la tâche
 /* ---- Blocs semaines du Cockpit : état replié/déplié, gardé sur l'appareil ---- */
 var WKFOLD=(function(){try{return JSON.parse(localStorage.getItem("robi_wkfold")||"{}");}catch(e){return {};}})();
 function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFOLD));}catch(e){}}
@@ -1535,7 +1537,7 @@ function initEffects(){
     var cg=e.target.closest("[data-capgoal]");
     if(cg){openCapGoal(cg.getAttribute("data-capgoal"));return;}
     var addc=e.target.closest("[data-addcap]");
-    if(addc){openAddCap(addc.getAttribute("data-addcap"));return;}
+    if(addc){ADDPROJ=null;openAddCap(addc.getAttribute("data-addcap"));return;}
     var pmn=e.target.closest("[data-projman]");
     if(pmn){PROJSEL=null;openProjectManage(pmn.getAttribute("data-projman"));return;}
     var gob=e.target.closest("[data-go-obj]");
@@ -1795,12 +1797,12 @@ function addCapTask(forced){
   render();return true;
 }
 function addCapProject(forced){
-  var el=document.getElementById("m-title");var t=el?el.value.trim():"";if(!t)return false;
-  var noteEl=document.getElementById("m-note");var nt=noteEl?noteEl.value.trim():"";
-  var rk=autoRank(t);
-  S.missions.push({id:uid(),title:t,rank:rk,note:nt,stat:(forced&&STATS[forced])?forced:guessProjStat(t)});save();
-  sysNotify("Objectif créé",esc(t),["Rang attribué : "+rk,"Dis-moi ses tâches dans Claude Code"]);
-  render();return true;
+  var el=document.getElementById("m-title");var t=el?el.value.trim():"";if(!t)return null;
+  var thEl=document.getElementById("m-theme");var th=thEl?thEl.value.trim():"";  // thème : nouveau ou existant
+  var rk=autoRank(t),id=uid();
+  S.missions.push({id:id,title:t,rank:rk,note:"",stat:(forced&&STATS[forced])?forced:guessProjStat(t),theme:th});save();
+  sysNotify("Projet créé",esc(t),[th?("Thème : "+th):"Sans thème","Rang attribué : "+rk]);
+  render();return id;
 }
 var MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 function calHTML(){
@@ -1840,22 +1842,30 @@ function bindCal(){
     CRANGE={from:"",to:""};redraw();
   };
 }
-function openAddCap(k){ // Ajouter, dans une modale : gain de place dans la vue
+function openAddCap(k){ // Ajouter, dans une modale : thème -> projet -> tâche, sans fermer entre les étapes
   CALSEL={};CALMON=null;CRANGE={from:"",to:""};
   var m=STATS[k];var projs=S.missions.filter(function(x){return capOf(x)===k;}).sort(byRankDesc);
+  var themes=[];projs.forEach(function(p){var th=(p.theme||"").trim();if(th&&themes.indexOf(th)<0)themes.push(th);});
+  var justCreated=ADDPROJ?find(S.missions,ADDPROJ):null;
   var h='<div class="mtag">▸ Ajouter dans '+m.ic+' '+esc(m.name)+'</div>';
-  h+='<div class="plab" style="margin-top:10px">Nouvelle tâche</div>';
-  h+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'">'+esc(pr.title)+'</option>';}).join("")+'</select></div>';
+  h+='<div class="subhead" style="margin:8px 0 4px">Thème, projet, tâche : remplis ce dont tu as besoin, de haut en bas.</div>';
+  // 1. THÈME + PROJET
+  h+='<div class="plab" style="margin-top:14px">Nouveau projet</div>';
+  if(justCreated)h+='<div class="okrow">✔ Projet « '+esc(justCreated.title)+' » créé'+(justCreated.theme?' dans le thème « '+esc(justCreated.theme)+' »':'')+'. Ajoute-lui une tâche ci-dessous, ou crée-en un autre.</div>';
+  h+='<div class="addrow"><input type="text" id="m-theme" list="theme-dl" placeholder="Thème (facultatif) — nouveau ou existant"></div>';
+  h+='<datalist id="theme-dl">'+themes.map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist>';
+  h+='<div class="addrow" style="margin-top:8px"><input type="text" id="m-title" placeholder="Nom du projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Créer le projet</button></div>';
+  // 2. TÂCHE
+  h+='<div class="plab" style="margin-top:20px">Nouvelle tâche</div>';
+  h+='<div class="addrow"><input type="text" id="q-title" placeholder="Écris ta tâche..."><select id="q-obj" class="selin"><option value="">Sans projet</option>'+projs.map(function(pr){return '<option value="'+pr.id+'"'+(pr.id===ADDPROJ?" selected":"")+'>'+esc(pr.title)+(pr.theme?" · "+esc(pr.theme):"")+'</option>';}).join("")+'</select></div>';
   h+='<div class="plab" style="margin-top:14px">Quand ? <span style="font-weight:400;color:var(--dim2)">un ou plusieurs jours, ou laisse vide</span></div>';
   h+='<div class="calwrap" id="calbox">'+calHTML()+'</div>';
   h+='<div class="rowbtn"><button class="btn" id="q-add" data-capadd="'+k+'">Ajouter la tâche</button></div>';
-  h+='<div class="plab" style="margin-top:20px">Nouveau projet</div>';
-  h+='<div class="addrow"><input type="text" id="m-title" placeholder="Nom du projet dans '+esc(m.name)+'..."><button class="btn ghost" id="m-add" data-capadd="'+k+'">Créer</button></div>';
   openModal(h,m.col);
   bindCal();
-  var qa=document.getElementById("q-add");if(qa)qa.onclick=function(){if(addCapTask(k))closeModal();};
-  var ma=document.getElementById("m-add");if(ma)ma.onclick=function(){if(addCapProject(k))closeModal();};
-  var qt=document.getElementById("q-title");if(qt)qt.focus();
+  var ma=document.getElementById("m-add");if(ma)ma.onclick=function(){var id=addCapProject(k);if(id){ADDPROJ=id;openAddCap(k);}};   // reste ouvert, projet présélectionné
+  var qa=document.getElementById("q-add");if(qa)qa.onclick=function(){if(addCapTask(k)){ADDPROJ=null;closeModal();}};
+  var focusFirst=document.getElementById(projs.length&&!justCreated?"q-title":"m-theme");if(focusFirst)try{focusFirst.focus();}catch(_){}
 }
 
 /* ---- Objectif : fenêtre détaillée ---- */
