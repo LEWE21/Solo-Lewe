@@ -382,12 +382,12 @@ export default async function handler(req, res) {
       }[kind];
       const r = await client.messages.create({
         model: CHAT_MODEL, max_tokens: 240,
-        output_config: { effort: "low", format: { type: "json_schema", schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } } },
+        output_config: { effort: "low" },
         system: persona,
-        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve, sur le thème indiqué" : "défi, sur l'angle indiqué"))} du jour.` }],
+        messages: [{ role: "user", content: `Niveau ${s.level || 1}, série ${s.streak || 0}. Donne ${kind === "journal" ? "tes questions" : ("ton " + (kind === "epictete" ? "épreuve, sur le thème indiqué" : "défi, sur l'angle indiqué"))} du jour. Réponds directement, sans préambule.` }],
       });
-      const t = r.content.find((b) => b.type === "text");
-      const payload = JSON.parse(t.text);
+      const text = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      const payload = { text: text || "(indisponible, réessaie)" };
       if (themeIdx !== null) payload.theme = String(themeIdx); // renvoyé au client pour éviter de répéter ce thème
       return ok(res, CHAT_MODEL, r, payload);
     }
@@ -399,15 +399,23 @@ export default async function handler(req, res) {
       const answer = (body.answer || "").toString().slice(0, 3000);
       const name = (body.state && body.state.name) || "Mathilde";
       const who = { epictete: "Epictetus, the stoic mentor", defi: "an expert life coach", journal: "an expert life coach" }[kind];
-      const sys = `You are ${who} for ${name} (a woman). Judge whether her answer below is a genuine, sincere, specific engagement with the challenge/question, NOT random, empty, one-word, evasive or off-topic. Be fair but never reward a non-answer. If genuine: set ok=true and write a short warm validation in FRENCH (1 to 2 sentences, address her with 'tu'). If not genuine: set ok=false and clearly explain in FRENCH (1 to 2 sentences) why it is not enough and what a real answer would look like. Never be cruel.`;
+      const sys = `You are ${who} for ${name} (a woman). Judge whether her answer below is a genuine, sincere, specific engagement with the challenge/question, NOT random, empty, one-word, evasive or off-topic. Be fair but never reward a non-answer. Reply with ONLY a JSON object, nothing else, in this exact shape: {"ok": true or false, "message": "..."}. If genuine: "ok" is true and "message" is a short warm validation in FRENCH (1 to 2 sentences, address her with 'tu'). If not genuine: "ok" is false and "message" clearly explains in FRENCH (1 to 2 sentences) why it is not enough and what a real answer would look like. Never be cruel.`;
       const r = await client.messages.create({
         model: CHAT_MODEL, max_tokens: 280,
-        output_config: { effort: "medium", format: { type: "json_schema", schema: { type: "object", properties: { ok: { type: "boolean" }, message: { type: "string" } }, required: ["ok", "message"], additionalProperties: false } } },
+        output_config: { effort: "medium" },
         system: sys,
         messages: [{ role: "user", content: `Défi/question du jour :\n"${prompt}"\n\nRéponse de ${name} :\n"${answer}"` }],
       });
-      const t = r.content.find((b) => b.type === "text");
-      return ok(res, CHAT_MODEL, r, JSON.parse(t.text));
+      const txt = r.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      let payload;
+      try {
+        const a = txt.indexOf("{"), b = txt.lastIndexOf("}");
+        payload = JSON.parse(txt.slice(a, b + 1));
+        if (typeof payload.ok !== "boolean" || typeof payload.message !== "string") throw new Error("shape");
+      } catch (e) {
+        payload = { ok: true, message: txt || "C'est noté. Continue." }; // en cas de pépin, on récompense plutôt que de bloquer
+      }
+      return ok(res, CHAT_MODEL, r, payload);
     }
 
     return res.status(400).json({ error: "unknown action" });

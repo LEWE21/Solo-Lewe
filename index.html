@@ -341,6 +341,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .planopt.on{border-color:var(--accent);background:var(--panel-3)}
 .pkbox{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--brd-hi);display:flex;align-items:center;justify-content:center;color:#fff;flex:none;font-size:13px;font-weight:700}
 .planopt.on .pkbox{background:var(--accent);border-color:var(--accent)}
+.pactelist{display:flex;flex-direction:column;gap:6px}
+.pacterow{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;background:var(--panel-3);border-left:2px solid var(--gold)}
+.pacterow .pttl{flex:1;min-width:0;font-size:14px;color:var(--txt)}
+.pacterow .pstar{font-size:13px}
+.pacterow .pok{color:var(--mint);font-weight:700}
+.pacterow.done .pttl{text-decoration:line-through;color:var(--dim2)}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -2372,13 +2378,12 @@ function doneBlock(){
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var focus=S.quests.filter(function(q){
-    if(q.daily||q.done||isBlocked(q)||pubSuppressed(q))return false;
-    if(q.pub)return true;
-    return !!q.due&&dayDiff(q.due,today())<=0;
-  }).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
-  var overdue=focus.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0;});   // en retard : échéance dépassée
-  var todayT=focus.filter(function(q){return q.pub||(q.due&&dayDiff(q.due,today())===0);}); // pour aujourd'hui
+  var actionable=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);});
+  var srt=function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);};
+  // Aujourd'hui : tâches datées du jour, publications, ET toutes les priorités du pacte (quelle que soit leur date)
+  var todayT=actionable.filter(function(q){return isPlan(q)||q.pub||(q.due&&dayDiff(q.due,today())===0);}).sort(srt);
+  // En retard : échéance dépassée, SAUF si c'est une priorité du pacte (elle rejoint alors Aujourd'hui)
+  var overdue=actionable.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0&&!isPlan(q);}).sort(srt);
   var ht=cockMoment();
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
@@ -2407,7 +2412,8 @@ function vCockpit(){
   if(!pAll.length){
     s+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
   }else{
-    s+=pAll.map(function(q){return questRow(q,0,true);}).join("");
+    // résumé : les tâches elles-mêmes (cochables) sont dans Aujourd'hui, ici juste le pacte
+    s+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="pacterow'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(q.done?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
     s+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
   }
   s+='</div>';
