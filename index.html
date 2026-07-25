@@ -329,6 +329,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .daypart.dpover .dpempty{border-color:var(--brd-hi);color:var(--txt)}
 .q.draggable{cursor:grab}
 .q.dragging{opacity:.45}
+.q.prio{box-shadow:inset 2px 0 0 var(--gold)}
+.nextcard{box-shadow:var(--shadow),var(--inset),inset 3px 0 0 var(--tc)}
+.nextrow{display:flex;align-items:center;gap:12px;margin-top:2px}
+.nextrow .check{width:32px;height:32px;font-size:16px;flex:none}
+.nextbody{flex:1;min-width:0}
+.nexttitle{font-size:17px;font-weight:600;line-height:1.25}
+.nextmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.planopt{display:flex;align-items:center;gap:11px;padding:10px 11px;border:1px solid var(--brd);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.12s}
+.planopt:hover{border-color:var(--brd-hi)}
+.planopt.on{border-color:var(--accent);background:var(--panel-3)}
+.pkbox{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--brd-hi);display:flex;align-items:center;justify-content:center;color:#fff;flex:none;font-size:13px;font-weight:700}
+.planopt.on .pkbox{background:var(--accent);border-color:var(--accent)}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -2273,6 +2285,60 @@ function weekBlock(key,label,a,b){
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
 function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
 function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment
+/* ---- Priorisation : pacte du jour (3 priorités max) + prochaine action ---- */
+var PLAN_MAX=3,PLANSEL=null;
+function planActive(){return (S.plan&&S.plan.date===today())?S.plan:null;}
+function planIds(){var p=planActive();return p?(p.ids||[]):[];}
+function isPlan(q){return !!q&&planIds().indexOf(q.id)>=0;}
+function planTasks(){return planIds().map(function(id){return find(S.quests,id);}).filter(function(q){return q&&!q.done;});}
+function urgencyRank(){ // tâches actionnables à prioriser : retards, puis aujourd'hui, puis prioritaires sans date
+  var pool=S.quests.filter(function(q){
+    if(q.daily||q.done||isBlocked(q)||q.pub||pubSuppressed(q))return false;
+    if(q.due)return dayDiff(q.due,today())<=0;
+    return q.prio==="high";
+  });
+  function key(q){var d=q.due?dayDiff(q.due,today()):50;var bucket=d<0?0:(d===0?1:2);var prio={high:0,med:1,low:2}[q.prio||"med"];return bucket*1000+prio*100+Math.min(60,Math.max(0,d<0?0:d));}
+  return pool.slice().sort(function(a,b){var ka=key(a),kb=key(b);return ka!==kb?ka-kb:(b.base-a.base);});
+}
+function suggestPlan(n){ // proposition de ROBI : varie les objectifs pour ne pas tout mettre sur un seul
+  var ranked=urgencyRank(),pick=[],seen={};
+  ranked.forEach(function(q){if(pick.length>=n)return;var o=q.mission||("_"+q.id);if(!seen[o]){seen[o]=1;pick.push(q.id);}});
+  ranked.forEach(function(q){if(pick.length>=n)return;if(pick.indexOf(q.id)<0)pick.push(q.id);});
+  return pick.slice(0,n);
+}
+function nextAction(){var pt=planTasks();if(pt.length)return pt[0];var r=urgencyRank();return r[0]||null;}
+function openPlan(){
+  var cand=urgencyRank();
+  if(PLANSEL===null)PLANSEL=planIds().length?planIds().filter(function(id){var q=find(S.quests,id);return q&&!q.done;}):suggestPlan(PLAN_MAX);
+  var h='<div class="mtag">▸ Mon pacte du jour</div>';
+  h+='<div class="subhead" style="margin:8px 0 12px">Coche au maximum '+PLAN_MAX+' tâches à faire aujourd\'hui. ROBI a pré-choisi pour toi (retards et priorités d\'abord). Ajuste comme tu veux, le reste devient du bonus.</div>';
+  if(!cand.length)h+='<div class="empty">Aucune tâche en retard ou datée à prioriser. Ajoute des tâches, ou profite de ta journée.</div>';
+  h+=cand.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var on=PLANSEL.indexOf(q.id)>=0;return '<div class="planopt'+(on?" on":"")+'" data-planpick="'+q.id+'"><span class="pkbox">'+(on?"✓":"")+'</span><div class="body" style="flex:1;min-width:0"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div></div>';}).join("");
+  h+='<div class="rowbtn"><button class="btn" id="plan-save">Valider mon pacte ('+PLANSEL.length+'/'+PLAN_MAX+')</button><button class="btn ghost" id="plan-robi">💬 En parler à ROBI</button></div>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-planpick]"),function(el){el.onclick=function(){
+    var id=el.getAttribute("data-planpick"),i=PLANSEL.indexOf(id);
+    if(i>=0)PLANSEL.splice(i,1);
+    else if(PLANSEL.length<PLAN_MAX)PLANSEL.push(id);
+    else{toast(PLAN_MAX+" priorités maximum. Décoche-en une d'abord.");return;}
+    openPlan();
+  };});
+  var ps=document.getElementById("plan-save");if(ps)ps.onclick=function(){S.plan={date:today(),ids:PLANSEL.slice()};PLANSEL=null;save();closeModal();render();toast("Pacte du jour posé. Une chose à la fois.");};
+  var pr=document.getElementById("plan-robi");if(pr)pr.onclick=function(){PLANSEL=null;planWithRobi();};
+}
+function planTaskList(n){var cand=urgencyRank().slice(0,n||10);return cand.map(function(q,i){var late=q.due&&dayDiff(q.due,today())<0;return (i+1)+". "+q.title+" ["+((STATS[questCap(q)]||{}).name||"")+(q.due?(late?", EN RETARD":", aujourd'hui"):", priorité haute")+"]";}).join("\n");}
+function planWithRobi(){ // idée 3 + Ray Dalio : trier la journée avec la méthode en 5 étapes
+  var list=planTaskList(10);
+  view="maitre";render();
+  sendChat("Aide-moi à trier ma journée avec la méthode de Ray Dalio (Principes). J'ai tendance à surcharger ma journée et à me disperser sur des tâches basiques.\n\n1) Rappelle-moi l'objectif de fond derrière ces tâches.\n2) Nomme le vrai problème du jour (ne le tolère pas).\n3) Diagnostique la cause racine si je bloque (surcharge ? dispersion ? tâche mal découpée ?).\n4) Conçois le plan : mes 3 priorités maximum et dans quel ordre.\n5) Lance-moi sur la toute première action.\n\nPrincipe à garder : je peux presque tout obtenir, mais pas tout à la fois. Voici mes tâches en retard et du jour :\n\n"+(list||"(aucune pour l'instant)")+"\n\nCourt, direct, honnête, en français.");
+}
+function reflectWithRobi(){ // Ray Dalio : douleur + réflexion = progrès
+  var pt=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean);
+  var faits=pt.filter(function(q){return q.done;}),reste=pt.filter(function(q){return !q.done;});
+  var recap=pt.length?("Mon pacte du jour était :\n"+pt.map(function(q){return "- "+(q.done?"[fait] ":"[pas fait] ")+q.title;}).join("\n")):"Je n'avais pas posé de pacte aujourd'hui.";
+  view="maitre";render();
+  sendChat("Fais mon bilan du soir selon Ray Dalio : douleur + réflexion = progrès. Sois honnête, pas complaisant.\n\n"+recap+"\n\n1) Demande-moi ce que j'ai vraiment accompli et ce qui a coincé.\n2) Aide-moi à trouver la cause racine (le vrai pourquoi, pas l'excuse) de ce qui n'a pas été fait.\n3) Tire une leçon, une seule, à retenir.\n4) Un ajustement concret pour demain ("+(reste.length?reste.length+" priorité(s) non faite(s)":"pacte tenu")+").\n\nCourt, direct, en français.");
+}
 function habCard(ht){
   var due=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   ht=ht||cockMoment();
@@ -2328,6 +2394,23 @@ function vCockpit(){
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
   if(ht==="soir")s+=defiCard("epictete")+defiCard("journal"); // le soir : défi d'Épictète + point du jour
   s+='</div><div class="ckcol">';
+  // Prochaine action : la seule chose à faire maintenant (Dalio : pousser jusqu'au résultat)
+  var na=nextAction();
+  if(na){var nm=STATS[questCap(na)]||STATS.mental;
+    s+='<div class="spanel nextcard" style="--tc:'+nm.col+'"><div class="spl" style="color:'+nm.col+'">▶ Prochaine action</div>';
+    s+='<div class="nextrow"><div class="check" data-check="'+na.id+'">✓</div><div class="nextbody"><div class="nexttitle">'+(isPlan(na)?"⭐ ":"")+esc(na.title)+'</div><div class="nextmeta"><span class="tag" style="color:'+nm.col+';border-color:'+nm.col+'55">'+nm.ic+' '+nm.name+'</span>'+dueBadge(na)+'</div></div></div>';
+    s+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div></div>';
+  }
+  // Pacte du jour : 3 priorités max (Dalio : prioriser, on ne peut pas tout faire)
+  var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return q.done;}).length;
+  s+='<div class="spanel"><div class="spl">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'</div>';
+  if(!pAll.length){
+    s+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
+  }else{
+    s+=pAll.map(function(q){return questRow(q,0,true);}).join("");
+    s+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
+  }
+  s+='</div>';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
   [["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]].forEach(function(mo){
     var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});
@@ -2472,7 +2555,7 @@ function questRow(q,depth,compact,ctx){
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var mact=!isMulti(q)||multiActiveToday(q); // un jour non prévu : la case n'est pas cochable
   var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
-  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
+  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -2751,6 +2834,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
