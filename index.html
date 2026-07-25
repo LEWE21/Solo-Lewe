@@ -319,6 +319,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .calsum{margin-top:10px;font-size:12.5px;color:var(--dim);line-height:1.4}
 .calsum b{color:var(--txt)}
 .okrow{background:rgba(63,201,160,.14);border:1px solid rgba(63,201,160,.4);color:var(--txt);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:10px;line-height:1.45}
+.latecard{border-color:rgba(224,82,100,.4);box-shadow:var(--shadow),var(--inset),inset 3px 0 0 var(--red)}
+.daypart{border-radius:12px;padding:8px 8px 4px;margin-top:8px;transition:background .12s,box-shadow .12s}
+.daypart+.daypart{margin-top:6px}
+.dphead{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin:2px 2px 6px;display:flex;align-items:center;gap:6px}
+.dpn{font-family:var(--mono);font-size:10px;background:var(--brd);color:var(--txt);border-radius:20px;padding:1px 6px}
+.dpempty{font-size:12px;color:var(--dim2);border:1px dashed var(--brd);border-radius:9px;padding:9px;text-align:center}
+.daypart.dpover{background:var(--panel-3);box-shadow:inset 0 0 0 2px var(--brd-hi)}
+.daypart.dpover .dpempty{border-color:var(--brd-hi);color:var(--txt)}
+.q.draggable{cursor:grab}
+.q.dragging{opacity:.45}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -1304,6 +1314,11 @@ function openTaskSet(qId){
     h+='<div class="plab" style="margin-top:16px">Échéance</div>';
     h+='<div class="addrow"><input type="date" id="ts-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="ts-duedel">Retirer</button></div>';
   }
+  if(!q.daily){ // moment de la journée : range la tâche dans Matin / Midi / Soir du Cockpit
+    h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+    [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    h+='</div>';
+  }
 
   // 4. Déplacer : capacité puis projet
   h+='<div class="plab" style="margin-top:18px">Déplacer</div>';
@@ -2257,6 +2272,7 @@ function weekBlock(key,label,a,b){
 }
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
 function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
+function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment
 function habCard(ht){
   var due=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   ht=ht||cockMoment();
@@ -2295,17 +2311,30 @@ function vCockpit(){
     if(q.pub)return true;
     return !!q.due&&dayDiff(q.due,today())<=0;
   }).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
+  var overdue=focus.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0;});   // en retard : échéance dépassée
+  var todayT=focus.filter(function(q){return q.pub||(q.due&&dayDiff(q.due,today())===0);}); // pour aujourd'hui
+  var ht=cockMoment();
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
-  var ht=cockMoment();
+  // Carré "Tâches en retard" : à gauche d'Aujourd'hui, disparaît quand il est vide
+  if(overdue.length){
+    s+='<div class="spanel latecard"><div class="spl" style="color:var(--red)">⏰ Tâches en retard<span style="flex:1"></span><span>'+overdue.length+'</span></div>';
+    s+=overdue.map(function(q){return questRow(q,0,true);}).join("");
+    s+='</div>';
+  }
   if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
   if(ht==="soir")s+=defiCard("epictete")+defiCard("journal"); // le soir : défi d'Épictète + point du jour
   s+='</div><div class="ckcol">';
-  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+focus.length+' à faire</span></div>';
-  s+=focus.length?'<div class="tcols">'+focus.map(function(q){return questRow(q,0,true);}).join("")+'</div>':'<div class="empty">Rien de daté aujourd\'hui. Tes habitudes sont à gauche, tes tâches datées plus tard t\'attendent dans leurs capacités.</div>';
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
+  [["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]].forEach(function(mo){
+    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});
+    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(moT.length?' <span class="dpn">'+moT.length+'</span>':'')+'</div>';
+    s+=moT.length?moT.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
+    s+='</div>';
+  });
   s+='</div>';
   s+='</div><div class="ckcol wks">';
   var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
@@ -2443,7 +2472,7 @@ function questRow(q,depth,compact,ctx){
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var mact=!isMulti(q)||multiActiveToday(q); // un jour non prévu : la case n'est pas cochable
   var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
-  if(compact){var db=dueBadge(q,ctx.win);return '<div class="q cpt'+(q.done?" done":"")+'" style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
+  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -2722,6 +2751,16 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
+  // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
+    el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
+    el.addEventListener("dragend",function(){el.classList.remove("dragging");});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-daypart]"),function(zone){
+    zone.addEventListener("dragover",function(e){e.preventDefault();zone.classList.add("dpover");});
+    zone.addEventListener("dragleave",function(){zone.classList.remove("dpover");});
+    zone.addEventListener("drop",function(e){e.preventDefault();zone.classList.remove("dpover");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}if(id)moveTaskMoment(id,zone.getAttribute("data-daypart"));});
+  });
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
   var ma=document.getElementById("m-add");
