@@ -355,6 +355,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
 .objgear:hover{color:var(--accent-2);background:var(--panel-3)}
 .rankrow.mini{gap:5px;margin:5px 0 2px}
 .rankrow.mini .rankb{min-width:32px;padding:6px 4px;font-size:12px;border-radius:8px}
+.ranklegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 12px;font-size:11px;color:var(--dim)}
+.ranklegend span{white-space:nowrap;cursor:help}
+.ranklegend b{font-family:var(--mono);font-size:11px}
+.objrankw{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;flex:none}
 .movecaps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .movecap{display:grid;justify-items:center;gap:7px;padding:14px 6px;border-radius:12px;cursor:pointer;
   background:var(--panel-3);border:1px solid var(--brd);border-left:3px solid var(--cc);color:var(--dim);
@@ -646,6 +650,17 @@ var STATS={
 var MOODS=["😔","😕","😐","🙂","😄"];
 var PCOL={high:"var(--red)",med:"var(--gold)",low:"var(--dim2)"};
 var RANKS=[{r:"E",min:1,c:"#7c93ab"},{r:"D",min:5,c:"#59d0a8"},{r:"C",min:10,c:"#3ac2ff"},{r:"B",min:16,c:"#6ea8ff"},{r:"A",min:23,c:"#9a6cff"},{r:"S",min:31,c:"#ffcf4d"}];
+// Ce que veut dire chaque rang d'objectif, pour aider à choisir (S le plus important, E le moins)
+var RANKWORD={S:"Vital",A:"Majeur",B:"Important",C:"Secondaire",D:"Accessoire",E:"En veille"};
+var RANKMEAN={
+  S:"Vital : ce qui doit avancer coûte que coûte, ta priorité numéro un.",
+  A:"Majeur : gros levier, à faire progresser chaque semaine.",
+  B:"Important : compte vraiment, mais passe après le vital et le majeur.",
+  C:"Secondaire : utile, à traiter quand tu as de la marge.",
+  D:"Accessoire : à faire un jour, sans pression.",
+  E:"En veille : gardé sous le coude, ou à trancher s'il n'avance pas."
+};
+function rankCol(r){var x=RANKS.filter(function(y){return y.r===r;})[0];return x?x.c:"var(--dim)";}
 function rankOf(lvl){var r=RANKS[0];for(var i=0;i<RANKS.length;i++){if(lvl>=RANKS[i].min)r=RANKS[i];}return r;}
 function rankOrder(r){var i=["E","D","C","B","A","S"].indexOf(r);return i<0?0:i;} // S le plus élevé
 function byRankDesc(a,b){return rankOrder(b.rank)-rankOrder(a.rank);} // du plus fort (S) au plus faible (E)
@@ -1749,8 +1764,8 @@ function openProjectManage(mId){
   h+='<datalist id="pm-themes">'+themes.map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist>';
   h+='<div class="plab" style="margin-top:16px">Rang</div><div class="rankrow">';
   RANKS.slice().reverse().forEach(function(r){
-    h+='<button class="rankb'+(r.r===PROJSEL.rank?" on":"")+'" data-pmrank="'+r.r+'" style="--rc:'+r.c+'">'+r.r+'</button>';});
-  h+='</div><div class="subhead" style="margin:8px 0 0">Le rang donne sa couleur au projet. S pour ce qui compte le plus.</div>';
+    h+='<button class="rankb'+(r.r===PROJSEL.rank?" on":"")+'" data-pmrank="'+r.r+'" style="--rc:'+r.c+'" title="'+esc(RANKMEAN[r.r])+'">'+r.r+'</button>';});
+  h+='</div><div class="subhead" style="margin:8px 0 0"><b style="color:'+rankCol(PROJSEL.rank)+'">'+PROJSEL.rank+' · '+(RANKWORD[PROJSEL.rank]||"")+'</b>. '+esc(RANKMEAN[PROJSEL.rank]||"Le rang donne l'importance de l'objectif.")+' Il pilote les propositions du pacte.</div>';
   h+='<div class="rowbtn" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pm-save">Enregistrer</button><button class="btn ghost" id="pm-del" style="color:var(--pink);border-color:var(--pink)">Supprimer le projet</button></div>';
   openModal(h,st.col);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmcap]"),function(el){
@@ -2395,15 +2410,16 @@ function objBoard(){
   if(open){
     if(!total)s+='<div class="empty">Aucun objectif pour l\'instant. Crée-en un depuis « + Ajouter » dans une capacité.</div>';
     else{
-      s+='<div class="subhead" style="margin:0 0 10px">Change le rang quand tes priorités bougent (S = ce qui compte le plus). Il pilote les propositions du pacte. Le ⚙ pour renommer, déplacer ou supprimer.</div>';
+      s+='<div class="subhead" style="margin:0 0 8px">Change le rang quand tes priorités bougent. Il pilote les propositions du pacte. Le ⚙ pour renommer, déplacer ou supprimer.</div>';
+      s+='<div class="ranklegend">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
       Object.keys(STATS).forEach(function(k){
         var ms=S.missions.filter(function(m){return capOf(m)===k;}).sort(byRankDesc);
         if(!ms.length)return;
         var st=STATS[k];
         s+='<div class="objcap"><div class="objcaphd" style="color:'+st.col+'">'+st.ic+' '+esc(st.name)+'</div>';
         ms.forEach(function(m){
-          s+='<div class="objrow2"><span class="objttl">'+esc(m.title)+'</span><span class="objgear" data-projman="'+m.id+'" title="Retravailler cet objectif">⚙</span></div>';
-          s+='<div class="rankrow mini">'+RANKS.slice().reverse().map(function(r){return '<button class="rankb'+(r.r===m.rank?" on":"")+'" data-objrank="'+m.id+'|'+r.r+'" style="--rc:'+r.c+'">'+r.r+'</button>';}).join("")+'</div>';
+          s+='<div class="objrow2"><span class="objttl">'+esc(m.title)+'</span><span class="objrankw" style="color:'+rankCol(m.rank)+'">'+(RANKWORD[m.rank]||"")+'</span><span class="objgear" data-projman="'+m.id+'" title="Retravailler cet objectif">⚙</span></div>';
+          s+='<div class="rankrow mini">'+RANKS.slice().reverse().map(function(r){return '<button class="rankb'+(r.r===m.rank?" on":"")+'" data-objrank="'+m.id+'|'+r.r+'" style="--rc:'+r.c+'" title="'+esc(RANKMEAN[r.r])+'">'+r.r+'</button>';}).join("")+'</div>';
         });
         s+='</div>';
       });
