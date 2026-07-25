@@ -2285,19 +2285,12 @@ function vCockpit(){
     if(q.pub)return true;
     return !!q.due&&dayDiff(q.due,today())<=0;
   }).sort(function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);});
-  var todo=dueList.filter(function(q){return !q.done;}).length+focus.length; // journalières + tâches datées, restant à faire
-  var caps=Object.keys(STATS),capsWk=caps.filter(capTouchedThisWeek).length;
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
-  s+='<div class="dgrid mini">';
-  s+=dcard('🔥',(S.streak||0),'Série',(S.streak?"jours d'affilée":"à relancer"),'var(--accent)');
-  s+=dcard('◎',todo,'À faire',(todo?"aujourd'hui":"tout est prévu ✓"),'var(--blue)');
-  s+=dcard('◇',capsWk+'/'+caps.length,'Capacités',(capsWk===caps.length?"semaine ✓":(caps.length-capsWk)+" en attente"),'var(--mint)');
-  s+='</div>';
   var ht=cockMoment();
-  s+=moodCard();     // humeur du jour, au-dessus des habitudes
+  if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
   if(ht==="soir")s+=defiCard("epictete")+defiCard("journal"); // le soir : défi d'Épictète + point du jour
   s+='</div><div class="ckcol">';
@@ -2596,11 +2589,13 @@ function sleepCard(){
   }
   return s+'</div>';
 }
+function moodDone(){return S.moodDate===today();}
 function moodCard(){ // "Humeur du jour" : réutilisée dans Mental et dans le Cockpit
-  var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">Comment tu te sens</span></div>';
+  var s='<div class="win"><div class="win-h"><span class="t">Humeur du jour</span><span class="ln"></span><span class="r">'+(moodDone()?MOODS[(S.moodVal||3)-1]+' notée':"Comment tu te sens")+'</span></div>';
+  if(moodDone()){s+='<div class="subhead" style="margin:0">Humeur enregistrée pour aujourd\'hui. À demain.</div></div>';return s;}
   s+='<div style="display:flex;gap:8px">';
   for(var i=1;i<=5;i++){s+='<button type="button" class="btn ghost jm'+(jMood===i?" sel":"")+'" data-m="'+i+'" style="flex:1;font-size:20px;padding:10px">'+MOODS[i-1]+'</button>';}
-  s+='</div></div>';
+  s+='</div><button class="btn" id="mood-save" style="width:100%;margin-top:10px">Valider mon humeur</button></div>';
   return s;
 }
 function vJournal(){ return moodCard()+defiCard("journal"); }
@@ -2725,6 +2720,8 @@ function bind(){
   if(ssv)ssv.onclick=function(){var el=document.getElementById("sleep-h");var v=parseFloat(el?el.value:"");if(isNaN(v)||v<0||v>16){toast("Entre un nombre d'heures (0 à 16)");return;}setSleep(v);};
   var jbs=document.querySelectorAll(".jm");
   Array.prototype.forEach.call(jbs,function(b){b.onclick=function(){jMood=parseInt(b.dataset.m,10);Array.prototype.forEach.call(jbs,function(x){x.classList.toggle("sel",x===b);});};});
+  var msv=document.getElementById("mood-save");
+  if(msv)msv.onclick=function(){S.moodDate=today();S.moodVal=jMood;var r=gainXP("mental",5,"Humeur du jour notée");sysNotify("Humeur du jour",MOODS[jMood-1]+" enregistrée",["+5 XP · Mental"]);afterGain(r);render();};
   var ja=document.getElementById("j-add");
   if(ja)ja.onclick=function(){var sl=document.getElementById("j-sleep").value,nt=document.getElementById("j-note").value.trim();S.journal.unshift({date:today(),mood:jMood,sleep:sl!==""?parseFloat(sl):null,note:nt});var r=gainXP("mental",10,"Entrée de journal");sysNotify("Journal","Entrée enregistrée",["+10 XP · Mental"]);afterGain(r);jMood=3;render();};
   var bds=document.getElementById("bd-save");
