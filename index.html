@@ -1010,9 +1010,12 @@ function multiActiveToday(q){return isMulti(q)&&q.dueDates.indexOf(today())>=0&&
 function validateTask(q){
   if(!q||q.done)return false;
   if(isMulti(q)){
-    var d=today();
-    if(q.dueDates.indexOf(d)<0||(q.doneDates||[]).indexOf(d)>=0)return false; // pas prévu aujourd'hui, ou déjà validé aujourd'hui
-    q.doneDates=q.doneDates||[];q.doneDates.push(d);
+    var dd=q.doneDates||[];
+    // On valide le plus ancien jour choisi pas encore fait, même si ce n'est pas
+    // exactement aujourd'hui : cocher fait toujours avancer la tâche.
+    var target=q.dueDates.slice().sort().filter(function(x){return dd.indexOf(x)<0;})[0];
+    if(!target)return false;           // plus aucun jour à valider
+    dd.push(target);q.doneDates=dd;
     award(q);                          // XP + combo + notif, sans retirer la tâche
     var nd=nextDue(q);
     if(nd)q.due=nd; else q.done=true;  // il reste des jours choisis -> elle revient ; sinon terminée
@@ -1534,7 +1537,9 @@ function defiCard(kind){
   var titles={epictete:"Défi d'Épictète",defi:"Défi du jour",journal:"Ton point du jour"};
   var intro={epictete:"Une épreuve stoïcienne à vivre aujourd'hui.",defi:"Une question de ton coach, pour avancer.",journal:"ROBI te pose quelques questions pour comprendre ta journée."};
   var startlbl={epictete:"⚡ Tirer mon épreuve",defi:"💬 Recevoir ma question",journal:"📝 Faire mon point du jour"};
-  var s='<div class="win" style="margin:0"><div class="win-h"><span class="t">'+titles[kind]+'</span><span class="ln"></span></div>';
+  var open=!WKFOLD["ch_"+kind]; // repliable comme les blocs de semaine, mémorisé sur l'appareil
+  var s='<div class="win" style="margin:0"><div class="win-h wkhead" data-wkfold="ch_'+kind+'" title="'+(open?"Replier":"Déplier")+'" style="cursor:pointer"><span class="t">'+titles[kind]+'</span><span class="ln"></span><span class="wkchev">'+(open?"▾":"▸")+'</span></div>';
+  if(open){
   if(CHBUSY[kind]){s+='<div class="subhead" style="margin:0">ROBI réfléchit <span class="spinload"></span></div>';}
   else if(fresh){s+='<div class="subhead" style="margin:0 0 10px">'+intro[kind]+'</div><button class="btn" data-ch-start="'+kind+'" style="width:100%">'+startlbl[kind]+'</button>';}
   else{
@@ -1548,6 +1553,7 @@ function defiCard(kind){
       s+='<button class="btn" data-ch-judge="'+kind+'" style="width:100%;margin-top:8px">Valider ma réponse</button>';
       s+='<div class="subhead" style="margin-top:8px">Attention : une seule tentative par jour, réussie ou non.</div>';
     }
+  }
   }
   s+='</div>';return s;
 }
@@ -2452,7 +2458,7 @@ function vCockpit(){
   }
   if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
-  if(ht==="soir")s+=defiCard("epictete")+defiCard("journal"); // le soir : défi d'Épictète + point du jour
+  if(ht==="soir")s+=defiCard("epictete"); // le soir : défi d'Épictète (repliable)
   s+='</div><div class="ckcol">';
   // Prochaine action : la seule chose à faire maintenant (Dalio : pousser jusqu'au résultat)
   var na=nextAction();
@@ -2482,8 +2488,10 @@ function vCockpit(){
   s+='</div>';
   s+='</div><div class="ckcol wks">';
   var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
-  var cwA=isoPlus(today(),1),cwB=isoPlus(mon0,6); // de demain à dimanche : le jour même vit dans Aujourd'hui
-  if(cwA<=cwB)s+=weekBlock("w0","Semaine",cwA,cwB); // le dimanche, il n'y a plus de "reste de semaine"
+  var tmr=isoPlus(today(),1);
+  s+=weekBlock("wd","Demain",tmr,tmr); // demain, à part, avant le reste de la semaine
+  var cwA=isoPlus(today(),2),cwB=isoPlus(mon0,6); // d'après-demain à dimanche (aujourd'hui et demain ont déjà leur bloc)
+  if(cwA<=cwB)s+=weekBlock("w0","Semaine",cwA,cwB); // en fin de semaine, il ne reste rien ici
   s+=weekBlock("w1","Semaine Prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
   s+=weekBlock("w2","Semaine Suivante",isoPlus(mon0,14),isoPlus(mon0,20));
   s+=doneBlock();  // sous Semaine Suivante : ce qui a été terminé aujourd'hui
