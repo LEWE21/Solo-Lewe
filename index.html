@@ -1007,6 +1007,10 @@ function isMulti(q){return !!(q&&q.dueDates&&q.dueDates.length);}
 function multiPending(q){var dd=q.doneDates||[];return (q.dueDates||[]).filter(function(d){return dd.indexOf(d)<0&&dayDiff(d,today())>=0;}).sort();}
 function nextDue(q){if(!isMulti(q))return q.due;var p=multiPending(q);return p.length?p[0]:null;}
 function multiActiveToday(q){return isMulti(q)&&q.dueDates.indexOf(today())>=0&&(q.doneDates||[]).indexOf(today())<0;}
+// "Fait pour aujourd'hui" : une tâche terminée, ou une multi-jours dont on a
+// validé une occurrence aujourd'hui. Sert à la sortir des vues du jour et à
+// valider le pacte, même si elle revient un autre jour.
+function doneForToday(q){return !!(q&&(q.done||(isMulti(q)&&q.lastDone===today())));}
 function validateTask(q){
   if(!q||q.done)return false;
   if(isMulti(q)){
@@ -1016,6 +1020,7 @@ function validateTask(q){
     var target=q.dueDates.slice().sort().filter(function(x){return dd.indexOf(x)<0;})[0];
     if(!target)return false;           // plus aucun jour à valider
     dd.push(target);q.doneDates=dd;
+    q.lastDone=today();                // marque "fait aujourd'hui" : sort des vues du jour, revient un autre jour
     award(q);                          // XP + combo + notif, sans retirer la tâche
     var nd=nextDue(q);
     if(nd)q.due=nd; else q.done=true;  // il reste des jours choisis -> elle revient ; sinon terminée
@@ -1947,7 +1952,7 @@ function openDungeon(mId){
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle tâche pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
   openModal(h,rk.c);
   DGOPEN=mId; // le menu ⋯ des lignes redessine cette fenêtre au lieu de la vue derrière
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();openDungeon(mId);});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
@@ -2327,7 +2332,7 @@ var PLAN_MAX=3,PLANSEL=null;
 function planActive(){return (S.plan&&S.plan.date===today())?S.plan:null;}
 function planIds(){var p=planActive();return p?(p.ids||[]):[];}
 function isPlan(q){return !!q&&planIds().indexOf(q.id)>=0;}
-function planTasks(){return planIds().map(function(id){return find(S.quests,id);}).filter(function(q){return q&&!q.done;});}
+function planTasks(){return planIds().map(function(id){return find(S.quests,id);}).filter(function(q){return q&&!doneForToday(q);});}
 function objWeight(q){ // importance de l'objectif (projet) de la tâche : rang S=0 (prioritaire) ... E=5, sans objectif=6
   if(!q.mission)return 6;
   var m=find(S.missions,q.mission);
@@ -2335,7 +2340,7 @@ function objWeight(q){ // importance de l'objectif (projet) de la tâche : rang 
 }
 function urgencyRank(){ // tâches actionnables à prioriser : retards, puis aujourd'hui, puis prioritaires sans date ; à urgence égale, l'objectif le plus important d'abord
   var pool=S.quests.filter(function(q){
-    if(q.daily||q.done||isBlocked(q)||q.pub||pubSuppressed(q))return false;
+    if(q.daily||doneForToday(q)||isBlocked(q)||q.pub||pubSuppressed(q))return false;
     if(q.due)return dayDiff(q.due,today())<=0;
     return q.prio==="high";
   });
@@ -2439,7 +2444,7 @@ function objBoard(){
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
-  var actionable=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!pubSuppressed(q);});
+  var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q);});
   var srt=function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);};
   // Aujourd'hui : tâches datées du jour, publications, ET toutes les priorités du pacte (quelle que soit leur date)
   var todayT=actionable.filter(function(q){return isPlan(q)||q.pub||(q.due&&dayDiff(q.due,today())===0);}).sort(srt);
@@ -2468,13 +2473,13 @@ function vCockpit(){
     s+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div></div>';
   }
   // Pacte du jour : 3 priorités max (Dalio : prioriser, on ne peut pas tout faire)
-  var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return q.done;}).length;
+  var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return doneForToday(q);}).length;
   s+='<div class="spanel"><div class="spl">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'</div>';
   if(!pAll.length){
     s+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
   }else{
     // résumé : les tâches elles-mêmes (cochables) sont dans Aujourd'hui, ici juste le pacte
-    s+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="pacterow'+(q.done?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(q.done?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
+    s+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var pd=doneForToday(q);return '<div class="pacterow'+(pd?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(pd?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
     s+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
   }
   s+='</div>';
@@ -2623,7 +2628,7 @@ function questRow(q,depth,compact,ctx){
     return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:var(--pink);border-color:rgba(255,107,138,.35)">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
   }
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
-  var mact=!isMulti(q)||multiActiveToday(q); // un jour non prévu : la case n'est pas cochable
+  var mact=!isMulti(q)||(!doneForToday(q)&&multiPending(q).length>0); // cochable tant qu'il reste un jour à faire, une fois par jour
   var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
   if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
@@ -2897,7 +2902,7 @@ function vEvolution(){
 }
 
 function bind(){
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||q.done)return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){validateTask(q);render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){validateTask(q);render();});};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
