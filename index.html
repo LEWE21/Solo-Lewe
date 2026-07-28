@@ -1331,25 +1331,34 @@ function openTaskSet(qId){
   var q=find(S.quests,qId);if(!q)return;
   var multi=isMulti(q),cap=TSETCAP||questCap(q),m=STATS[cap]||STATS.mental;
   var order=[1,2,3,4,5,6,0],lbl={1:"L",2:"M",3:"M",4:"J",5:"V",6:"S",0:"D"};
-  var c=q.cad||{},isDays=!!(c.days&&c.days.length);
+  var c=q.cad||{},isDays=!!(c.days&&c.days.length),isMonthly=!!c.dom;
 
   var h='<div class="mtag">▸ Réglages de la tâche</div>';
   // 1. Le nom
   h+='<div class="plab" style="margin-top:12px">Nom</div>';
   h+='<div class="addrow"><input type="text" id="ts-title" maxlength="160" placeholder="Nom de la tâche..."></div>';
 
-  // 2. Répétition : ponctuelle, jours choisis, ou chaque semaine
+  // 2. Répétition : ponctuelle, jours choisis, chaque semaine ou chaque mois
   h+='<div class="plab" style="margin-top:16px">Répétition</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
   h+='<button class="btn'+((!q.daily&&!multi)?"":" ghost")+'" data-tsrep="once">Une seule fois</button>';
   h+='<button class="btn'+(multi?"":" ghost")+'" data-tsrep="days">Jours choisis</button>';
-  h+='<button class="btn'+(q.daily?"":" ghost")+'" data-tsrep="weekly">Chaque semaine</button>';
+  h+='<button class="btn'+((q.daily&&!isMonthly)?"":" ghost")+'" data-tsrep="weekly">Chaque semaine</button>';
+  h+='<button class="btn'+((q.daily&&isMonthly)?"":" ghost")+'" data-tsrep="monthly">Chaque mois</button>';
   h+='</div>';
 
   // 3. La date, selon le mode choisi
   if(q.daily){
-    h+='<div class="plab" style="margin-top:16px">Quels jours de la semaine</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-    order.forEach(function(d){var on=isDays?((c.days||[]).indexOf(d)>=0):true;h+='<button class="cbtn'+(on?" on":"")+'" data-tsday="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
-    h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
+    if(isMonthly){
+      h+='<div class="plab" style="margin-top:16px">Quel jour du mois</div>';
+      h+='<select id="ts-dom" class="selin" style="max-width:130px">';
+      for(var dd=1;dd<=31;dd++)h+='<option value="'+dd+'"'+(c.dom===dd?" selected":"")+'>'+dd+'</option>';
+      h+='</select>';
+      h+='<div class="subhead" style="margin:8px 0 0">La tâche revient <b>'+cadLabel(q)+'</b> (le dernier jour du mois s\'il est plus court).</div>';
+    }else{
+      h+='<div class="plab" style="margin-top:16px">Quels jours de la semaine</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+      order.forEach(function(d){var on=isDays?((c.days||[]).indexOf(d)>=0):true;h+='<button class="cbtn'+(on?" on":"")+'" data-tsday="'+d+'" style="min-width:38px;text-align:center">'+lbl[d]+'</button>';});
+      h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
+    }
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
     [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
     h+='</div>';
@@ -1390,10 +1399,13 @@ function openTaskSet(qId){
     var mode=el.getAttribute("data-tsrep");
     if(mode==="once"){q.daily=false;delete q.cad;delete q.paused;delete q.dueDates;delete q.doneDates;if(!q.due)q.due=prochaineDate(q.prio);}
     else if(mode==="days"){q.daily=false;delete q.cad;delete q.paused;if(!isMulti(q)){q.dueDates=[q.due||today()];q.doneDates=[];q.due=nextDue(q);}}  // le jour déjà choisi devient le 1er ; on ajoute les autres au calendrier
-    else{q.daily=true;delete q.dueDates;delete q.doneDates;delete q.due;}
+    else if(mode==="monthly"){q.daily=true;delete q.dueDates;delete q.doneDates;delete q.due;delete q.paused;if(!(q.cad&&q.cad.dom))q.cad={dom:new Date(today()+"T12:00:00Z").getUTCDate()};}  // un jour du mois (aujourd'hui par défaut)
+    else{q.daily=true;delete q.dueDates;delete q.doneDates;delete q.due;if(q.cad&&q.cad.dom)q.cad=null;}  // chaque semaine : on efface une éventuelle cadence mensuelle
     q.base=baseFor(q.prio,q.daily);
     reopen();
   };});
+  var domSel=document.getElementById("ts-dom");
+  if(domSel)domSel.onchange=function(){var v=parseInt(domSel.value,10);if(v>=1&&v<=31){q.cad={dom:v};q.paused=false;save();render();openTaskSet(qId);}};
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsday]"),function(el){el.onclick=function(){
     var d=parseInt(el.getAttribute("data-tsday"),10);
     if(!(q.cad&&q.cad.days))q.cad={days:[1,2,3,4,5,6,0]};        // "tous les jours" devient une liste qu'on peut décocher
@@ -1641,8 +1653,8 @@ function weekdayMon(iso){return (new Date(iso+"T12:00:00Z").getUTCDay()+6)%7;}  
 function fmtDJ(ds){return ["lun","mar","mer","jeu","ven","sam","dim"][weekdayMon(ds)]+" "+fmtD(ds);}
 function fmtAbs(a){return a.from===a.to?("le "+fmtD(a.from)):("du "+fmtD(a.from)+" au "+fmtD(a.to));}
 function isAbsent(ds){return (S.absences||[]).some(function(a){return a.from<=ds&&ds<=a.to;});}
-function cadLabel(q){var c=q.cad;if(q.paused)return "en pause";if(!c||(!(c.days&&c.days.length)&&(!c.n||c.n<=1)))return "chaque jour";if(c.days&&c.days.length){var J=["dim","lun","mar","mer","jeu","ven","sam"];return c.days.map(function(d){return J[d];}).join("/");}return "tous les "+c.n+" jours";}
-function dueOn(q,ds){if(!q.daily)return true;if(q.paused)return false;var c=q.cad;if(!c)return true;if(c.days&&c.days.length)return c.days.indexOf(new Date(ds+"T12:00:00").getDay())>=0;var n=c.n||1;if(n<=1)return true;var anc=c.anchor||ds;var d=dayDiff(ds,anc);return ((d%n)+n)%n===0;}
+function cadLabel(q){var c=q.cad;if(q.paused)return "en pause";if(!c)return "chaque jour";if(c.dom)return "le "+c.dom+" de chaque mois";if(c.days&&c.days.length){var J=["dim","lun","mar","mer","jeu","ven","sam"];return c.days.map(function(d){return J[d];}).join("/");}if(c.n&&c.n>1)return "tous les "+c.n+" jours";return "chaque jour";}
+function dueOn(q,ds){if(!q.daily)return true;if(q.paused)return false;var c=q.cad;if(!c)return true;if(c.dom){var dt=new Date(ds+"T12:00:00Z");return dt.getUTCDate()===Math.min(c.dom,daysInMonth(dt.getUTCFullYear(),dt.getUTCMonth()+1));}if(c.days&&c.days.length)return c.days.indexOf(new Date(ds+"T12:00:00").getDay())>=0;var n=c.n||1;if(n<=1)return true;var anc=c.anchor||ds;var d=dayDiff(ds,anc);return ((d%n)+n)%n===0;}
 function dueToday(q){return dueOn(q,today());}
 function dailyInfo(){var d=S.quests.filter(function(q){return q.daily&&dueToday(q);});return {tot:d.length,done:d.filter(function(q){return q.done;}).length};}
 /* ---- Planning de publication (par objectif) : tâche 4 jours avant la date, reste jusqu'à validation, et met en retrait les autres tâches de l'objectif ---- */
