@@ -996,6 +996,7 @@ function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFO
 /* ---- Habitudes du jour : moment (matin / midi / soir) d'une journalière, et onglet actif ---- */
 var habTab=null;
 function taskMoment(q){
+  if(q&&q.moment==="libre")return "libre"; // sans moment précis, choisi explicitement
   if(q&&/^(matin|midi|soir)$/.test(q.moment||""))return q.moment;
   var t=((q&&q.title)||"").toLowerCase();
   if(/matin|matinal|r[ée]veil|petit[- ]d[ée]j/.test(t))return "matin";
@@ -1360,7 +1361,7 @@ function openTaskSet(qId){
       h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
     }
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-    [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    [["matin","Matin"],["midi","Midi"],["soir","Soir"],["libre","Peu importe"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
     h+='</div>';
     h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
   }else if(multi){
@@ -1374,7 +1375,7 @@ function openTaskSet(qId){
   }
   if(!q.daily){ // moment de la journée : range la tâche dans Matin / Midi / Soir du Cockpit
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-    [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    [["matin","Matin"],["midi","Midi"],["soir","Soir"],["libre","Peu importe"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
     h+='</div>';
   }
 
@@ -2338,7 +2339,7 @@ function weekBlock(key,label,a,b){
 }
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
 function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
-function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment
+function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir|libre)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment (libre = sans moment)
 /* ---- Priorisation : pacte du jour (3 priorités max) + prochaine action ---- */
 var PLAN_MAX=3,PLANSEL=null;
 function planActive(){return (S.plan&&S.plan.date===today())?S.plan:null;}
@@ -2411,6 +2412,8 @@ function habCard(ht){
   s+='</div>';
   var moc=due.filter(function(q){return taskMoment(q)===ht;});
   s+=moc.length?moc.map(function(q){return dailyRow(q,true);}).join(""):'<div class="empty">Aucune habitude pour ce moment.</div>';
+  var libres=due.filter(function(q){return taskMoment(q)==="libre";}); // habitudes sans moment : à faire à tout moment du jour
+  if(libres.length)s+='<div class="dphead" style="margin-top:12px">🕒 À tout moment</div>'+libres.map(function(q){return dailyRow(q,true);}).join("");
   s+='</div>';
   return s;
 }
@@ -2496,7 +2499,10 @@ function vCockpit(){
   }
   s+='</div>';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
-  [["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]].forEach(function(mo){
+  var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]];
+  var libT=todayT.filter(function(q){return taskMoment(q)==="libre";});
+  if(libT.length)parts.push(["libre","🕒 À tout moment"]); // affiché seulement s'il y a des tâches sans moment ; reste une zone de dépôt
+  parts.forEach(function(mo){
     var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});
     s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(moT.length?' <span class="dpn">'+moT.length+'</span>':'')+'</div>';
     s+=moT.length?moT.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
