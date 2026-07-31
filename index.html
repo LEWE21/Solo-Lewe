@@ -2366,7 +2366,12 @@ function suggestPlan(n){ // proposition de ROBI : varie les objectifs pour ne pa
   ranked.forEach(function(q){if(pick.length>=n)return;if(pick.indexOf(q.id)<0)pick.push(q.id);});
   return pick.slice(0,n);
 }
-function nextAction(){var pt=planTasks();if(pt.length)return pt[0];var r=urgencyRank();return r[0]||null;}
+function momentRank(q){var m={matin:0,midi:1,soir:2,libre:3}[taskMoment(q)];return m==null?9:m;} // ordre du jour : matin, midi, soir, puis "à tout moment"
+function nextAction(){ // la prochaine action DU JOUR : par moment (matin d'abord), à moment égal on garde l'ordre du pacte / de l'urgence ; quand elle est validée, la suivante apparaît
+  var pt=planTasks(),pool=pt.length?pt:urgencyRank();
+  if(!pool.length)return null;
+  return pool.slice().sort(function(a,b){return momentRank(a)-momentRank(b);})[0];
+}
 function openPlan(){
   var cand=urgencyRank();
   if(PLANSEL===null)PLANSEL=planIds().length?planIds().filter(function(id){var q=find(S.quests,id);return q&&!q.done;}):suggestPlan(PLAN_MAX);
@@ -2478,24 +2483,30 @@ function vCockpit(){
   }
   if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
-  if(ht==="soir")s+=defiCard("epictete"); // le soir : défi d'Épictète (repliable)
+  if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
   // Prochaine action : la seule chose à faire maintenant (Dalio : pousser jusqu'au résultat)
   var na=nextAction();
-  if(na){var nm=STATS[questCap(na)]||STATS.mental;
-    s+='<div class="spanel nextcard" style="--tc:'+nm.col+'"><div class="spl" style="color:'+nm.col+'">▶ Prochaine action</div>';
-    s+='<div class="nextrow"><div class="check" data-check="'+na.id+'">✓</div><div class="nextbody"><div class="nexttitle">'+(isPlan(na)?"⭐ ":"")+esc(na.title)+'</div><div class="nextmeta"><span class="tag" style="color:'+nm.col+';border-color:'+nm.col+'55">'+nm.ic+' '+nm.name+'</span>'+dueBadge(na)+'</div></div></div>';
-    s+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div></div>';
+  if(na){var nm=STATS[questCap(na)]||STATS.mental,opn=!WKFOLD.na;
+    s+='<div class="spanel nextcard" style="--tc:'+nm.col+'"><div class="spl wkhead" data-wkfold="na" title="'+(opn?"Replier":"Déplier")+'" style="color:'+nm.col+'">▶ Prochaine action<span style="flex:1"></span><span class="wkchev">'+(opn?"▾":"▸")+'</span></div>';
+    if(opn){
+      s+='<div class="nextrow"><div class="check" data-check="'+na.id+'">✓</div><div class="nextbody"><div class="nexttitle">'+(isPlan(na)?"⭐ ":"")+esc(na.title)+'</div><div class="nextmeta"><span class="tag" style="color:'+nm.col+';border-color:'+nm.col+'55">'+nm.ic+' '+nm.name+'</span>'+dueBadge(na)+'</div></div></div>';
+      s+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div>';
+    }
+    s+='</div>';
   }
   // Pacte du jour : 3 priorités max (Dalio : prioriser, on ne peut pas tout faire)
   var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return doneForToday(q);}).length;
-  s+='<div class="spanel"><div class="spl">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'</div>';
+  var opp=!WKFOLD.pacte;
+  s+='<div class="spanel"><div class="spl wkhead" data-wkfold="pacte" title="'+(opp?"Replier":"Déplier")+'">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'<span class="wkchev">'+(opp?"▾":"▸")+'</span></div>';
+  if(opp){
   if(!pAll.length){
     s+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
   }else{
     // résumé : les tâches elles-mêmes (cochables) sont dans Aujourd'hui, ici juste le pacte
     s+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var pd=doneForToday(q);return '<div class="pacterow'+(pd?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(pd?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
     s+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
+  }
   }
   s+='</div>';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
