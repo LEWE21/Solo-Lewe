@@ -2525,6 +2525,27 @@ function vCockpit(){
   // En retard : échéance dépassée, SAUF si c'est une priorité du pacte (elle rejoint alors Aujourd'hui)
   var overdue=actionable.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0&&!isPlan(q);}).sort(srt);
   var ht=cockMoment();
+  // Prochaine action + Pacte du jour : construits ici, placés dans la colonne de gauche au-dessus des habitudes
+  var na=nextAction(),naHtml="";
+  if(na){var nm=STATS[questCap(na)]||STATS.mental,opn=!WKFOLD.na;
+    naHtml='<div class="spanel nextcard" style="--tc:'+nm.col+'"><div class="spl wkhead" data-wkfold="na" title="'+(opn?"Replier":"Déplier")+'" style="color:'+nm.col+'">▶ Prochaine action<span style="flex:1"></span><span class="wkchev">'+(opn?"▾":"▸")+'</span></div>';
+    if(opn){
+      naHtml+='<div class="nextrow"><div class="check" data-check="'+na.id+'">✓</div><div class="nextbody"><div class="nexttitle">'+(isPlan(na)?"⭐ ":"")+esc(na.title)+'</div><div class="nextmeta"><span class="tag" style="color:'+nm.col+';border-color:'+nm.col+'55">'+nm.ic+' '+nm.name+'</span>'+dueBadge(na)+'</div></div></div>';
+      naHtml+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div>';
+    }
+    naHtml+='</div>';
+  }
+  var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return doneForToday(q);}).length;
+  var opp=!WKFOLD.pacte,pacteHtml='<div class="spanel"><div class="spl wkhead" data-wkfold="pacte" title="'+(opp?"Replier":"Déplier")+'">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'<span class="wkchev">'+(opp?"▾":"▸")+'</span></div>';
+  if(opp){
+    if(!pAll.length){
+      pacteHtml+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
+    }else{
+      pacteHtml+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var pd=doneForToday(q);return '<div class="pacterow'+(pd?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(pd?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
+      pacteHtml+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
+    }
+  }
+  pacteHtml+='</div>';
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
   s+='<div class="ckgrid"><div class="ckcol">';
@@ -2536,33 +2557,10 @@ function vCockpit(){
     s+='</div>';
   }
   if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
+  s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour, au-dessus des habitudes
   s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
   if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
-  // Prochaine action : la seule chose à faire maintenant (Dalio : pousser jusqu'au résultat)
-  var na=nextAction();
-  if(na){var nm=STATS[questCap(na)]||STATS.mental,opn=!WKFOLD.na;
-    s+='<div class="spanel nextcard" style="--tc:'+nm.col+'"><div class="spl wkhead" data-wkfold="na" title="'+(opn?"Replier":"Déplier")+'" style="color:'+nm.col+'">▶ Prochaine action<span style="flex:1"></span><span class="wkchev">'+(opn?"▾":"▸")+'</span></div>';
-    if(opn){
-      s+='<div class="nextrow"><div class="check" data-check="'+na.id+'">✓</div><div class="nextbody"><div class="nexttitle">'+(isPlan(na)?"⭐ ":"")+esc(na.title)+'</div><div class="nextmeta"><span class="tag" style="color:'+nm.col+';border-color:'+nm.col+'55">'+nm.ic+' '+nm.name+'</span>'+dueBadge(na)+'</div></div></div>';
-      s+='<div class="subhead" style="margin:8px 0 0">Fais juste ça, jusqu\'au bout. Le reste attendra.</div>';
-    }
-    s+='</div>';
-  }
-  // Pacte du jour : 3 priorités max (Dalio : prioriser, on ne peut pas tout faire)
-  var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return doneForToday(q);}).length;
-  var opp=!WKFOLD.pacte;
-  s+='<div class="spanel"><div class="spl wkhead" data-wkfold="pacte" title="'+(opp?"Replier":"Déplier")+'">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'<span class="wkchev">'+(opp?"▾":"▸")+'</span></div>';
-  if(opp){
-  if(!pAll.length){
-    s+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
-  }else{
-    // résumé : les tâches elles-mêmes (cochables) sont dans Aujourd'hui, ici juste le pacte
-    s+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var pd=doneForToday(q);return '<div class="pacterow'+(pd?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(pd?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
-    s+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
-  }
-  }
-  s+='</div>';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]];
   var libT=todayT.filter(function(q){return taskMoment(q)==="libre";});
