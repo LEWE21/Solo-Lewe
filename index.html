@@ -1770,7 +1770,11 @@ var FORGE_CITS=[
  {q:"Autrefois, les gens pratiquaient la Voie de la Vie : des exercices pour l'énergie, des repas équilibrés à heures régulières, un lever et un coucher à heures fixes, ni surmenage ni excès. Il n'est pas surprenant qu'ils aient vécu plus de cent ans.",a:"Neijing Suwen, Classique de l'Empereur Jaune"},
  {q:"Balance tes bras pour être en bonne santé, balance tes bras pour être heureux.",a:"Dicton chinois — leçon Arm Swings"},
  {q:"Respirer, c'est la vie. Sans air, le feu s'éteint. — Combien de temps dois-je faire ça ? — Pour le restant de ta vie.",a:"Le Mighty Atom, enfant asthmatique devenu l'homme le plus fort du siècle"},
- {q:"Tu dois sentir un étirement doux, jamais une tension. Ne cherche pas à battre de record : compare-toi à qui tu étais hier, pas aux autres.",a:"The Forge — Respiration du matin"}
+ {q:"Tu dois sentir un étirement doux, jamais une tension. Ne cherche pas à battre de record : compare-toi à qui tu étais hier, pas aux autres.",a:"The Forge — Respiration du matin"},
+ {q:"Le seul endroit où la forme physique passe avant la santé, c'est dans le dictionnaire.",a:"Brett Jones — The Forge"},
+ {q:"Ne t'inquiète pas, n'intellectualise pas, savoure la pratique.",a:"Wong Kiew Kit"},
+ {q:"Le progrès quotidien est invisible, comme voir grandir un enfant : jour après jour tu ne vois rien, mais reviens après des années et la différence est immense.",a:"Wong Kiew Kit"},
+ {q:"En cas de doute, fais-en moins. Laisse à ton corps le temps de s'adapter, et soigne la technique.",a:"The Forge — Hindu Pushups"}
 ];
 function forgeCitToday(){var n=Math.floor(Date.parse(today()+"T00:00:00Z")/86400000);return FORGE_CITS[((n%FORGE_CITS.length)+FORGE_CITS.length)%FORGE_CITS.length];} // une par jour, cycle complet de la liste
 function citationForgeCard(){
@@ -2559,20 +2563,24 @@ function vCockpit(){
   }
   if(!moodDone())s+=moodCard();     // humeur du jour ; disparaît une fois validée
   if(sleepToday()==null)s+=sleepCard(); // sommeil de la nuit ; comme l'humeur, disparaît une fois noté
-  s+='<div class="cksec">🎯 Priorités du jour</div>';   // distinction nette : priorités...
+  s+='<div class="cksec">🎯 Priorités du jour</div>';   // les priorités (colonne de gauche), distinctes des habitudes qui sont dans Aujourd'hui
   s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour
-  s+='<div class="cksec">🔁 Habitudes &amp; rituels</div>'; // ...séparées des habitudes
-  s+=habCard(ht);    // les habitudes du jour
   if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
-  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
+  var undoneHab=dueList.filter(function(q){return !doneForToday(q);}).length; // habitudes du jour non faites, comptées dans "à faire"
+  s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+(todayT.length+undoneHab)+' à faire</span></div>';
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]];
   var libT=todayT.filter(function(q){return taskMoment(q)==="libre";});
-  if(libT.length)parts.push(["libre","🕒 À tout moment"]); // affiché seulement s'il y a des tâches sans moment ; reste une zone de dépôt
+  var libH=dueList.filter(function(q){return taskMoment(q)==="libre";});
+  if(libT.length||libH.length)parts.push(["libre","🕒 À tout moment"]); // affiché s'il y a une habitude ou une tâche sans moment ; reste une zone de dépôt
   parts.forEach(function(mo){
-    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});
-    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(moT.length?' <span class="dpn">'+moT.length+'</span>':'')+'</div>';
-    s+=moT.length?moT.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
+    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0];});   // les habitudes de ce moment, en premier
+    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});    // puis les tâches datées de ce moment
+    var n=moH.length+moT.length;
+    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(n?' <span class="dpn">'+n+'</span>':'')+'</div>';
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");               // habitudes d'abord
+    s+=moT.map(function(q){return questRow(q,0,true,{drag:true});}).join(""); // tâches ensuite
+    if(!n)s+='<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div>';
   });
   s+='</div>';
