@@ -213,6 +213,7 @@ nav button.capnav.on .ni{filter:none}
 .subcheck.on{background:color-mix(in srgb,var(--tc,var(--accent)) 22%,transparent);border-color:var(--tc,var(--accent));color:var(--tc,var(--accent))}
 .subttl{font-size:13px;color:var(--txt)}
 .subttl.done{text-decoration:line-through;color:var(--dim2)}
+.cksec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim2);font-weight:700;margin:14px 2px 4px;padding-top:12px;border-top:1px solid var(--line-soft)}
 .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:3px 9px;border-radius:7px;
   border:1px solid var(--brd);color:var(--dim);white-space:nowrap}
 .deptag{color:var(--gold);border-color:rgba(255,207,111,.4)}
@@ -2556,9 +2557,12 @@ function vCockpit(){
     s+=overdue.map(function(q){return questRow(q,0,true);}).join("");
     s+='</div>';
   }
-  if(!moodDone())s+=moodCard();     // humeur du jour, au-dessus des habitudes ; disparaît une fois validée
-  s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour, au-dessus des habitudes
-  s+=habCard(ht);    // les habitudes du jour, à gauche des tâches d'aujourd'hui
+  if(!moodDone())s+=moodCard();     // humeur du jour ; disparaît une fois validée
+  if(sleepToday()==null)s+=sleepCard(); // sommeil de la nuit ; comme l'humeur, disparaît une fois noté
+  s+='<div class="cksec">🎯 Priorités du jour</div>';   // distinction nette : priorités...
+  s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour
+  s+='<div class="cksec">🔁 Habitudes &amp; rituels</div>'; // ...séparées des habitudes
+  s+=habCard(ht);    // les habitudes du jour
   if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+' à faire</span></div>';
