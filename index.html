@@ -992,8 +992,31 @@ function award(q){
   if(r.statLeveled)lines.push(m.name+" niv "+r.statLevel);
   sysNotify("Tâche accomplie",esc(q.title),lines);
   afterGain(r);
+  q._award={gain:r.gain,cap:ck}; // trace du gain pour pouvoir réactiver la tâche (annuler l'XP) si validée par erreur
   sfx(q.pub?"success":"check");
   save();
+}
+// Réactiver une tâche validée par erreur : on rouvre la tâche ET on annule l'XP gagné (anti-farm)
+function reactivateTask(q){
+  if(!q)return false;
+  if(q._award){
+    var g=q._award.gain||0,ck=q._award.cap||questCap(q),st=S.stats[ck];
+    if(st)st.xp=Math.max(0,st.xp-g);
+    var h=S.hunter;h.xp-=g;while(h.xp<0&&h.level>1){h.level--;h.xp+=xpNeed(h.level);}if(h.xp<0)h.xp=0;
+    S.doneCount=Math.max(0,S.doneCount-1);
+    S.combo=Math.max(0,S.combo-1);
+    delete q._award;
+  }
+  if(isMulti(q)){
+    var dd=(q.doneDates||[]).filter(function(d){return d!==today();});q.doneDates=dd; // on retire l'occurrence du jour
+    if(q.lastDone===today())delete q.lastDone;
+    q.done=false;var nd=nextDue(q);if(nd)q.due=nd;
+  }else{
+    q.done=false;
+    if(q.subs)q.subs.forEach(function(s){s.done=false;}); // une routine réactivée décoche ses étapes
+    if(q.daily&&q.lastDone===today())delete q.lastDone;
+  }
+  save();return true;
 }
 /* ---- Tâches à jours choisis (dates multiples, ex. jours de réserve, JDC d'une semaine) ---- */
 var CALSEL={},CALMON=null,CRANGE={from:"",to:""};
@@ -2458,7 +2481,7 @@ function doneTodayList(){
 function doneBlock(){
   var list=doneTodayList(),open=!WKFOLD.wdone;
   var s='<div class="spanel"><div class="spl wkhead" data-wkfold="wdone" title="'+(open?"Replier":"Déplier")+'">Tâches terminées<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span><span class="wkchev">'+(open?"▾":"▸")+'</span></div>';
-  if(open)s+=list.length?list.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span></div>';}).join(""):'<div class="empty">Rien de terminé aujourd\'hui pour l\'instant.</div>';
+  if(open)s+=list.length?list.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span><span class="gear" data-reopen="'+q.id+'" title="Réactiver (validée par erreur)">↩</span></div>';}).join(""):'<div class="empty">Rien de terminé aujourd\'hui pour l\'instant.</div>';
   s+='</div>';
   return s;
 }
@@ -2981,6 +3004,10 @@ function bind(){
     if(q.subs.every(function(s){return s.done;})){if(!q.done&&q.lastDone!==today())validateTask(q);q.done=true;q.lastDone=today();} // toutes cochées : la routine se valide (une fois/jour)
     else{q.done=false;}                                                                                                            // on rouvre la routine si une étape est décochée
     save();render();
+  };});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-reopen]"),function(el){el.onclick=function(){
+    var q=find(S.quests,el.getAttribute("data-reopen"));if(!q)return;
+    sysConfirm("Réactiver cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle repasse à faire et l'XP gagné est retiré."],function(){reactivateTask(q);render();toast("Tâche réactivée");});
   };});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
