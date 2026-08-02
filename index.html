@@ -893,8 +893,13 @@ function ingestTasks(){
   return robiStore("tasks_get").then(function(r){
     var arr=(r&&r.tasks)||[];if(!arr.length)return;
     var added=0,created=[];
+    // Anti-doublon : une tâche non faite du même titre existe déjà (utile pour les pushs récurrents, ex. Cron Proxy)
+    var have={};S.quests.forEach(function(q){if(!q.done)have[q.title.toLowerCase()]=true;});
     arr.forEach(function(x){
       if(!x||!x.title)return;
+      var tkey=String(x.title).slice(0,160).toLowerCase();
+      if(have[tkey])return; // déjà présente et non faite : on ne recrée pas
+      have[tkey]=true;
       var stat=STATS[x.stat]?x.stat:"discipline";
       var prio=["high","med","low"].indexOf(x.prio)>=0?x.prio:"med";
       var daily=!!x.daily,mission=null;
