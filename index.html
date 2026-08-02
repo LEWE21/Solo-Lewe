@@ -205,6 +205,14 @@ nav button.capnav.on .ni{filter:none}
 .check:hover{border-color:var(--accent);color:rgba(58,64,90,.32)}
 .q.done .check{background:linear-gradient(140deg,var(--accent),var(--accent-deep));border-color:transparent;color:#fff}
 .check.off{cursor:default;border-style:dashed;color:var(--dim2)}
+.substeps{display:flex;flex-direction:column;gap:2px;margin:-2px 0 8px 34px}
+.subq{display:flex;align-items:center;gap:9px;padding:4px 6px}
+.subcheck{width:18px;height:18px;border-radius:5px;flex:none;display:grid;place-items:center;font-size:11px;
+  border:1.5px solid color-mix(in srgb,var(--tc,var(--accent)) 55%,transparent);color:transparent;cursor:pointer;transition:.16s}
+.subcheck[data-subcheck]:hover{border-color:var(--tc,var(--accent))}
+.subcheck.on{background:color-mix(in srgb,var(--tc,var(--accent)) 22%,transparent);border-color:var(--tc,var(--accent));color:var(--tc,var(--accent))}
+.subttl{font-size:13px;color:var(--txt)}
+.subttl.done{text-decoration:line-through;color:var(--dim2)}
 .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:3px 9px;border-radius:7px;
   border:1px solid var(--brd);color:var(--dim);white-space:nowrap}
 .deptag{color:var(--gold);border-color:rgba(255,207,111,.4)}
@@ -929,7 +937,7 @@ function rollover(){
   // Les tâches normales validées la veille sont retirées (déjà comptées et tracées dans le Journal de ROBI),
   // pour que la liste reste vivante et alignée sur ta progression. Les journalières, elles, se réinitialisent.
   S.quests=S.quests.filter(function(q){return q.daily||!q.done;});
-  S.quests.forEach(function(q){if(q.daily)q.done=false;});
+  S.quests.forEach(function(q){if(q.daily){q.done=false;if(q.subs)q.subs.forEach(function(s){s.done=false;});}});
   S.lastDate=today();save();
   return out;
 }
@@ -1027,6 +1035,8 @@ function validateTask(q){
     if(nd)q.due=nd; else q.done=true;  // il reste des jours choisis -> elle revient ; sinon terminée
     save();return true;
   }
+  if(q.subs)q.subs.forEach(function(s){s.done=true;});  // valider la routine coche toutes ses étapes
+  q.lastDone=today();
   q.done=true;award(q);return true;
 }
 /* ---- Mécanique : combo (progression) ---- */
@@ -1379,6 +1389,16 @@ function openTaskSet(qId){
     h+='</div>';
   }
 
+  // 3bis. Sous-tâches : uniquement pour les routines (étapes de la routine)
+  if(q.daily){
+    h+='<div class="plab" style="margin-top:18px">Sous-tâches <span style="font-weight:400;color:var(--dim2)">(étapes de la routine)</span></div>';
+    h+='<div class="subhead" style="margin:0 0 8px">La routine se valide toute seule quand toutes ses étapes sont cochées.</div>';
+    (q.subs||[]).forEach(function(sub){
+      h+='<div class="addrow" style="margin-bottom:6px"><input type="text" class="ts-subttl" data-subid="'+sub.id+'" maxlength="120" value="'+esc(sub.title)+'"><button class="btn ghost" data-tssubdel="'+sub.id+'" style="color:var(--pink);flex:0 0 auto">✕</button></div>';
+    });
+    h+='<div class="addrow"><input type="text" id="ts-subnew" maxlength="120" placeholder="Ajouter une étape..."><button class="btn ghost" id="ts-subadd" style="flex:0 0 auto">+ Ajouter</button></div>';
+  }
+
   // 4. Déplacer : capacité puis projet
   h+='<div class="plab" style="margin-top:18px">Déplacer</div>';
   h+='<div class="movecaps">';
@@ -1396,6 +1416,11 @@ function openTaskSet(qId){
   var ti=document.getElementById("ts-title");if(ti){ti.value=q.title;try{ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);}catch(_){}}
 
   function reopen(){save();render();openTaskSet(qId);}
+  function captureSubs(){if(!q.subs)return;Array.prototype.forEach.call(document.querySelectorAll("#modal .ts-subttl"),function(inp){var sub=find(q.subs,inp.getAttribute("data-subid"));if(sub){var v=(inp.value||"").trim();if(v)sub.title=v.slice(0,120);}});}
+  var sadd=document.getElementById("ts-subadd");
+  if(sadd)sadd.onclick=function(){var inp=document.getElementById("ts-subnew"),v=(inp&&inp.value||"").trim();if(!v){toast("Écris une étape");return;}captureSubs();if(!q.subs)q.subs=[];q.subs.push({id:uid(),title:v.slice(0,120),done:false});reopen();};
+  var sne=document.getElementById("ts-subnew");if(sne)sne.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();if(sadd)sadd.onclick();}};
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tssubdel]"),function(el){el.onclick=function(){captureSubs();var id=el.getAttribute("data-tssubdel");q.subs=(q.subs||[]).filter(function(s){return s.id!==id;});if(!q.subs.length)delete q.subs;reopen();};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsrep]"),function(el){el.onclick=function(){
     var mode=el.getAttribute("data-tsrep");
     if(mode==="once"){q.daily=false;delete q.cad;delete q.paused;delete q.dueDates;delete q.doneDates;if(!q.due)q.due=prochaineDate(q.prio);}
@@ -1441,6 +1466,7 @@ function openTaskSet(qId){
     var sel=document.getElementById("ts-proj"),dest=sel?(sel.value||null):null;
     q.mission=dest;
     q.stat=dest?capOf(find(S.missions,dest)):(TSETCAP||q.stat);
+    captureSubs();
     TSETCAP=null;save();closeModal();render();toast("Tâche enregistrée");
   }
   var sv=document.getElementById("ts-save");if(sv)sv.onclick=commit;
@@ -2680,13 +2706,25 @@ function questTree(list,ctx){
   list.forEach(function(q){if(!seen[q.id])emit(q,0);});
   return out;
 }
+function subBadge(q){if(!q.subs||!q.subs.length)return "";var d=q.subs.filter(function(s){return s.done;}).length;return '<span class="xpv" style="color:var(--dim2);font-weight:700">'+d+'/'+q.subs.length+'</span>';}
+function subStepsHTML(q,m){
+  if(!q.subs||!q.subs.length)return "";
+  var due=dueToday(q);
+  return '<div class="substeps">'+q.subs.map(function(s){
+    return '<div class="subq"'+(due?'':' style="opacity:.5"')+'>'+
+      '<div class="subcheck'+(s.done?" on":"")+'"'+(due?' data-subcheck="'+q.id+'|'+s.id+'"':'')+' style="--tc:'+m.col+'">'+(s.done?"✓":"")+'</div>'+
+      '<span class="subttl'+(s.done?" done":"")+'">'+esc(s.title)+'</span>'+
+    '</div>';
+  }).join("")+'</div>';
+}
 function dailyRow(q,compact){
   var m=STATS[questCap(q)]||STATS.mental;var due=dueToday(q);
-  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
+  var hasSubs=!!(q.subs&&q.subs.length),xp=hasSubs?subBadge(q):'<span class="xpv">+'+q.base+'</span>';
+  if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div>'+xp+rowActs(q)+'</div>'+subStepsHTML(q,m);
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
     '<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">🔁 '+cadLabel(q)+(due?"":" · pas aujourd\'hui")+'</span></div></div>'+
-    '<span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
+    xp+rowActs(q)+'</div>'+subStepsHTML(q,m);
 }
 function vQuetes(){
   var dailies=S.quests.filter(function(q){return q.daily;});
@@ -2936,6 +2974,14 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-subcheck]"),function(el){el.onclick=function(){
+    var p=el.getAttribute("data-subcheck").split("|"),q=find(S.quests,p[0]);if(!q||!q.subs||!dueToday(q))return;
+    var sub=find(q.subs,p[1]);if(!sub)return;
+    sub.done=!sub.done;
+    if(q.subs.every(function(s){return s.done;})){if(!q.done&&q.lastDone!==today())validateTask(q);q.done=true;q.lastDone=today();} // toutes cochées : la routine se valide (une fois/jour)
+    else{q.done=false;}                                                                                                            // on rouvre la routine si une étape est décochée
+    save();render();
+  };});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wkfold]"),function(el){el.onclick=function(){var k=el.getAttribute("data-wkfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
