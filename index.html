@@ -2541,7 +2541,9 @@ function objAdviceCard(){
   s+='<div class="subhead" style="margin:0 0 8px">Claude analyse tes objectifs selon ton temps, ta vie et tes compétences, à la manière de Ray Dalio (Les Principes). Son analyse d\'abord ; ensuite tu recadres, sous forme d\'un jeu de questions, une à la fois.</div>';
   s+='<div class="ranklegend" style="margin:0 0 10px">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
   s+='<button class="btn" data-objanalyse="1" style="width:100%">🔍 Lancer l\'analyse de mes objectifs</button>';
-  s+='<div class="subhead" style="margin:8px 0 0;text-align:center">Ça ouvre une discussion avec Claude.</div>';
+  s+='<div class="subhead" style="margin:8px 0 6px;text-align:center">Ça ouvre une discussion avec Claude.</div>';
+  var nchat=(S.chat||[]).length;
+  s+='<button class="btn ghost" data-chathist="1" style="width:100%">📜 Historique de mes discussions'+(nchat?' ('+nchat+')':'')+'</button>';
   s+='</div>';
   return s;
 }
@@ -3075,6 +3077,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objrank]"),function(el){el.onclick=function(){var p=el.getAttribute("data-objrank").split("|");var m=find(S.missions,p[0]);if(m){m.rank=p[1];save();render();}};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
