@@ -214,6 +214,8 @@ nav button.capnav.on .ni{filter:none}
 .subttl{font-size:13px;color:var(--txt)}
 .subttl.done{text-decoration:line-through;color:var(--dim2)}
 .cksec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim2);font-weight:700;margin:14px 2px 4px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.dpsub{margin:4px 0 8px}
+.q.dropafter{box-shadow:0 3px 0 -1px var(--accent)}
 .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:3px 9px;border-radius:7px;
   border:1px solid var(--brd);color:var(--dim);white-space:nowrap}
 .deptag{color:var(--gold);border-color:rgba(255,207,111,.4)}
@@ -1032,6 +1034,7 @@ var WKFOLD=(function(){try{return JSON.parse(localStorage.getItem("robi_wkfold")
 function saveWkfold(){try{localStorage.setItem("robi_wkfold",JSON.stringify(WKFOLD));}catch(e){}}
 /* ---- Habitudes du jour : moment (matin / midi / soir) d'une journalière, et onglet actif ---- */
 var habTab=null;
+var dayTab={};  // onglet actif (habitudes / tâches) par moment dans Aujourd'hui, ex. {matin:"hab"} ; défaut "tache"
 function taskMoment(q){
   if(q&&q.moment==="libre")return "libre"; // sans moment précis, choisi explicitement
   if(q&&/^(matin|midi|soir)$/.test(q.moment||""))return q.moment;
@@ -2399,6 +2402,16 @@ function weekBlock(key,label,a,b){
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
 function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
 function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir|libre)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment (libre = sans moment)
+function reorderTask(dragId,targetId){ // déposer une tâche sur une autre : la placer juste après, dans la même catégorie
+  var qi=-1;for(var i=0;i<S.quests.length;i++){if(S.quests[i].id===dragId){qi=i;break;}}
+  var q=qi>=0?S.quests[qi]:null,tgt=find(S.quests,targetId);
+  if(!q||!tgt)return;
+  q.moment=taskMoment(tgt);          // même moment que la cible (matin/midi/soir/libre)
+  S.quests.splice(qi,1);             // retirer la tâche déplacée
+  var ti=-1;for(var j=0;j<S.quests.length;j++){if(S.quests[j].id===targetId){ti=j;break;}}
+  S.quests.splice(ti+1,0,q);         // réinsérer juste après la cible
+  save();render();
+}
 /* ---- Priorisation : pacte du jour (3 priorités max) + prochaine action ---- */
 var PLAN_MAX=3,PLANSEL=null;
 function planActive(){return (S.plan&&S.plan.date===today())?S.plan:null;}
@@ -2526,7 +2539,8 @@ function vCockpit(){
   var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q);});
   var srt=function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);};
   // Aujourd'hui : tâches datées du jour, publications, ET toutes les priorités du pacte (quelle que soit leur date)
-  var todayT=actionable.filter(function(q){return isPlan(q)||q.pub||(q.due&&dayDiff(q.due,today())===0);}).sort(srt);
+  // Ordre = ordre du tableau S.quests, pour que le glisser-déposer manuel dans une catégorie soit respecté
+  var todayT=actionable.filter(function(q){return isPlan(q)||q.pub||(q.due&&dayDiff(q.due,today())===0);});
   // En retard : échéance dépassée, SAUF si c'est une priorité du pacte (elle rejoint alors Aujourd'hui)
   var overdue=actionable.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0&&!isPlan(q);}).sort(srt);
   var ht=cockMoment();
@@ -2575,15 +2589,21 @@ function vCockpit(){
   if(libT.length||libH.length)parts.push(["libre","🕒 À tout moment"]); // affiché s'il y a une habitude ou une tâche sans moment ; reste une zone de dépôt
   parts.forEach(function(mo){
     var moH=dueList.filter(function(q){return taskMoment(q)===mo[0];});          // habitudes de ce moment
-    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});           // tâches datées de ce moment
-    var moPrio=moT.filter(function(q){return isPlan(q);});                       // ⭐ pacte du jour : toujours en tête, peu importe le moment
-    var moRest=moT.filter(function(q){return !isPlan(q);});                      // les autres tâches
-    var n=moH.length+moT.length;
-    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(n?' <span class="dpn">'+n+'</span>':'')+'</div>';
-    s+=moPrio.map(function(q){return questRow(q,0,true,{drag:true});}).join("");  // priorités du pacte d'abord
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                   // puis les habitudes
-    s+=moRest.map(function(q){return questRow(q,0,true,{drag:true});}).join("");  // puis le reste des tâches
-    if(!moT.length)s+='<div class="dpempty">Dépose une tâche ici</div>';         // zone de dépôt visible dans chaque catégorie sans tâche (glisser-déposer)
+    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});           // tâches de ce moment (ordre du tableau = glisser-déposer)
+    var moPrio=moT.filter(function(q){return isPlan(q);});                       // ⭐ pacte du jour : toujours en tête
+    var moRest=moT.filter(function(q){return !isPlan(q);});
+    var ordered=moPrio.concat(moRest);                                          // priorités d'abord, puis l'ordre manuel
+    var tab=dayTab[mo[0]]||"tache";                                             // onglet actif du moment : Tâches par défaut
+    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+((moH.length+moT.length)?' <span class="dpn">'+(moH.length+moT.length)+'</span>':'')+'</div>';
+    s+='<div class="habtabs dpsub">';                                          // deux onglets dissociés : Tâches / Habitudes
+    s+='<button class="habtab'+(tab==="tache"?" on":"")+'" data-daytab="'+mo[0]+'|tache">Tâches'+(moT.length?' <span class="htn">'+moT.length+'</span>':'')+'</button>';
+    s+='<button class="habtab'+(tab==="hab"?" on":"")+'" data-daytab="'+mo[0]+'|hab">Habitudes'+(moH.length?' <span class="htn">'+moH.length+'</span>':'')+'</button>';
+    s+='</div>';
+    if(tab==="hab"){
+      s+=moH.length?moH.map(function(q){return dailyRow(q,true);}).join(""):'<div class="dpempty">Aucune habitude à ce moment.</div>';
+    }else{
+      s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
+    }
     s+='</div>';
   });
   s+='</div>';
@@ -2726,7 +2746,7 @@ function questRow(q,depth,compact,ctx){
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var mact=!isMulti(q)||(!doneForToday(q)&&multiPending(q).length>0); // cochable tant qu'il reste un jour à faire, une fois par jour
   var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
-  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
+  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -3042,6 +3062,14 @@ function bind(){
     zone.addEventListener("dragleave",function(){zone.classList.remove("dpover");});
     zone.addEventListener("drop",function(e){e.preventDefault();zone.classList.remove("dpover");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}if(id)moveTaskMoment(id,zone.getAttribute("data-daypart"));});
   });
+  // Réordonner : déposer une tâche SUR une autre la place juste après (dans la même catégorie)
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-droptask]"),function(row){
+    row.addEventListener("dragover",function(e){e.preventDefault();e.stopPropagation();row.classList.add("dropafter");});
+    row.addEventListener("dragleave",function(){row.classList.remove("dropafter");});
+    row.addEventListener("drop",function(e){e.preventDefault();e.stopPropagation();row.classList.remove("dropafter");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}var tgt=row.getAttribute("data-droptask");if(id&&id!==tgt)reorderTask(id,tgt);});
+  });
+  // Onglets Habitudes / Tâches de chaque moment
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-daytab]"),function(el){el.onclick=function(){var p=el.getAttribute("data-daytab").split("|");dayTab[p[0]]=p[1];render();};});
   var qa=document.getElementById("q-add");
   if(qa)qa.onclick=function(){addCapTask(qa.getAttribute("data-capadd"));};
   var ma=document.getElementById("m-add");
