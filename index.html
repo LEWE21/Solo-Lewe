@@ -2194,6 +2194,7 @@ function render(){
   if(view.indexOf("cap:")===0)html=vCap(view.slice(4));
   else if(view==="maitre")html=vMaitre();
   else if(view==="evolution")html=vEvolution();
+  else if(view==="objectifs")html=vObjectifs();
   else {view="cockpit";html=vCockpit();}
   v.innerHTML='<div class="view-anim">'+html+'</div>';
   v.classList.remove("cockpit");
@@ -2210,6 +2211,7 @@ var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Busi
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
+  h+='<button data-v="objectifs" class="'+(view==="objectifs"?"on":"")+'"><span class="ni">◈</span><span class="nl">Objectifs</span></button>';
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],tw=capTouchedThisWeek(k),v="cap:"+k;
     h+='<button data-v="'+v+'" class="capnav'+(tw?" wk":"")+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+(tw?" · semaine validée":" · semaine à valider")+'">'+
@@ -2533,6 +2535,21 @@ function objBoard(){
   s+='</div>';
   return s;
 }
+/* ---- Onglet "Objectifs" : vue d'ensemble + avis de Claude (Ray Dalio) ---- */
+function objAdviceCard(){
+  var s='<div class="spanel"><div class="spl">🧭 L\'avis de Claude</div>';
+  s+='<div class="subhead" style="margin:0 0 8px">Claude analyse tes objectifs selon ton temps, ta vie et tes compétences, à la manière de Ray Dalio (Les Principes). Son analyse d\'abord ; ensuite tu recadres, sous forme d\'un jeu de questions, une à la fois.</div>';
+  s+='<div class="ranklegend" style="margin:0 0 10px">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
+  s+='<button class="btn" data-objanalyse="1" style="width:100%">🔍 Lancer l\'analyse de mes objectifs</button>';
+  s+='<div class="subhead" style="margin:8px 0 0;text-align:center">Ça ouvre une discussion avec Claude.</div>';
+  s+='</div>';
+  return s;
+}
+function analyzeObjectivesWithRobi(){
+  var lines=Object.keys(STATS).map(function(k){var ms=S.missions.filter(function(m){return capOf(m)===k;}).sort(byRankDesc);if(!ms.length)return "";return STATS[k].name+" :\n"+ms.map(function(m){return "  - ["+m.rank+"] "+m.title;}).join("\n");}).filter(Boolean).join("\n\n")||"(aucun objectif défini)";
+  view="maitre";render();
+  sendChat("Fais l'analyse de tous mes objectifs à la manière de Ray Dalio (Les Principes du succès).\n\nDonne TON ANALYSE D'ABORD, avant toute question : en fonction de mon temps réel, de ma vie et de mes compétences, dis-moi lesquels sont vraiment prioritaires, lesquels se dispersent ou se contredisent, lesquels je pourrais mettre en pause ou fusionner, et si mes rangs actuels (S=vital, A=majeur, B=important, C=secondaire, D=accessoire, E=en veille) te semblent justes.\n\nEnsuite, lance-moi un JEU de questions, UNE seule à la fois, pour que je recadre avec toi : je réponds, tu ajustes ton analyse. Reste honnête et direct, pas de complaisance, en français. Principe Dalio à garder : je peux presque tout obtenir, mais pas tout à la fois.\n\nVoici mes objectifs et leur rang actuel, par capacité :\n\n"+lines);
+}
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
@@ -2616,7 +2633,7 @@ function vCockpit(){
   s+=weekBlock("w1","Semaine Prochaine",isoPlus(mon0,7),isoPlus(mon0,13));
   s+=weekBlock("w2","Semaine Suivante",isoPlus(mon0,14),isoPlus(mon0,20));
   s+=doneBlock();  // sous Semaine Suivante : ce qui a été terminé aujourd'hui
-  s+=objBoard();   // ajuster les rangs et retravailler ses objectifs
+  // (les objectifs ont désormais leur propre onglet "Objectifs")
   s+='</div></div>';
   s+='</div>';
   return s;
@@ -2822,7 +2839,8 @@ function taskGroup(m,qs){
 function vObjectifs(){
   if(objSel){var mm=find(S.missions,objSel);if(mm)return vObjDetail(mm);objSel=null;}
   var s='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Touche un objectif pour faire le point, mettre ton Claude à jour et choisir tes tâches ensemble.</div>';
+  s+='<div class="subhead">Vue d\'ensemble et classification. Change le rang d\'un clic (il pilote les propositions du pacte). Touche le nom pour faire le point objectif par objectif.</div>';
+  s+='<div class="ranklegend" style="margin:6px 0 10px">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
   S.missions.slice().sort(byRankDesc).forEach(function(m){
     var qs=S.quests.filter(function(q){return q.mission===m.id;});
     var done=qs.filter(function(q){return q.done;}).length;
@@ -2830,9 +2848,11 @@ function vObjectifs(){
     var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
     var np=(m.proposals&&m.proposals.length)?(' <span style="color:var(--mint);font-size:11px">· '+m.proposals.length+' à valider</span>'):'';
     s+='<div class="objrow" data-obj-sel="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+np+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rk.c+'55,'+rk.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
+    s+='<div class="rankrow mini" style="margin:-2px 0 12px">'+RANKS.slice().reverse().map(function(r){return '<button class="rankb'+(r.r===m.rank?" on":"")+'" data-objrank="'+m.id+'|'+r.r+'" style="--rc:'+r.c+'" title="'+esc(RANKMEAN[r.r])+'">'+r.r+'</button>';}).join("")+'</div>'; // rang modifiable d'un clic
   });
   s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div>';
   s+='</div>';
+  s+=objAdviceCard();   // carte "L'avis de Claude" (analyse Ray Dalio + jeu de questions)
   return s;
 }
 function vObjDetail(m){
@@ -3052,6 +3072,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objrank]"),function(el){el.onclick=function(){var p=el.getAttribute("data-objrank").split("|");var m=find(S.missions,p[0]);if(m){m.rank=p[1];save();render();}};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
