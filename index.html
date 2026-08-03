@@ -2195,6 +2195,7 @@ function render(){
   else if(view==="maitre")html=vMaitre();
   else if(view==="evolution")html=vEvolution();
   else if(view==="objectifs")html=vObjectifs();
+  else if(view==="priorites")html=vPriorites();
   else {view="cockpit";html=vCockpit();}
   v.innerHTML='<div class="view-anim">'+html+'</div>';
   v.classList.remove("cockpit");
@@ -2212,6 +2213,7 @@ function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
   h+='<button data-v="objectifs" class="'+(view==="objectifs"?"on":"")+'"><span class="ni">◈</span><span class="nl">Objectifs</span></button>';
+  h+='<button data-v="priorites" class="'+(view==="priorites"?"on":"")+'"><span class="ni">⚑</span><span class="nl">Priorités</span></button>';
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],tw=capTouchedThisWeek(k),v="cap:"+k;
     h+='<button data-v="'+v+'" class="capnav'+(tw?" wk":"")+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+(tw?" · semaine validée":" · semaine à valider")+'">'+
@@ -2551,6 +2553,43 @@ function analyzeObjectivesWithRobi(){
   var lines=Object.keys(STATS).map(function(k){var ms=S.missions.filter(function(m){return capOf(m)===k;}).sort(byRankDesc);if(!ms.length)return "";return STATS[k].name+" :\n"+ms.map(function(m){return "  - ["+m.rank+"] "+m.title;}).join("\n");}).filter(Boolean).join("\n\n")||"(aucun objectif défini)";
   view="maitre";render();
   sendChat("Fais l'analyse de tous mes objectifs à la manière de Ray Dalio (Les Principes du succès).\n\nDonne TON ANALYSE D'ABORD, avant toute question : en fonction de mon temps réel, de ma vie et de mes compétences, dis-moi lesquels sont vraiment prioritaires, lesquels se dispersent ou se contredisent, lesquels je pourrais mettre en pause ou fusionner, et si mes rangs actuels (S=vital, A=majeur, B=important, C=secondaire, D=accessoire, E=en veille) te semblent justes.\n\nEnsuite, lance-moi un JEU de questions, UNE seule à la fois, pour que je recadre avec toi : je réponds, tu ajustes ton analyse. Reste honnête et direct, pas de complaisance, en français. Principe Dalio à garder : je peux presque tout obtenir, mais pas tout à la fois.\n\nVoici mes objectifs et leur rang actuel, par capacité :\n\n"+lines);
+}
+/* ---- Onglet "Priorités" : tes tâches triées selon l'importance de leur objectif, + retour de Claude sur tes dates ---- */
+function prioPool(){ // tâches actives (hors journalières/faites/bloquées/publications), triées par rang d'objectif puis échéance
+  var pool=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!q.pub&&!pubSuppressed(q);});
+  return pool.sort(function(a,b){
+    var wa=objWeight(a),wb=objWeight(b);if(wa!==wb)return wa-wb;                 // objectif le plus vital d'abord
+    var da=a.due||"9999-99-99",db=b.due||"9999-99-99";if(da!==db)return da<db?-1:1; // puis échéance la plus proche
+    return b.base-a.base;
+  });
+}
+function reviewDatesWithRobi(){
+  var list=prioPool().map(function(q){var m=q.mission?find(S.missions,q.mission):null;return "- "+q.title+" | objectif : "+(m?m.title+" (rang "+m.rank+")":"aucun")+" | échéance : "+(q.due||"aucune")+(q.due&&dayDiff(q.due,today())<0?" (EN RETARD)":"");}).join("\n")||"(aucune tâche datée)";
+  view="maitre";render();
+  sendChat("Donne-moi ton retour sur mes CHOIX DE DATES (échéances), à la manière de Ray Dalio.\n\nTon analyse D'ABORD : est-ce que mes échéances sont réalistes vu le temps que ça prend vraiment ? Est-ce que j'ai trop de choses tombant le même jour ? Est-ce que des tâches rattachées à un objectif important (rang élevé) sont trop repoussées, ou au contraire écrasées par de l'accessoire ? Mon planning respecte-t-il « je peux presque tout obtenir, mais pas tout à la fois » ? Propose-moi des dates plus réalistes quand il le faut.\n\nEnsuite, une question à la fois pour ajuster avec moi. Honnête, direct, français.\n\nVoici mes tâches, leur objectif (et son rang) et leur échéance :\n\n"+list);
+}
+function dateReviewCard(){
+  var s='<div class="spanel"><div class="spl">🗓️ Retour de Claude sur mes dates</div>';
+  s+='<div class="subhead" style="margin:0 0 10px">Claude regarde tes échéances à la manière de Ray Dalio : sont-elles réalistes ? trop chargées le même jour ? l\'important passe-t-il avant l\'accessoire ? Son analyse d\'abord, puis tu ajustes avec lui.</div>';
+  s+='<button class="btn" data-datesreview="1" style="width:100%">🗓️ Analyser mes dates avec Claude</button>';
+  s+='</div>';
+  return s;
+}
+function vPriorites(){
+  var pool=prioPool();
+  var s='<div class="solo"><div class="tbar"><span class="tt">⚑ Priorités</span><small>Tes tâches ROBI, triées par importance d\'objectif</small></div>';
+  s+='<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">';
+  s+='<div style="flex:1.3;min-width:300px"><div class="spanel"><div class="spl">Tes tâches par objectif <span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+pool.length+'</span></div>';
+  s+='<div class="subhead" style="margin:0 0 10px">De l\'objectif le plus vital (S) au plus en veille (E), puis par échéance. Ce que tu as entré dans ROBI.</div>';
+  if(!pool.length)s+='<div class="empty">Aucune tâche active pour l\'instant.</div>';
+  else pool.forEach(function(q){
+    var m=STATS[questCap(q)]||STATS.mental;var obj=q.mission?find(S.missions,q.mission):null;var rk=obj?(RANKS.filter(function(r){return r.r===obj.rank;})[0]||RANKS[0]):null;
+    s+='<div class="q cpt'+(isPlan(q)?" prio":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(isPlan(q)?"⭐ ":"")+esc(q.title)+'</div><div class="meta">'+(obj?'<span class="tag" style="color:'+rk.c+';border-color:'+rk.c+'55" title="'+esc(RANKMEAN[obj.rank]||"")+'">'+obj.rank+' · '+esc(obj.title)+'</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">sans objectif</span>')+'<span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
+  });
+  s+='</div></div>';
+  s+='<div style="flex:1;min-width:280px">'+dateReviewCard()+'</div>';
+  s+='</div></div>';
+  return s;
 }
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
@@ -3078,6 +3117,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objrank]"),function(el){el.onclick=function(){var p=el.getAttribute("data-objrank").split("|");var m=find(S.missions,p[0]);if(m){m.rank=p[1];save();render();}};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
