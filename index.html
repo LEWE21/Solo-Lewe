@@ -2728,6 +2728,7 @@ function prochaineDate(prio){ // la premiere journee pas encore chargee, selon l
 }
 function dueBadge(q,win){ // badge d'échéance sur une tâche non journalière ; win=[du,au] pour les blocs semaine
   if(q.daily)return "";
+  if(q.done)return ""; // pas de badge "en retard" / échéance sur une tâche terminée
   if(win){
     if(isMulti(q)){
       var occ=multiPending(q).filter(function(d){return d>=win[0]&&d<=win[1];});
@@ -2774,6 +2775,7 @@ function questRow(q,depth,compact,ctx){
   return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
 }
 function questTree(list,ctx){
+  list=list.filter(function(q){return !q.done;}); // une tâche ponctuelle terminée disparaît tout de suite (les tâches à jours choisis, elles, reviennent : q.done reste false)
   var byId={};list.forEach(function(q){byId[q.id]=q;});
   var kids={},roots=[];
   list.forEach(function(q){var pid=(q.dependsOn&&byId[q.dependsOn])?q.dependsOn:null;if(pid){(kids[pid]=kids[pid]||[]).push(q);}else{roots.push(q);}});
