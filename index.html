@@ -2596,9 +2596,15 @@ function vCockpit(){
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q);});
   var srt=function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);};
-  // Aujourd'hui : tâches datées du jour, publications, ET toutes les priorités du pacte (quelle que soit leur date)
+  // Aujourd'hui : publications, tâches dues aujourd'hui, et priorités du pacte SAUF celles datées dans le futur
+  // (une tâche d'un jour suivant n'apparaît pas dans Aujourd'hui ; elle reste dans son bloc Demain/Semaine)
   // Ordre = ordre du tableau S.quests, pour que le glisser-déposer manuel dans une catégorie soit respecté
-  var todayT=actionable.filter(function(q){return isPlan(q)||q.pub||(q.due&&dayDiff(q.due,today())===0);});
+  var todayT=actionable.filter(function(q){
+    if(q.pub)return true;
+    if(q.due&&dayDiff(q.due,today())===0)return true;                 // due aujourd'hui
+    if(isPlan(q))return !q.due||dayDiff(q.due,today())<=0;            // priorité du pacte : seulement si sans date, aujourd'hui, ou en retard (pas dans le futur)
+    return false;
+  });
   // En retard : échéance dépassée, SAUF si c'est une priorité du pacte (elle rejoint alors Aujourd'hui)
   var overdue=actionable.filter(function(q){return !q.pub&&q.due&&dayDiff(q.due,today())<0&&!isPlan(q);}).sort(srt);
   var ht=cockMoment();
