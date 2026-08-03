@@ -1414,6 +1414,8 @@ function openTaskSet(qId){
   }else{
     h+='<div class="plab" style="margin-top:16px">Échéance</div>';
     h+='<div class="addrow"><input type="date" id="ts-due" min="'+today()+'" value="'+(q.due||"")+'" style="max-width:170px"><button class="btn ghost" id="ts-duedel">Retirer</button></div>';
+    h+='<div class="plab" style="margin-top:16px">Heure <span style="font-weight:400;color:var(--dim2)">(si c\'est un RDV, facultatif)</span></div>';
+    h+='<div class="addrow"><input type="time" id="ts-time" value="'+(q.time||"")+'" style="max-width:130px"><button class="btn ghost" id="ts-timedel">Retirer</button></div>';
   }
   if(!q.daily){ // moment de la journée : range la tâche dans Matin / Midi / Soir du Cockpit
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
@@ -1475,6 +1477,7 @@ function openTaskSet(qId){
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsmoment]"),function(el){el.onclick=function(){q.moment=el.getAttribute("data-tsmoment");reopen();};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tscap]"),function(el){el.onclick=function(){TSETCAP=el.getAttribute("data-tscap");openTaskSet(qId);};});
   var dd=document.getElementById("ts-duedel");if(dd)dd.onclick=function(){var e2=document.getElementById("ts-due");if(e2)e2.value="";};
+  var td=document.getElementById("ts-timedel");if(td)td.onclick=function(){var e3=document.getElementById("ts-time");if(e3)e3.value="";};
   var del=document.getElementById("ts-del");if(del)del.onclick=function(){
     sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){
       S.quests=S.quests.filter(function(x){return x.id!==q.id;});TSETCAP=null;save();closeModal();render();toast("Tâche supprimée");});
@@ -1494,6 +1497,8 @@ function openTaskSet(qId){
       if(de){var dv=de.value;
         if(dv&&dv<today()){toast("Cette date est déjà passée. Choisis aujourd'hui ou plus tard.");return;}
         if(dv)q.due=dv;else delete q.due;}
+      var te=document.getElementById("ts-time"); // heure du RDV (facultatif)
+      if(te){var tv=(te.value||"").trim();if(/^\d{2}:\d{2}$/.test(tv))q.time=tv;else delete q.time;}
     }
     var sel=document.getElementById("ts-proj"),dest=sel?(sel.value||null):null;
     q.mission=dest;
@@ -2781,7 +2786,7 @@ function dueBadge(q,win){ // badge d'échéance sur une tâche non journalière 
       var occ=multiPending(q).filter(function(d){return d>=win[0]&&d<=win[1];});
       return occ.length?'<span class="tag" style="color:var(--dim);border-color:var(--brd)">🔁 '+occ.map(fmtDJ).join(" · ")+'</span>':"";
     }
-    return q.due?'<span class="tag" style="color:var(--dim);border-color:var(--brd)">⏰ '+fmtDJ(q.due)+'</span>':"";
+    return q.due?'<span class="tag" style="color:var(--dim);border-color:var(--brd)">⏰ '+fmtDJ(q.due)+(q.time?' · 🕐 '+q.time:'')+'</span>':"";
   }
   if(isMulti(q)){
     var pen=multiPending(q);if(!pen.length)return "";
@@ -2791,13 +2796,13 @@ function dueBadge(q,win){ // badge d'échéance sur une tâche non journalière 
     else{c2="var(--dim2)";w2=fmtD(nd);}
     return '<span class="tag" style="color:'+c2+';border-color:'+c2+'55">🔁 '+w2+(pen.length>1?' · '+pen.length+' jours':'')+'</span>';
   }
-  if(!q.due)return "";
+  if(!q.due)return q.time?'<span class="tag" style="color:var(--txt);border-color:var(--line-soft)">🕐 '+q.time+'</span>':""; // RDV avec heure mais sans date
   var dd=dayDiff(q.due,today()),col,txt;
   if(dd<0){col="var(--pink)";txt="⏰ en retard ("+fmtD(q.due)+")";}
   else if(dd===0){col="var(--txt)";txt="⏰ aujourd'hui";}
   else if(dd<=3){col="var(--dim)";txt="⏰ dans "+dd+" j";}
   else{col="var(--dim2)";txt="⏰ "+fmtD(q.due);}
-  return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+'</span>';
+  return '<span class="tag" style="color:'+col+';border-color:'+col+'55">'+txt+(q.time?' · 🕐 '+q.time:'')+'</span>'; // heure du RDV si posée
 }
 function rowActs(q){ // une seule roue crantée par tâche : tout se règle dans sa fenêtre
   return '<span class="gear" data-tset="'+q.id+'" title="Régler la tâche">⚙</span>';
