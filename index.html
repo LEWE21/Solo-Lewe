@@ -2585,19 +2585,19 @@ function vCockpit(){
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+(todayT.length+undoneHab)+' à faire</span></div>';
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]];
   var libT=todayT.filter(function(q){return taskMoment(q)==="libre";});
-  var libH=dueList.filter(function(q){return taskMoment(q)==="libre";});
+  var libH=dueList.filter(function(q){return taskMoment(q)==="libre"&&!doneForToday(q);});
   if(libT.length||libH.length)parts.push(["libre","🕒 À tout moment"]); // affiché s'il y a une habitude ou une tâche sans moment ; reste une zone de dépôt
   parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0];});          // habitudes de ce moment
+    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0]&&!doneForToday(q);}); // habitudes non faites de ce moment (une habitude terminée disparaît, elle revient demain)
     var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});           // tâches de ce moment (ordre du tableau = glisser-déposer)
     var moPrio=moT.filter(function(q){return isPlan(q);});                       // ⭐ pacte du jour : toujours en tête
     var moRest=moT.filter(function(q){return !isPlan(q);});
     var ordered=moPrio.concat(moRest);                                          // priorités d'abord, puis l'ordre manuel
     var tab=dayTab[mo[0]]||"tache";                                             // onglet actif du moment : Tâches par défaut
     s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+((moH.length+moT.length)?' <span class="dpn">'+(moH.length+moT.length)+'</span>':'')+'</div>';
-    s+='<div class="habtabs dpsub">';                                          // deux onglets dissociés : Tâches / Habitudes
-    s+='<button class="habtab'+(tab==="tache"?" on":"")+'" data-daytab="'+mo[0]+'|tache">Tâches'+(moT.length?' <span class="htn">'+moT.length+'</span>':'')+'</button>';
+    s+='<div class="habtabs dpsub">';                                          // deux onglets dissociés : Habitudes / Tâches
     s+='<button class="habtab'+(tab==="hab"?" on":"")+'" data-daytab="'+mo[0]+'|hab">Habitudes'+(moH.length?' <span class="htn">'+moH.length+'</span>':'')+'</button>';
+    s+='<button class="habtab'+(tab==="tache"?" on":"")+'" data-daytab="'+mo[0]+'|tache">Tâches'+(moT.length?' <span class="htn">'+moT.length+'</span>':'')+'</button>';
     s+='</div>';
     if(tab==="hab"){
       s+=moH.length?moH.map(function(q){return dailyRow(q,true);}).join(""):'<div class="dpempty">Aucune habitude à ce moment.</div>';
