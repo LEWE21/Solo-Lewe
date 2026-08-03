@@ -2574,13 +2574,16 @@ function vCockpit(){
   var libH=dueList.filter(function(q){return taskMoment(q)==="libre";});
   if(libT.length||libH.length)parts.push(["libre","🕒 À tout moment"]); // affiché s'il y a une habitude ou une tâche sans moment ; reste une zone de dépôt
   parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0];});   // les habitudes de ce moment, en premier
-    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});    // puis les tâches datées de ce moment
+    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0];});          // habitudes de ce moment
+    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});           // tâches datées de ce moment
+    var moPrio=moT.filter(function(q){return isPlan(q);});                       // ⭐ pacte du jour : toujours en tête, peu importe le moment
+    var moRest=moT.filter(function(q){return !isPlan(q);});                      // les autres tâches
     var n=moH.length+moT.length;
     s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(n?' <span class="dpn">'+n+'</span>':'')+'</div>';
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");               // habitudes d'abord
-    s+=moT.map(function(q){return questRow(q,0,true,{drag:true});}).join(""); // tâches ensuite
-    if(!n)s+='<div class="dpempty">Dépose une tâche ici</div>';
+    s+=moPrio.map(function(q){return questRow(q,0,true,{drag:true});}).join("");  // priorités du pacte d'abord
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                   // puis les habitudes
+    s+=moRest.map(function(q){return questRow(q,0,true,{drag:true});}).join("");  // puis le reste des tâches
+    if(!moT.length)s+='<div class="dpempty">Dépose une tâche ici</div>';         // zone de dépôt visible dans chaque catégorie sans tâche (glisser-déposer)
     s+='</div>';
   });
   s+='</div>';
