@@ -1044,6 +1044,16 @@ function taskMoment(q){
   if(/soir|coucher|nuit|dodo|avant de dormir/.test(t))return "soir";
   return "matin"; // par défaut, le matin
 }
+// Une tâche peut désormais viser PLUSIEURS moments (q.moments = ["matin","soir"]...) ; sinon on retombe sur le moment unique.
+function taskMoments(q){ if(q&&q.moments&&q.moments.length)return q.moments.slice(); return [taskMoment(q)]; }
+function momentSelected(q,mo){ if(q&&q.moments&&q.moments.length)return q.moments.indexOf(mo)>=0; return taskMoment(q)===mo; }
+function momentButtons(q){ // sélecteur : matin/midi/soir cumulables, + "Peu importe" (exclusif)
+  var s='';
+  [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){s+='<button class="btn'+(momentSelected(q,mo[0])?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+  var libre=!(q.moments&&q.moments.length)&&taskMoment(q)==="libre";
+  s+='<button class="btn'+(libre?"":" ghost")+'" data-tsmoment="libre">Peu importe</button>';
+  return s;
+}
 function isMulti(q){return !!(q&&q.dueDates&&q.dueDates.length);}
 function multiPending(q){var dd=q.doneDates||[];return (q.dueDates||[]).filter(function(d){return dd.indexOf(d)<0&&dayDiff(d,today())>=0;}).sort();}
 function nextDue(q){if(!isMulti(q))return q.due;var p=multiPending(q);return p.length?p[0]:null;}
@@ -1403,7 +1413,7 @@ function openTaskSet(qId){
       h+='</div><div class="subhead" style="margin:8px 0 0">Rythme actuel : <b>'+cadLabel(q)+'</b></div>';
     }
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-    [["matin","Matin"],["midi","Midi"],["soir","Soir"],["libre","Peu importe"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    h+=momentButtons(q);
     h+='</div>';
     h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'+(q.paused?'<button class="btn" data-tspause="0">Réactiver</button>':'<button class="btn ghost" data-tspause="1">Mettre en pause</button>')+'</div>';
   }else if(multi){
@@ -1419,7 +1429,7 @@ function openTaskSet(qId){
   }
   if(!q.daily){ // moment de la journée : range la tâche dans Matin / Midi / Soir du Cockpit
     h+='<div class="plab" style="margin-top:16px">Moment de la journée</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
-    [["matin","Matin"],["midi","Midi"],["soir","Soir"],["libre","Peu importe"]].forEach(function(mo){h+='<button class="btn'+(taskMoment(q)===mo[0]?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+    h+=momentButtons(q);
     h+='</div>';
   }
 
@@ -1474,7 +1484,17 @@ function openTaskSet(qId){
     q.paused=false;reopen();
   };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tspause]"),function(el){el.onclick=function(){q.paused=el.getAttribute("data-tspause")==="1";reopen();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsmoment]"),function(el){el.onclick=function(){q.moment=el.getAttribute("data-tsmoment");reopen();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tsmoment]"),function(el){el.onclick=function(){
+    var mo=el.getAttribute("data-tsmoment");
+    if(mo==="libre"){delete q.moments;q.moment="libre";}                    // "Peu importe" : exclusif
+    else{
+      var cur=(q.moments&&q.moments.length)?q.moments.slice():(/^(matin|midi|soir)$/.test(taskMoment(q))?[taskMoment(q)]:[]);
+      var i=cur.indexOf(mo);if(i>=0)cur.splice(i,1);else cur.push(mo);      // bascule le moment
+      if(!cur.length){delete q.moments;q.moment="libre";}                   // plus rien coché -> Peu importe
+      else{var ord={matin:0,midi:1,soir:2};cur.sort(function(a,b){return ord[a]-ord[b];});q.moments=cur;q.moment=cur[0];}
+    }
+    reopen();
+  };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tscap]"),function(el){el.onclick=function(){TSETCAP=el.getAttribute("data-tscap");openTaskSet(qId);};});
   var dd=document.getElementById("ts-duedel");if(dd)dd.onclick=function(){var e2=document.getElementById("ts-due");if(e2)e2.value="";};
   var td=document.getElementById("ts-timedel");if(td)td.onclick=function(){var e3=document.getElementById("ts-time");if(e3)e3.value="";};
@@ -2410,12 +2430,12 @@ function weekBlock(key,label,a,b){
 }
 /* ---- Carte "Habitudes du jour" : les journalières du jour, par moment (matin / midi / soir) ---- */
 function cockMoment(){return habTab||({matin:"matin",journee:"midi",soir:"soir"}[momentOf()]||"matin");}
-function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir|libre)$/.test(mo)){q.moment=mo;save();render();}} // glisser une tâche dans un compartiment (libre = sans moment)
+function moveTaskMoment(id,mo){var q=find(S.quests,id);if(q&&/^(matin|midi|soir|libre)$/.test(mo)){q.moment=mo;delete q.moments;save();render();}} // glisser une tâche dans un compartiment : un seul moment (libre = sans moment)
 function reorderTask(dragId,targetId){ // déposer une tâche sur une autre : la placer juste après, dans la même catégorie
   var qi=-1;for(var i=0;i<S.quests.length;i++){if(S.quests[i].id===dragId){qi=i;break;}}
   var q=qi>=0?S.quests[qi]:null,tgt=find(S.quests,targetId);
   if(!q||!tgt)return;
-  q.moment=taskMoment(tgt);          // même moment que la cible (matin/midi/soir/libre)
+  q.moment=taskMoment(tgt);delete q.moments; // même (seul) moment que la cible (matin/midi/soir/libre)
   S.quests.splice(qi,1);             // retirer la tâche déplacée
   var ti=-1;for(var j=0;j<S.quests.length;j++){if(S.quests[j].id===targetId){ti=j;break;}}
   S.quests.splice(ti+1,0,q);         // réinsérer juste après la cible
@@ -2653,12 +2673,12 @@ function vCockpit(){
   var undoneHab=dueList.filter(function(q){return !doneForToday(q);}).length; // habitudes du jour non faites, comptées dans "à faire"
   s+='<div class="spanel"><div class="spl">Aujourd\'hui <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+(todayT.length+undoneHab)+' à faire</span></div>';
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"]];
-  var libT=todayT.filter(function(q){return taskMoment(q)==="libre";});
-  var libH=dueList.filter(function(q){return taskMoment(q)==="libre"&&!doneForToday(q);});
+  var libT=todayT.filter(function(q){return taskMoments(q).indexOf("libre")>=0;});
+  var libH=dueList.filter(function(q){return taskMoments(q).indexOf("libre")>=0&&!doneForToday(q);});
   if(libT.length||libH.length)parts.push(["libre","🕒 À tout moment"]); // affiché s'il y a une habitude ou une tâche sans moment ; reste une zone de dépôt
   parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoment(q)===mo[0]&&!doneForToday(q);}); // habitudes non faites de ce moment (une habitude terminée disparaît, elle revient demain)
-    var moT=todayT.filter(function(q){return taskMoment(q)===mo[0];});           // tâches de ce moment (ordre du tableau = glisser-déposer)
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);}); // habitudes non faites de ce moment (multi-moment possible)
+    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});           // tâches de ce moment (multi-moment possible ; ordre du tableau = glisser-déposer)
     var moPrio=moT.filter(function(q){return isPlan(q);});                       // ⭐ pacte du jour : toujours en tête
     var moRest=moT.filter(function(q){return !isPlan(q);});
     var ordered=moPrio.concat(moRest);                                          // priorités d'abord, puis l'ordre manuel
