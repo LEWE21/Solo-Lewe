@@ -3139,16 +3139,16 @@ function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4
 function aaeWeekTable(ids){var t=today();var mon=isoPlus(t,-weekdayMon(t));var map=habHistMap();var names=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids);});var s='<table class="wk-t"><tbody>';for(var i=0;i<7;i++){var ds=isoPlus(mon,i);var isToday=(ds===t);var isPast=(ds<t);var dayItems=[];dailies.forEach(function(q){if(dueOn(q,ds)){var done=(ds<t)?(function(){var h=map[ds];return !!(h&&h.doneIds&&h.doneIds.indexOf(q.id)>=0);})():(ds===t?!!q.done:false);dayItems.push({mo:habMoments(q)[0]||"libre",cls:"hab"+(done?" done":""),ic:"🔁 ",title:q.title});}});tasks.forEach(function(q){if(q.due===ds){dayItems.push({mo:(habMoments(q)[0]||"libre"),cls:"tsk",ic:"",title:q.title});}});var cell="";MO.forEach(function(mm){var its=dayItems.filter(function(it){return it.mo===mm[0];});if(!its.length)return;cell+='<div class="wk-mo"><span class="wk-mol">'+mm[1]+'</span><span class="wk-chips">'+its.map(function(it){return '<span class="wk-chip '+it.cls+'">'+it.ic+esc(it.title)+'</span>';}).join("")+'</span></div>';});if(!cell)cell='<span class="wk-empty">—</span>';var dn=+ds.slice(8,10);s+='<tr class="'+(isToday?"wk-today":(isPast?"wk-past":""))+'"><td class="wk-day">'+names[i]+'<span class="wk-num">'+dn+'</span></td><td class="wk-items">'+cell+'</td></tr>';}s+='</tbody></table>';var undated=tasks.filter(function(q){return !q.due;});if(undated.length){s+='<div class="spl" style="margin-top:14px">Sans échéance</div>';undated.forEach(function(q){s+='<div class="q cpt"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div></div>';});}return s;}
 function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
-'.sk-grid{border-collapse:separate;border-spacing:0;width:auto}'+
+'.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
 '.sk-grid th,.sk-grid td{font-size:11px;padding:0}'+
-'.sk-h{position:sticky;left:0;background:var(--panel-2);color:var(--txt);text-align:left;padding:8px 12px;font-weight:600;font-size:12.5px;white-space:nowrap;min-width:150px;z-index:3;border-right:1px solid var(--brd)}'+
+'.sk-h{position:sticky;left:0;background:var(--panel-2);color:var(--txt);text-align:left;padding:8px 12px;font-weight:600;font-size:12.5px;width:160px;min-width:160px;z-index:3;border-right:1px solid var(--brd)}'+
 'thead .sk-h{z-index:4}'+
-'.sk-d{width:23px;min-width:23px;text-align:center;color:var(--dim);font-size:11px;font-weight:700;padding:5px 0 6px;background:var(--panel-2)}'+
+'.sk-d{text-align:center;color:var(--dim);font-size:11px;font-weight:700;padding:5px 0 6px;background:var(--panel-2)}'+
 '.sk-dow{display:block;font-size:8px;color:var(--dim2);line-height:1.3;font-weight:700}'+
 '.sk-d.we{color:var(--dim2)}'+
 '.sk-d.is-today{color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--panel-2))}'+
 '.sk-sec td{padding:9px 12px 4px;font-size:10px;font-weight:800;letter-spacing:.07em;color:var(--dim);text-transform:uppercase}'+
-'.sk-c{width:23px;min-width:23px;height:24px;text-align:center}'+
+'.sk-c{height:24px;text-align:center}'+
 '.sk-c.we{background:rgba(58,64,90,.035)}'+
 '.sk-c.is-today{background:color-mix(in srgb,var(--gold) 8%,transparent)}'+
 '.sk-c i{display:inline-block;width:15px;height:15px;border-radius:5px;background:transparent;border:1px solid rgba(58,64,90,.12);vertical-align:middle}'+
@@ -3158,7 +3158,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 '.sk-c.fu i{border-color:rgba(58,64,90,.07)}'+
 '.sk-c.nd i{border-color:rgba(58,64,90,.13)}'+
 '.sk-c.td i{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}'+
-'.sk-p{position:sticky;right:0;background:var(--panel-2);color:var(--txt);padding:6px 12px;text-align:right;white-space:nowrap;min-width:90px;z-index:3;border-left:1px solid var(--brd)}'+
+'.sk-p{position:sticky;right:0;background:var(--panel-2);color:var(--txt);padding:6px 12px;text-align:right;white-space:nowrap;width:110px;min-width:110px;z-index:3;border-left:1px solid var(--brd)}'+
 '.sk-p b{font-size:13px;color:var(--txt)}'+
 '.sk-bar{display:block;height:6px;border-radius:99px;background:var(--panel-3);overflow:hidden;margin-top:4px;width:60px;margin-left:auto}'+
 '.sk-bar i{display:block;height:100%;background:var(--gold)}'+
