@@ -3132,33 +3132,35 @@ function habDashboard(){
 }
 function suiviAaeMissionIds(){var out=[];(S.missions||[]).forEach(function(m){var t=(m.title||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();if(t.indexOf("armee de l air")>=0||t.indexOf("armee de l'air")>=0||(/arm/.test(t)&&/air/.test(t)))out.push(m.id);});return out;}
 function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior/i.test(q.title||"");}
+function suiviAaeMissionIds(){var out=[];(S.missions||[]).forEach(function(m){var t=(m.title||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();if(t.indexOf("armee de l air")>=0||t.indexOf("armee de l'air")>=0||(/arm/.test(t)&&/air/.test(t)))out.push(m.id);});return out;}
+function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior/i.test(q.title||"");}
 function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,c=2*Math.PI*r,off=c*(1-v/100);return '<div class="sk-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--panel-3)" stroke-width="7"></circle><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"></circle><text x="32" y="37" text-anchor="middle" font-size="16" font-weight="800" fill="var(--txt)">'+Math.round(v)+'%</text></svg><span class="sk-lab">'+lab+'</span></div>';}
 function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4),mo=+t.slice(5,7);var dim=daysInMonth(y,mo);var ym=t.slice(0,7);var mon=isoPlus(t,-weekdayMon(t));var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});if(!dailies.length)return {html:'<div class="empty">Aucune habitude rattachée à l\'Armée de l\'Air. Dans l\'app, touche ⚙ sur une journalière et relie-la à l\'objectif ARMEE DE L\'AIR.</div>',globalPc:0,weekPc:0};var s='<div class="sk-wrap"><table class="sk-grid"><thead><tr><th class="sk-h">Habitude</th>';for(var d=1;d<=dim;d++){s+='<th class="sk-d">'+d+'</th>';}s+='<th class="sk-p">Ce mois</th></tr></thead><tbody>';var gT=0,gP=0,wT=0,wP=0;dailies.forEach(function(q){var done=0,poss=0;var row='<tr><td class="sk-h">'+esc(q.title)+'</td>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var cls,inWeek=(ds>=mon&&ds<=t);if(ds>t){cls="fu";}else if(!dueOn(q,ds)){cls="off";}else if(ds===t){if(q.done){cls="ok";poss++;done++;if(inWeek){wP++;wT++;}}else{cls="td";}}else{var h=map[ds];if(!h){cls="nd";}else{poss++;var ok=h.doneIds&&h.doneIds.indexOf(q.id)>=0;if(ok)done++;cls=ok?"ok":"no";if(inWeek){wP++;if(ok)wT++;}}}row+='<td class="sk-c '+cls+'"><i></i></td>';}var pc=poss?Math.round(done/poss*100):0;gT+=done;gP+=poss;row+='<td class="sk-p"><b>'+pc+'%</b><span class="sk-bar"><i style="width:'+pc+'%"></i></span></td></tr>';s+=row;});s+='</tbody></table></div>';return {html:s,globalPc:gP?Math.round(gT/gP*100):0,weekPc:wP?Math.round(wT/wP*100):0};}
 function allTasksView(ids){var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids);});if(!tasks.length)return '<div class="empty">Aucune tâche Armée de l\'Air en cours.</div>';var byObj={},order=[];tasks.forEach(function(q){var k=q.mission||"__";if(!byObj[k]){byObj[k]=[];order.push(k);}byObj[k].push(q);});var s='';order.forEach(function(k){var m=find(S.missions,k);var name=(k==="__")?"Armée de l\'Air":(m?m.title:"Objectif");s+='<div class="spanel"><div class="spl">'+esc(name)+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+byObj[k].length+'</span></div>';byObj[k].forEach(function(q){s+='<div class="q cpt"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div></div>';});s+='</div>';});return s;}
 function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<style>'+
-'.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd)}'+
+'.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;background:var(--panel-3)}'+
 '.sk-grid th,.sk-grid td{font-size:11px;padding:0}'+
-'.sk-h{position:sticky;left:0;background:#2b2f3d;color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12.5px;white-space:nowrap;min-width:150px;z-index:2}'+
-'.sk-d{width:20px;text-align:center;color:rgba(255,255,255,.82);font-size:10px;padding:8px 0;background:#2b2f3d;font-weight:600}'+
+'.sk-h{position:sticky;left:0;background:var(--panel-2);color:var(--txt);text-align:left;padding:9px 12px;font-weight:600;font-size:12.5px;white-space:nowrap;min-width:150px;z-index:2;border-right:1px solid var(--brd)}'+
+'.sk-d{width:20px;text-align:center;color:var(--dim2);font-size:10px;padding:8px 0;background:var(--panel-2);font-weight:600}'+
 '.sk-c{width:20px;height:23px;text-align:center}'+
-'.sk-c i{display:inline-block;width:14px;height:14px;border-radius:4px;background:rgba(43,47,61,.09)}'+
-'.sk-c.ok i{background:#37b98a}'+
-'.sk-c.no i{background:#e8776e}'+
-'.sk-c.off i{background:transparent;border:1px dashed rgba(43,47,61,.28)}'+
-'.sk-c.nd i,.sk-c.fu i,.sk-c.td i{background:rgba(43,47,61,.07)}'+
-'.sk-c.td i{box-shadow:0 0 0 2px rgba(231,154,58,.55) inset;background:rgba(231,154,58,.12)}'+
-'.sk-p{position:sticky;right:0;background:#2b2f3d;color:#fff;padding:7px 12px;text-align:right;white-space:nowrap;min-width:98px;z-index:2}'+
-'.sk-p b{font-size:13px}'+
-'.sk-bar{display:block;height:6px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden;margin-top:4px;width:70px;margin-left:auto}'+
-'.sk-bar i{display:block;height:100%;background:#ffb457}'+
+'.sk-c i{display:inline-block;width:14px;height:14px;border-radius:5px;background:var(--panel-3)}'+
+'.sk-c.ok i{background:var(--mint)}'+
+'.sk-c.no i{background:var(--red)}'+
+'.sk-c.off i{background:transparent;border:1px dashed var(--brd-hi)}'+
+'.sk-c.nd i,.sk-c.fu i{background:rgba(58,64,90,.05)}'+
+'.sk-c.td i{background:transparent;box-shadow:0 0 0 2px var(--gold) inset}'+
+'.sk-p{position:sticky;right:0;background:var(--panel-2);color:var(--txt);padding:7px 12px;text-align:right;white-space:nowrap;min-width:98px;z-index:2;border-left:1px solid var(--brd)}'+
+'.sk-p b{font-size:13px;color:var(--txt)}'+
+'.sk-bar{display:block;height:6px;border-radius:99px;background:var(--panel-3);overflow:hidden;margin-top:4px;width:70px;margin-left:auto}'+
+'.sk-bar i{display:block;height:100%;background:var(--gold)}'+
 '.sk-rings{display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:center}'+
 '.sk-ring{display:flex;flex-direction:column;align-items:center;gap:5px}'+
 '.sk-lab{font-size:11.5px;color:var(--dim2);font-weight:600}'+
 '</style>';
 s+='<div class="solo"><div class="tbar"><span class="tt">Suivi</span><small>Armée de l\'Air, ta progression du mois</small></div>';
-s+='<div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","#37b98a")+suiviRing(g.weekPc,"Cette semaine","#ffb457")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
-s+='<div class="spanel"><div class="spl">📅 Grille du mois</div>'+g.html+'<div class="subhead" style="margin-top:10px">Vert = fait · corail = manqué · pointillé = non prévu ce jour-là · gris clair = à venir ou non enregistré · lisere orange = aujourd\'hui à faire. Le taux ne compte que les jours prévus et enregistrés.</div></div>';
+s+='<div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
+s+='<div class="spanel"><div class="spl">📅 Grille du mois</div>'+g.html+'<div class="subhead" style="margin-top:10px">Vert = fait · rouge = manqué · pointillé = non prévu ce jour-là · gris clair = à venir ou non enregistré · liseré doré = aujourd\'hui à faire. Le taux ne compte que les jours prévus et enregistrés.</div></div>';
 s+='<div class="cksec">🗂️ Mes tâches Armée de l\'Air</div>'+allTasksView(ids);
 s+='</div>';return s;}
 function vEvolution(){
