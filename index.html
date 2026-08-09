@@ -2470,11 +2470,11 @@ function suggestPlan(n){ // proposition de ROBI : varie les objectifs pour ne pa
   ranked.forEach(function(q){if(pick.length>=n)return;if(pick.indexOf(q.id)<0)pick.push(q.id);});
   return pick.slice(0,n);
 }
-function momentRank(q){var m={matin:0,midi:1,soir:2,libre:3}[taskMoment(q)];return m==null?9:m;} // ordre du jour : matin, midi, soir, puis "à tout moment"
+function taskMomentRank(q){var m={matin:0,midi:1,soir:2,libre:3}[taskMoment(q)];return m==null?9:m;} // ordre du jour d'une tâche : matin, midi, soir, puis "à tout moment" (nom distinct du momentRank(str) du Suivi)
 function nextAction(){ // la prochaine action DU JOUR : par moment (matin d'abord), à moment égal on garde l'ordre du pacte / de l'urgence ; quand elle est validée, la suivante apparaît
   var pt=planTasks(),pool=pt.length?pt:urgencyRank();
   if(!pool.length)return null;
-  return pool.slice().sort(function(a,b){return momentRank(a)-momentRank(b);})[0];
+  return pool.slice().sort(function(a,b){return taskMomentRank(a)-taskMomentRank(b);})[0];
 }
 function openPlan(){
   var cand=urgencyRank();
@@ -2675,27 +2675,32 @@ function vCockpit(){
   s+='</div><div class="ckcol">';
   var undoneHab=dueList.filter(function(q){return !doneForToday(q);}).length;
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  var totCount=undoneHab+todayT.length;
-  // ---- Un seul fil chronologique : habitudes ET tâches ensemble, par moment ----
-  s+='<div class="spanel"><div class="spl">📅 Ma journée <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+totCount+'</span></div>';
+  // ---- Carré 1 : Habitudes du jour (par moment, seulement les moments qui en ont) ----
+  s+='<div class="spanel"><div class="spl">🔁 Habitudes du jour <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+undoneHab+'</span></div>';
+  var anyHab=false;
+  parts.forEach(function(mo){
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});
+    if(!moH.length)return;anyHab=true;
+    s+='<div class="daypart" data-habpart="'+mo[0]+'"><div class="dphead">'+mo[1]+' <span class="dpn">'+moH.length+'</span></div>';
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");
+    s+='</div>';
+  });
+  if(!anyHab)s+='<div class="empty">Aucune habitude à faire, tout est coché. Elles reviennent demain.</div>';
+  s+='</div>';
+  // ---- Carré 2 : Tâches du jour (par moment, zones de dépôt pour glisser-déposer) ----
+  s+='<div class="spanel"><div class="spl">🗂️ Tâches du jour <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+'</span></div>';
   if(todayT.length>3)s+='<div class="subhead" style="margin:0 0 8px">'+todayT.length+' tâches aujourd\'hui, c\'est beaucoup. Garde 3 priorités (ton pacte), le reste est du bonus : aucune pression pour tout finir, ce qui reste passera à un autre jour.</div>';
   var totMins=0;todayT.forEach(function(q){totMins+=(q.mins||0);});
   if(totMins>0)s+='<div class="subhead" style="margin:0 0 8px">⏱ ≈ '+fmtDurMin(totMins)+' de travail estimé aujourd\'hui.'+(totMins>180?' Grosse journée, garde tes 3 priorités.':'')+'</div>';
-  var anyDay=false;
   parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});
     var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});
     var moPrio=moT.filter(function(q){return isPlan(q);}),moRest=moT.filter(function(q){return !isPlan(q);});
     var ordered=moPrio.concat(moRest);                                          // ⭐ priorités du pacte d'abord, puis l'ordre manuel
-    if(!moH.length&&!ordered.length)return;                                     // on n'affiche que les moments qui ont quelque chose (moins de cases vides)
-    anyDay=true;
-    var n=moH.length+ordered.length;
-    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+' <span class="dpn">'+n+'</span></div>';
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                 // habitudes d'abord (la routine du moment)
-    s+=ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""); // puis les tâches (glisser-déposer conservé)
+    if(mo[0]==="libre"&&!ordered.length)return;                                 // "À tout moment" seulement s'il a des tâches ; matin/midi/soir toujours (zone de dépôt)
+    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(ordered.length?' <span class="dpn">'+ordered.length+'</span>':'')+'</div>';
+    s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div>';
   });
-  if(!anyDay)s+='<div class="empty">Rien à faire pour le moment. Profite, ou avance une tâche de plus tard.</div>';
   s+='</div>';
   s+='</div><div class="ckcol wks">';
   var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
