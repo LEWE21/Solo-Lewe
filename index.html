@@ -939,7 +939,7 @@ function rollover(){
     if(doneN>0){S.streak++;if(S.streak>S.best)S.best=S.streak;log("Journée active : "+doneN+"/"+dailies.length+" habitude(s) faite(s) (série "+S.streak+" j)");out={k:"done",streak:S.streak,done:doneN,total:dailies.length};}
     else{S.streak=0;log("Journée sans habitude le "+S.lastDate+" — aucune pénalité, on repart demain");out={k:"rest"};}
   }
-  S.history.push({date:S.lastDate,level:S.hunter.level,done:dailies.filter(function(q){return q.done;}).length,tot:dailies.length});if(S.history.length>120)S.history.shift();
+  S.history.push({date:S.lastDate,level:S.hunter.level,done:dailies.filter(function(q){return q.done;}).length,tot:dailies.length,dueIds:dailies.map(function(q){return q.id;}),doneIds:dailies.filter(function(q){return q.done;}).map(function(q){return q.id;})});if(S.history.length>120)S.history.shift();
   // Tâches à jours choisis : on recale la prochaine échéance ; quand tous les jours sont passés, la tâche est terminée.
   S.quests.forEach(function(q){if(isMulti(q)){var nd=nextDue(q);if(nd)q.due=nd;else q.done=true;}});
   // Les tâches normales validées la veille sont retirées (déjà comptées et tracées dans le Journal de ROBI),
@@ -3110,9 +3110,30 @@ function wireSettings(tab){
 }
 
 
+function habActiveToday(){var ds=today();var dl=S.quests.filter(function(q){return q.daily&&dueOn(q,ds);});return dl.some(function(q){return q.done;});}
+function habHistMap(){var m={};(S.history||[]).forEach(function(e){m[e.date]=e;});return m;}
+function habDayActive(d,map){if(d===today())return habActiveToday();var e=map[d];return !!(e&&((e.done>0)||(e.doneIds&&e.doneIds.length>0)));}
+function habWeekActive(){var mon=isoPlus(today(),-weekdayMon(today()));var map=habHistMap();var n=0;for(var i=0;i<7;i++){var d=isoPlus(mon,i);if(d>today())break;if(habDayActive(d,map))n++;}return n;}
+function habFrise(){var map=habHistMap();var out="";for(var i=29;i>=0;i--){var d=isoPlus(today(),-i);var known=(map[d]!=null)||(d===today());var a=habDayActive(d,map);var col=a?"#5fe0aa":(known?"rgba(150,190,240,.16)":"rgba(150,190,240,.06)");out+='<span title="'+d+'" style="width:13px;height:13px;border-radius:3px;background:'+col+';display:inline-block"></span>';}return out;}
+function habRate(q){var due=0,done=0;(S.history||[]).forEach(function(e){if(e.dueIds&&e.dueIds.indexOf(q.id)>=0){due++;if(e.doneIds&&e.doneIds.indexOf(q.id)>=0)done++;}});if(dueToday(q)){due++;if(q.done)done++;}return due?Math.round(done/due*100):null;}
+function habDashboard(){
+  var dailies=S.quests.filter(function(q){return q.daily;});
+  var wk=habWeekActive();
+  var s='<div class="win"><div class="win-h"><span class="t">Progression des habitudes</span><span class="ln"></span><span class="r">'+wk+'/7 cette sem.</span></div>';
+  s+='<div class="evgrid">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+kpi(wk+"/7","Cette semaine")+'</div>';
+  s+='<div class="plab" style="margin-top:14px">30 derniers jours</div>';
+  s+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+habFrise()+'</div>';
+  s+='<div class="subhead" style="margin-top:6px">Chaque case verte = un jour où tu as fait au moins une habitude.</div>';
+  s+='<div class="plab" style="margin-top:14px">Par habitude</div>';
+  if(!dailies.length)s+='<div class="empty">Aucune habitude pour l\'instant.</div>';
+  else{s+='<div class="sys">';dailies.forEach(function(q){var r=habRate(q);var done=dueToday(q)&&q.done;var pf=(r==null?0:r/100);s+='<div class="sysrow"><span class="n">'+(done?"✓ ":"")+esc(q.title)+'</span><span class="track"><i style="transform:scaleX('+pf+');background:linear-gradient(90deg,#5fe0aa88,#5fe0aa)"></i></span><span class="p">'+(r==null?"—":r+"%")+'</span></div>';});s+='</div>';}
+  s+='<div class="subhead" style="margin-top:6px">Le taux par habitude se remplit à partir de maintenant.</div>';
+  s+='</div>';
+  return s;
+}
 function vEvolution(){
   var h=S.hunter,rk=rankOf(h.level);
-  var s='<div class="win"><div class="win-h"><span class="t">Évolution</span><span class="ln"></span><span class="r">Progression</span></div>';
+  var s=habDashboard()+'<div class="win"><div class="win-h"><span class="t">Évolution</span><span class="ln"></span><span class="r">Progression</span></div>';
   s+='<div class="evgrid">'+kpi(h.level,"Niveau")+kpi(rk.r,"Palier")+kpi(S.doneCount,"Tâches")+kpi(S.best,"Record série")+'</div>';
   s+='<div class="subhead" style="margin-top:6px">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
   s+='<div class="plab" style="margin-top:16px">Ton lapin guerrier</div>'+warriorLadder();
