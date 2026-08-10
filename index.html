@@ -2596,6 +2596,15 @@ function reviewDatesWithRobi(){
   view="maitre";render();
   sendChat("Donne-moi ton retour sur mes CHOIX DE DATES (échéances), à la manière de Ray Dalio.\n\nTon analyse D'ABORD : est-ce que mes échéances sont réalistes vu le temps que ça prend vraiment ? Est-ce que j'ai trop de choses tombant le même jour ? Est-ce que des tâches rattachées à un objectif important (rang élevé) sont trop repoussées, ou au contraire écrasées par de l'accessoire ? Mon planning respecte-t-il « je peux presque tout obtenir, mais pas tout à la fois » ? Propose-moi des dates plus réalistes quand il le faut.\n\nEnsuite, une question à la fois pour ajuster avec moi. Honnête, direct, français.\n\nVoici mes tâches, leur objectif (et son rang) et leur échéance :\n\n"+list);
 }
+// Le pacte conseille quoi décaler : à partir des retards + de la charge du jour, Claude dit quoi garder et quoi repousser (Ray Dalio)
+function deferAdviceWithRobi(){
+  var act=S.quests.filter(function(q){return !q.daily&&!q.done&&!isBlocked(q)&&!q.pub&&!pubSuppressed(q);});
+  function line(q){var m=q.mission?find(S.missions,q.mission):null;var dd=q.due?dayDiff(q.due,today()):null;var when=(q.due?(dd<0?"EN RETARD de "+(-dd)+" j":(dd===0?"aujourd'hui":"dans "+dd+" j")):"sans date");return "- "+q.title+" | objectif : "+(m?m.title+" (rang "+m.rank+")":"aucun")+" | "+when;}
+  var late=act.filter(function(q){return q.due&&dayDiff(q.due,today())<0;}).sort(function(a,b){return a.due<b.due?-1:1;});
+  var todayL=act.filter(function(q){return isPlan(q)||(q.due&&dayDiff(q.due,today())===0);});
+  view="maitre";render();
+  sendChat("Je suis en surcharge : j'ai trop de choses différentes à faire et j'accumule les retards. Aide-moi à décider QUOI DÉCALER, à la manière de Ray Dalio.\n\nTon analyse D'ABORD : parmi ces tâches, lesquelles je dois GARDER aujourd'hui (les vraies priorités, liées à mes objectifs les plus importants) et lesquelles je peux DÉCALER — et à quelle date réaliste — sans culpabiliser ? Sois concret : nomme celles à repousser et celles à ne surtout pas repousser. Principe : je peux presque tout obtenir, mais pas tout à la fois ; mieux vaut faire peu et bien.\n\nEnsuite, une question à la fois pour trancher avec moi. Honnête, direct, français.\n\nEN RETARD :\n"+(late.map(line).join("\n")||"(rien en retard)")+"\n\nAUJOURD'HUI / PRIORITÉS :\n"+(todayL.map(line).join("\n")||"(rien)"));
+}
 function dateReviewCard(){
   var s='<div class="spanel"><div class="spl">🗓️ Retour de Claude sur mes dates</div>';
   s+='<div class="subhead" style="margin:0 0 10px">Claude regarde tes échéances à la manière de Ray Dalio : sont-elles réalistes ? trop chargées le même jour ? l\'important passe-t-il avant l\'accessoire ? Son analyse d\'abord, puis tu ajustes avec lui.</div>';
@@ -2655,6 +2664,8 @@ function vCockpit(){
       pacteHtml+='<div class="pactelist">'+pAll.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var pd=doneForToday(q);return '<div class="pacterow'+(pd?" done":"")+'" style="--tc:'+m.col+'"><span class="pstar">⭐</span><span class="pttl">'+esc(q.title)+'</span>'+(pd?'<span class="pok">✓</span>':'')+'</div>';}).join("")+'</div>';
       pacteHtml+='<div class="rowbtn"><button class="btn ghost" data-openplan="1" style="flex:1">Modifier</button>'+(pDone>=pAll.length?'<button class="btn" data-bilan="1" style="flex:1">✔ Bilan du soir</button>':'<button class="btn ghost" data-bilan="1" style="flex:1">Bilan du soir</button>')+'</div>';
     }
+    var lateCount=S.quests.filter(function(q){return !q.daily&&!q.done&&q.due&&dayDiff(q.due,today())<0&&!isBlocked(q)&&!q.pub&&!pubSuppressed(q);}).length;
+    pacteHtml+='<button class="btn ghost" data-defer="1" style="width:100%;margin-top:8px">🔀 Que décaler aujourd\'hui ?'+(lateCount?' ('+lateCount+' en retard)':'')+'</button>';
   }
   pacteHtml+='</div>';
   var s='<div class="solo">';
@@ -3235,6 +3246,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-defer]"),function(el){el.onclick=function(){deferAdviceWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objrank]"),function(el){el.onclick=function(){var p=el.getAttribute("data-objrank").split("|");var m=find(S.missions,p[0]);if(m){m.rank=p[1];save();render();}};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
