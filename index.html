@@ -2239,9 +2239,8 @@ var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Busi
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
-  h+='<button data-v="objectifs" class="'+(view==="objectifs"?"on":"")+'"><span class="ni">◈</span><span class="nl">Objectifs</span></button>';
-  h+='<button data-v="priorites" class="'+(view==="priorites"?"on":"")+'"><span class="ni">⚑</span><span class="nl">Priorités</span></button>';
-  h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">Suivi</span></button>';
+  // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
+  h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],tw=capTouchedThisWeek(k),v="cap:"+k;
     h+='<button data-v="'+v+'" class="capnav'+(tw?" wk":"")+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+(tw?" · semaine validée":" · semaine à valider")+'">'+
@@ -2614,7 +2613,7 @@ function dateReviewCard(){
 }
 function vPriorites(){
   var pool=prioPool();
-  var s='<div class="solo"><div class="tbar"><span class="tt">⚑ Priorités</span><small>Tes tâches ROBI, triées par importance d\'objectif</small></div>';
+  var s='<div class="solo"><div class="tbar"><span class="tt">⚑ Priorités</span><small>Tes tâches ROBI, triées par importance d\'objectif</small></div>'+pilotTabs("priorites");
   s+='<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">';
   s+='<div style="flex:1.3;min-width:300px"><div class="spanel"><div class="spl">Tes tâches par objectif <span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+pool.length+'</span></div>';
   s+='<div class="subhead" style="margin:0 0 10px">De l\'objectif le plus vital (S) au plus en veille (E), puis par échéance. Ce que tu as entré dans ROBI.</div>';
@@ -2627,6 +2626,10 @@ function vPriorites(){
   s+='<div style="flex:1;min-width:280px">'+dateReviewCard()+'</div>';
   s+='</div></div>';
   return s;
+}
+function pilotTabs(active){ // onglets Cockpit / Objectifs / Priorités, en tête des trois vues de pilotage
+  var tabs=[["cockpit","◎ Cockpit"],["objectifs","◈ Objectifs"],["priorites","⚑ Priorités"]];
+  return '<div class="habtabs" style="margin:0 0 14px">'+tabs.map(function(t){return '<button class="habtab'+(active===t[0]?" on":"")+'" data-piv="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>';
 }
 function vCockpit(){
   var h=S.hunter,rk=rankOf(h.level),need=xpNeed(h.level),col=rankColor(rk.r),xpfrac=pct(h.xp,need)/100;
@@ -2670,6 +2673,7 @@ function vCockpit(){
   pacteHtml+='</div>';
   var s='<div class="solo">';
   s+='<div class="tbar"><span class="tt">Cockpit</span><small>Voici ta journée</small></div>';
+  s+=pilotTabs("cockpit");
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
   // Carré "Tâches en retard" : à gauche d'Aujourd'hui, disparaît quand il est vide
@@ -2926,7 +2930,7 @@ function taskGroup(m,qs){
 
 function vObjectifs(){
   if(objSel){var mm=find(S.missions,objSel);if(mm)return vObjDetail(mm);objSel=null;}
-  var s='<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
+  var s=pilotTabs("objectifs")+'<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
   s+='<div class="subhead">Vue d\'ensemble et classification. Change le rang d\'un clic (il pilote les propositions du pacte). Touche le nom pour faire le point objectif par objectif.</div>';
   s+='<div class="ranklegend" style="margin:6px 0 10px">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
   S.missions.slice().sort(byRankDesc).forEach(function(m){
@@ -3191,7 +3195,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 'tr.wk-today .wk-day{border-left:1px solid var(--gold);border-radius:10px 0 0 10px}'+
 'tr.wk-today .wk-items{border-right:1px solid var(--gold);border-radius:0 10px 10px 0}'+
 '</style>';
-s+='<div class="solo"><div class="tbar"><span class="tt">Suivi</span><small>Armée de l\'Air, ta progression du mois</small></div>';
+s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta progression au jour, à la semaine, au mois</small></div>';
 s+='<div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
 s+='<div class="spanel"><div class="spl">📅 Grille du mois</div><div class="subhead" style="margin:0 0 10px">Triée par moment de la journée. Vert = fait · rouge = manqué · contour = à venir ou non enregistré · pointillé = non prévu · liseré doré = aujourd\'hui.</div>'+g.html+'</div>';
 s+='<div class="cksec">🗓️ Ma semaine (Armée de l\'Air)</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Séparé en Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait · jours passés grisés.</div>'+aaeWeekTable(ids)+'</div>';
@@ -3242,6 +3246,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objrank]"),function(el){el.onclick=function(){var p=el.getAttribute("data-objrank").split("|");var m=find(S.missions,p[0]);if(m){m.rank=p[1];save();render();}};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-piv]"),function(el){el.onclick=function(){view=el.getAttribute("data-piv");objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
