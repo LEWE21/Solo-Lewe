@@ -2686,30 +2686,22 @@ function vCockpit(){
   s+='</div><div class="ckcol">';
   var undoneHab=dueList.filter(function(q){return !doneForToday(q);}).length;
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  // ---- Carré 1 : Habitudes du jour (par moment, seulement les moments qui en ont) ----
-  s+='<div class="spanel"><div class="spl">🔁 Habitudes du jour <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+undoneHab+'</span></div>';
-  var anyHab=false;
-  parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});
-    if(!moH.length)return;anyHab=true;
-    s+='<div class="daypart" data-habpart="'+mo[0]+'"><div class="dphead">'+mo[1]+' <span class="dpn">'+moH.length+'</span></div>';
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");
-    s+='</div>';
-  });
-  if(!anyHab)s+='<div class="empty">Aucune habitude à faire, tout est coché. Elles reviennent demain.</div>';
-  s+='</div>';
-  // ---- Carré 2 : Tâches du jour (par moment, zones de dépôt pour glisser-déposer) ----
-  s+='<div class="spanel"><div class="spl">🗂️ Tâches du jour <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayT.length+'</span></div>';
+  var totCount=undoneHab+todayT.length;
+  // ---- Un seul tableau "Ma journée" : par moment, d'abord les habitudes, ensuite les tâches ----
+  s+='<div class="spanel"><div class="spl">📅 Ma journée <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+totCount+'</span></div>';
   if(todayT.length>3)s+='<div class="subhead" style="margin:0 0 8px">'+todayT.length+' tâches aujourd\'hui, c\'est beaucoup. Garde 3 priorités (ton pacte), le reste est du bonus : aucune pression pour tout finir, ce qui reste passera à un autre jour.</div>';
   var totMins=0;todayT.forEach(function(q){totMins+=(q.mins||0);});
   if(totMins>0)s+='<div class="subhead" style="margin:0 0 8px">⏱ ≈ '+fmtDurMin(totMins)+' de travail estimé aujourd\'hui.'+(totMins>180?' Grosse journée, garde tes 3 priorités.':'')+'</div>';
   parts.forEach(function(mo){
-    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});   // habitudes non faites du moment
+    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});                       // tâches du moment
     var moPrio=moT.filter(function(q){return isPlan(q);}),moRest=moT.filter(function(q){return !isPlan(q);});
-    var ordered=moPrio.concat(moRest);                                          // ⭐ priorités du pacte d'abord, puis l'ordre manuel
-    if(mo[0]==="libre"&&!ordered.length)return;                                 // "À tout moment" seulement s'il a des tâches ; matin/midi/soir toujours (zone de dépôt)
-    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(ordered.length?' <span class="dpn">'+ordered.length+'</span>':'')+'</div>';
-    s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):'<div class="dpempty">Dépose une tâche ici</div>';
+    var ordered=moPrio.concat(moRest);                                                                 // ⭐ priorités du pacte d'abord, puis l'ordre manuel
+    if(mo[0]==="libre"&&!moH.length&&!ordered.length)return;                                           // "À tout moment" seulement s'il a du contenu ; matin/midi/soir toujours (zone de dépôt)
+    var n=moH.length+ordered.length;
+    s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(n?' <span class="dpn">'+n+'</span>':'')+'</div>';
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                                        // d'abord les habitudes
+    s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):(moH.length?'':'<div class="dpempty">Dépose une tâche ici</div>'); // puis les tâches (ou zone de dépôt si le moment est vide)
     s+='</div>';
   });
   s+='</div>';
