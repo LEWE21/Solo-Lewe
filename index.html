@@ -3189,9 +3189,8 @@ function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
   return '<div class="spanel aae-card">'+head+rows+'</div>';
 }
 function vAaeProgress(){
-  var A=S.aae,ph=A.phys,me=A.mental,t=today(),onP=A.cycle.indexOf(t)>=0;
-  var s='<div class="spanel aae-cycle'+(onP?' on':'')+'"><button class="aae-cybtn" data-aaecycle="1">'+(onP?'🌙 Règles : jour allégé':'🌙 J\'ai mes règles aujourd\'hui')+'</button>'+(onP?'<span class="aae-cymsg">Garde marche, mobilité, respiration, méditation. VMA et kettlebell lourd seulement si tu te sens bien.</span>':'')+'</div>';
-  s+='<div class="aae-grid2">'
+  var A=S.aae,ph=A.phys,me=A.mental;
+  var s='<div class="aae-grid2">'
     +'<div class="aae-col"><div class="cksec">📊 Progression physique</div><div class="spanel aae-card">'
       +aaeVal("Course · Luc-Léger",ph.course,9,"palier","phys|course","var(--gold)")
       +aaeVal("Pompes",ph.pompes,50,"","phys|pompes","var(--gold)")
@@ -3211,8 +3210,12 @@ function aaeMonthsUntil(y,m){var t=today();return (y-(+t.slice(0,4)))*12+(m-(+t.
 function aaePhaseIdx(){var t=today();var idx=(+t.slice(0,4)-2026)*12+(+t.slice(5,7)-8);return Math.max(0,Math.min(5,idx));}
 function aaeCountdown(){
   var dep=Math.max(0,aaeMonthsUntil(2027,1)),ec=Math.max(0,aaeMonthsUntil(2027,9));
-  return '<div class="spanel aae-cd"><div class="aae-cd1"><b>~'+dep+' mois</b><span>Dépôt du dossier · janvier 2027</span></div>'
-    +'<div class="aae-cd1 blue"><b>~'+ec+' mois</b><span>Entrée à l\'école · ~septembre 2027</span></div></div>';
+  var onP=S.aae.cycle.indexOf(today())>=0;
+  var s='<div class="spanel aae-cd"><div class="aae-cd1"><b>~'+dep+' mois</b><span>Dépôt du dossier · janvier 2027</span></div>'
+    +'<div class="aae-cd1 blue"><b>~'+ec+' mois</b><span>Entrée à l\'école · ~septembre 2027</span></div>'
+    +'<div class="aae-cyc'+(onP?' on':'')+'"><button class="aae-cybtn" data-aaecycle="1">'+(onP?'🌙 Règles : jour allégé':'🌙 J\'ai mes règles')+'</button></div></div>';
+  if(onP)s+='<div class="aae-cymsg2">🌙 Jour allégé : garde marche, mobilité, respiration, méditation. VMA et kettlebell lourd seulement si tu te sens bien.</div>';
+  return s;
 }
 function aaeTimeline(){
   var cur=aaePhaseIdx();var ph=[["M1","Fondation"],["M2","Montée"],["M3","Build"],["M4","Pic"],["M5","Affûtage"],["M6","Forge à fond"]];
@@ -3268,7 +3271,7 @@ function aaeTodayAgenda(ids){
   });
   return s;
 }
-function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<style>'+
+function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
 '.sk-grid th,.sk-grid td{font-size:11px;padding:0}'+
@@ -3337,6 +3340,9 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 '.aae-cybtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel);color:var(--dim);padding:7px 13px;border-radius:99px;cursor:pointer}'+
 '.aae-cycle.on .aae-cybtn{background:color-mix(in srgb,#c98bb8 22%,var(--panel));border-color:#c98bb8;color:#8E3E77}'+
 '.aae-cymsg{font-size:11.5px;color:#8E3E77}'+
+'.aae-cyc{margin-left:auto;display:flex;align-items:center}'+
+'.aae-cyc.on .aae-cybtn{background:color-mix(in srgb,#c98bb8 22%,var(--panel));border-color:#c98bb8;color:#8E3E77}'+
+'.aae-cymsg2{font-size:11.5px;color:#8E3E77;margin-top:8px}'+
 '.aae-cd{display:flex;gap:14px;flex-wrap:wrap}'+
 '.aae-cd1{flex:1;min-width:150px;background:var(--panel-2);border:1px solid var(--brd);border-radius:12px;padding:10px 14px}'+
 '.aae-cd1 b{display:block;font-size:20px;color:var(--gold);line-height:1.1}'+
@@ -3380,11 +3386,10 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
 s+=aaeCountdown();
 s+=aaeTimeline();
-s+=vAaeProgress();
-s+=aaeCursusBlock();
 s+=aaeTodayAgenda(ids);
+s+=aaeCursusBlock();
+s+=vAaeProgress();
 s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
-s+='<div class="cksec">📅 Grille du mois</div><div class="spanel"><div class="subhead" style="margin:0 0 10px">Vert = fait · rouge = manqué · contour = à venir · pointillé = non prévu.</div>'+g.html+'</div>';
 s+='</div>';return s;}
 function vEvolution(){
   var h=S.hunter,rk=rankOf(h.level);
