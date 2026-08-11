@@ -813,7 +813,9 @@ function load(){
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
      if(!("cursus" in _A))_A.cursus=0;
-     if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}}
+     if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
+     if(!("stepsDay" in _A))_A.stepsDay=null;
+     if(!_A.stepsSet)_A.stepsSet=[];}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3281,9 +3283,7 @@ var AAE_SPORT=[
 function aaeStepsHtml(steps){return steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");}
 function aaeWeekProgram(){
   var todayWd=weekdayMon(today());
-  var mr=aaeFiche("morning recharge"),ev=aaeFiche("evening habits");
-  var s='<div class="cksec">🗓️ Programme The Forge de la semaine</div>';
-  s+='<details class="spanel aae-cblock"><summary><span class="aae-cbname">☀️ Socle quotidien (identique tous les jours)</span><span class="aae-chev">▸</span></summary><div class="aae-clist"><div class="aae-wp-h">🌅 Matin · Recharge ('+mr.dur+')</div>'+aaeStepsHtml(mr.steps)+'<div class="aae-wp-h">🌙 Soir ('+ev.dur+')</div>'+aaeStepsHtml(ev.steps)+'</div></details>';
+  var s='<div class="cksec">🗓️ Programme The Forge de la semaine</div><div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour.</div>';
   AAE_SPORT.forEach(function(d,i){
     var isToday=(i===todayWd),sess=d.steps[0][0];
     s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeStepsHtml(d.steps.slice(1))+'</div></details>';
@@ -3304,30 +3304,37 @@ function aaeFiche(title){
   if(/anglais|english/.test(t))return {dur:"~25 min",steps:[["Cours + lecture (astuce : page stoïcienne du matin en anglais)","",""]]};
   return null;
 }
+function aaeStepDone(id){var A=S.aae;if(!A||A.stepsDay!==today())return false;return (A.stepsSet||[]).indexOf(id)>=0;}
 function aaeTodayCard(ids){
   var t=today();
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids)&&dueOn(q,t);});
+  var isSocle=function(q){return /morning recharge|recharge matinale|evening habits|habitudes du soir|routine du soir/i.test(q.title||"");};
+  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids)&&dueOn(q,t)&&!isSocle(q);});
   var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids)&&q.due===t;});
   var items=[];
-  dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:true,done:!!q.done});});
-  tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:false,done:false});});
+  items.push({mo:"matin",key:"morning",title:"Recharge matinale",fiche:aaeFiche("morning recharge"),ic:"🌅 ",done:false});   // socle matin en 1er
+  dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"🔁 ",done:!!q.done});});
+  tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"📌 ",done:false});});
+  items.push({mo:"soir",key:"evening",title:"Routine du soir",fiche:aaeFiche("evening habits"),ic:"🌙 ",done:false});          // socle soir en dernier
   var n=items.length,inner='';
-  if(!n){inner='<div class="empty">Aucune habitude ni tâche EAE aujourd\'hui. Relie tes journalières à l\'objectif ARMEE DE L\'AIR (⚙).</div>';}
-  else MO.forEach(function(mm){
+  MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div>';
     list.forEach(function(it){
-      var f=aaeFiche(it.q.title),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',ic=it.daily?'🔁 ':'📌 ',doneCls=it.done?' done':'';
+      var f=it.fiche,dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=it.done?' done':'';
       if(f){
-        var steps=f.steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");
-        inner+='<details class="aae-hb'+doneCls+'"><summary><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+        var steps=f.steps.map(function(st,idx){
+          var can=(st[1]!==""||st[2]!==""),sid=it.key+'#'+idx,on=aaeStepDone(sid);
+          var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
+          return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+        }).join("");
+        inner+='<details class="aae-hb'+doneCls+'" open><summary><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
-        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span>'+dur+'</div>';
+        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span></div>';
       }
     });
   });
-  return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' tâche'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
+  return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' item'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
 }
 function aaeWeekProgressCard(ids){
   var t=today(),mon=isoPlus(t,-weekdayMon(t)),map=habHistMap();
@@ -3484,7 +3491,12 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-dur{font-size:11px;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel));padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap;margin-left:8px}'+
 '.aae-hb.flat .aae-dur{margin-left:auto}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
-'.aae-step{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--dim)}'+
+'.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim)}'+
+'.aae-scheck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--brd-hi);flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}'+
+'.aae-scheck.on{background:var(--mint);border-color:var(--mint)}'+
+'.aae-scheck.on:after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px}'+
+'.aae-scheck.ph{border:none;background:none;cursor:default}'+
+'.aae-step.sdone .aae-stx{opacity:.5;text-decoration:line-through}'+
 '.aae-stx b{color:var(--txt);font-weight:600}'+
 '.aae-src{color:#4C7C93;font-size:11px}'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
@@ -3559,6 +3571,7 @@ function bind(){
     save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(){var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
