@@ -802,6 +802,16 @@ function load(){
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
     if(typeof r.costUsd!=="number")r.costUsd=0;
+    // Suivi de progression EAE (physique/mental valeurs, psycho/entretien notes) + cycle menstruel
+    if(!r.aae)r.aae={};
+    {var _A=r.aae;
+     if(!_A.phys)_A.phys={course:null,pompes:null,gainage:null};
+     if(!_A.mental)_A.mental={medit:null,bolt:null,froid:null};
+     if(!_A.psycho)_A.psycho={"Logique":[],"Numérique":[],"Verbal":[],"Spatial":[],"Attention":[]};
+     if(!_A.entretien)_A.entretien={parcours:[],motivation:[],sic:[],defense:[],oral:[]};
+     if(!("psychoBase" in _A))_A.psychoBase=null;
+     if(!("entretienBase" in _A))_A.entretienBase=null;
+     if(!_A.cycle)_A.cycle=[];}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3149,6 +3159,49 @@ function momentRank(m){return m==="matin"?0:m==="midi"?1:m==="soir"?2:3;}
 function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,c=2*Math.PI*r,off=c*(1-v/100);return '<div class="sk-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--panel-3)" stroke-width="7"></circle><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"></circle><text x="32" y="37" text-anchor="middle" font-size="16" font-weight="800" fill="var(--txt)">'+Math.round(v)+'%</text></svg><span class="sk-lab">'+lab+'</span></div>';}
 function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4),mo=+t.slice(5,7);var dim=daysInMonth(y,mo);var ym=t.slice(0,7);var mon=isoPlus(t,-weekdayMon(t));var DOW="LMMJVSD";var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});if(!dailies.length)return {html:'<div class="empty">Aucune habitude rattachée à l\'Armée de l\'Air. Dans l\'app, touche ⚙ sur une journalière et relie-la à l\'objectif ARMEE DE L\'AIR.</div>',globalPc:0,weekPc:0};var groups={};dailies.forEach(function(q){var m=habMoments(q)[0]||"libre";(groups[m]=groups[m]||[]).push(q);});var totalCols=dim+2;var s='<div class="sk-wrap"><table class="sk-grid"><thead><tr><th class="sk-h">Habitude</th>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);s+='<th class="sk-d'+(wd>=5?' we':'')+(ds===t?' is-today':'')+'"><span class="sk-dow">'+DOW.charAt(wd)+'</span>'+d+'</th>';}s+='<th class="sk-p">Ce mois</th></tr></thead><tbody>';var gT=0,gP=0,wT=0,wP=0;MO.forEach(function(mm){var list=groups[mm[0]];if(!list||!list.length)return;s+='<tr class="sk-sec"><td colspan="'+totalCols+'">'+mm[1]+'</td></tr>';list.forEach(function(q){var done=0,poss=0;var row='<tr><td class="sk-h">'+esc(q.title)+'</td>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);var we=wd>=5;var inWeek=(ds>=mon&&ds<=t);var cls;if(ds>t){cls="fu";}else if(!dueOn(q,ds)){cls="off";}else if(ds===t){if(q.done){cls="ok";poss++;done++;if(inWeek){wP++;wT++;}}else{cls="td";}}else{var h=map[ds];var tracked=h&&h.dueIds&&h.dueIds.indexOf(q.id)>=0;if(!tracked){cls="nd";}else{poss++;var ok=h.doneIds&&h.doneIds.indexOf(q.id)>=0;if(ok)done++;cls=ok?"ok":"no";if(inWeek){wP++;if(ok)wT++;}}}row+='<td class="sk-c '+cls+(we?' we':'')+(ds===t?' is-today':'')+'"><i></i></td>';}var pc=poss?Math.round(done/poss*100):0;gT+=done;gP+=poss;row+='<td class="sk-p"><b>'+pc+'%</b><span class="sk-bar"><i style="width:'+pc+'%"></i></span></td></tr>';s+=row;});});s+='</tbody></table></div>';return {html:s,globalPc:gP?Math.round(gT/gP*100):0,weekPc:wP?Math.round(wT/wP*100):0};}
 function aaeWeekTable(ids){var t=today();var mon=isoPlus(t,-weekdayMon(t));var map=habHistMap();var names=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids);});var s='<table class="wk-t"><tbody>';for(var i=0;i<7;i++){var ds=isoPlus(mon,i);var isToday=(ds===t);var isPast=(ds<t);var dayItems=[];dailies.forEach(function(q){if(dueOn(q,ds)){var done=(ds<t)?(function(){var h=map[ds];return !!(h&&h.doneIds&&h.doneIds.indexOf(q.id)>=0);})():(ds===t?!!q.done:false);dayItems.push({mo:habMoments(q)[0]||"libre",cls:"hab"+(done?" done":""),ic:"🔁 ",title:q.title});}});tasks.forEach(function(q){if(q.due===ds){dayItems.push({mo:(habMoments(q)[0]||"libre"),cls:"tsk",ic:"",title:q.title});}});var cell="";MO.forEach(function(mm){var its=dayItems.filter(function(it){return it.mo===mm[0];});if(!its.length)return;cell+='<div class="wk-mo"><span class="wk-mol">'+mm[1]+'</span><span class="wk-chips">'+its.map(function(it){return '<span class="wk-chip '+it.cls+'">'+it.ic+esc(it.title)+'</span>';}).join("")+'</span></div>';});if(!cell)cell='<span class="wk-empty">—</span>';var dn=+ds.slice(8,10);s+='<tr class="'+(isToday?"wk-today":(isPast?"wk-past":""))+'"><td class="wk-day">'+names[i]+'<span class="wk-num">'+dn+'</span></td><td class="wk-items">'+cell+'</td></tr>';}s+='</tbody></table>';var undated=tasks.filter(function(q){return !q.due;});if(undated.length){s+='<div class="spl" style="margin-top:14px">Sans échéance</div>';undated.forEach(function(q){s+='<div class="q cpt"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div></div>';});}return s;}
+/* ---- Progression EAE : 4 blocs (physique, mental, psychotechnique, entretien) + cycle ---- */
+var AAE_PSY=[["Logique","Logique"],["Numérique","Numérique"],["Verbal","Verbal"],["Spatial","Spatial"],["Attention","Attention"]];
+var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (pourquoi l'armée)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Posture & oral (stress)"]];
+function aaeAvg3(arr){if(!arr||!arr.length)return null;var n=arr.slice(-3);return n.reduce(function(a,b){return a+b;},0)/n.length;}
+function aaeBar(pc,col){return '<div class="aae-track"><i style="width:'+Math.max(5,Math.min(100,pc))+'%;background:'+col+'"></i></div>';}
+function aaeVal(label,cur,target,unit,path,col){
+  var pc=cur!=null?(cur/target*100):5;
+  return '<div class="aae-m"><div class="aae-top"><span class="aae-n">'+label+'</span><span class="aae-v"><b>'+(cur!=null?cur:'—')+'</b> / '+target+(unit?' '+unit:'')+'</span></div>'
+    +aaeBar(pc,col)
+    +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" data-aaeset="'+path+'" placeholder="saisir" min="0"><span class="aae-hint">'+(cur!=null?'dernière mesure':'à mesurer au diagnostic')+'</span></div></div>';
+}
+function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
+  var store=S.aae[storeKey];
+  var scores=defs.map(function(d){return {k:d[0],lab:d[1],s:aaeAvg3(store[d[0]])};});
+  var ws=scores.filter(function(x){return x.s!=null;}).slice().sort(function(a,b){return a.s-b.s;});
+  var low={},high={};ws.slice(0,2).forEach(function(x){low[x.k]=1;});ws.slice(-2).forEach(function(x){high[x.k]=1;});
+  var got=scores.filter(function(x){return x.s!=null;});
+  var moy=got.length?got.reduce(function(a,x){return a+x.s;},0)/got.length:null;
+  var base=S.aae[baseKey],delta=(moy!=null&&base!=null)?(moy-base):null;
+  var head='<div class="aae-h"><span class="aae-ht">Moyenne</span><span class="aae-moy">'+(moy!=null?'<b>'+moy.toFixed(1)+'</b>':'<b>—</b>')+' / 20'+(delta!=null?' <em class="aae-d" style="color:'+(delta>=0?'var(--mint)':'var(--red)')+'">'+(delta>=0?'+':'')+delta.toFixed(1)+' pts</em>':'')+'</span></div>';
+  var rows=scores.map(function(x){
+    var tag=x.s!=null&&low[x.k]?'<span class="aae-tag lo">'+lowLab+'</span>':(x.s!=null&&high[x.k]?'<span class="aae-tag hi">'+highLab+'</span>':'');
+    return '<div class="aae-m"><div class="aae-top"><span class="aae-n">'+esc(x.lab)+'</span>'+tag+'<span class="aae-v"><b>'+(x.s!=null?x.s.toFixed(1):'—')+'</b> / 20</span></div>'
+      +aaeBar(x.s!=null?x.s/20*100:5,col)
+      +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" min="0" max="20" data-aaenote="'+storeKey+'|'+x.k+'" placeholder="note /20"></div></div>';
+  }).join("");
+  return '<div class="spanel aae-card">'+head+rows+'</div>';
+}
+function vAaeProgress(){
+  var A=S.aae,ph=A.phys,me=A.mental,t=today(),onP=A.cycle.indexOf(t)>=0;
+  var s='<div class="spanel aae-cycle'+(onP?' on':'')+'"><button class="aae-cybtn" data-aaecycle="1">'+(onP?'🌙 Règles : jour allégé':'🌙 J\'ai mes règles aujourd\'hui')+'</button>'+(onP?'<span class="aae-cymsg">Garde marche, mobilité, respiration, méditation. VMA et kettlebell lourd seulement si tu te sens bien.</span>':'')+'</div>';
+  s+='<div class="cksec">📊 Progression physique</div><div class="spanel aae-card">'
+    +aaeVal("Course · Luc-Léger",ph.course,9,"palier","phys|course","var(--gold)")
+    +aaeVal("Pompes",ph.pompes,50,"","phys|pompes","var(--gold)")
+    +aaeVal("Gainage isométrique",ph.gainage,168,"s","phys|gainage","var(--gold)")+'</div>';
+  s+='<div class="cksec">🧠 Progression mentale</div><div class="spanel aae-card">'
+    +aaeVal("Méditation",me.medit,20,"min","mental|medit","var(--mint)")
+    +aaeVal("Apnée · BOLT",me.bolt,40,"s","mental|bolt","var(--mint)")
+    +aaeVal("Douche froide",me.froid,120,"s","mental|froid","var(--mint)")+'</div>';
+  s+='<div class="cksec">🎯 Progression psychotechnique</div>'+aaeNotesCard(AAE_PSY,"psycho","psychoBase","#8a6fc0","faible","forte");
+  s+='<div class="cksec">🎤 Progression entretien</div>'+aaeNotesCard(AAE_ENT,"entretien","entretienBase","#3f9d84","à travailler","solide");
+  return s;
+}
 function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
@@ -3194,9 +3247,30 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 'tr.wk-today .wk-day,tr.wk-today .wk-items{background:color-mix(in srgb,var(--gold) 9%,transparent);border-top:1px solid var(--gold);border-bottom:1px solid var(--gold)}'+
 'tr.wk-today .wk-day{border-left:1px solid var(--gold);border-radius:10px 0 0 10px}'+
 'tr.wk-today .wk-items{border-right:1px solid var(--gold);border-radius:0 10px 10px 0}'+
+'.aae-card{padding:14px}'+
+'.aae-m{margin:0 0 14px}.aae-m:last-child{margin-bottom:0}'+
+'.aae-top{display:flex;align-items:center;gap:8px;font-size:13px}'+
+'.aae-n{font-weight:600;color:var(--txt)}'+
+'.aae-v{margin-left:auto;color:var(--dim);font-size:12.5px}.aae-v b{color:var(--txt)}'+
+'.aae-track{height:8px;border-radius:99px;background:var(--panel-3);overflow:hidden;margin:6px 0}'+
+'.aae-track i{display:block;height:100%;border-radius:99px}'+
+'.aae-in{display:flex;align-items:center;gap:8px}'+
+'.aae-inp{width:98px;font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--brd);border-radius:8px;background:var(--panel);color:var(--txt)}'+
+'.aae-hint{font-size:11px;color:var(--dim2)}'+
+'.aae-tag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:99px}'+
+'.aae-tag.lo{background:color-mix(in srgb,var(--red) 16%,var(--panel));color:var(--red)}'+
+'.aae-tag.hi{background:color-mix(in srgb,var(--mint) 18%,var(--panel));color:var(--mint)}'+
+'.aae-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}'+
+'.aae-ht{font-weight:700;color:var(--txt)}'+
+'.aae-moy{font-size:13px;color:var(--dim)}.aae-moy b{color:var(--txt);font-size:15px}.aae-d{font-weight:700;font-size:12px;margin-left:4px;font-style:normal}'+
+'.aae-cycle{display:flex;align-items:center;gap:12px;flex-wrap:wrap}'+
+'.aae-cybtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel);color:var(--dim);padding:7px 13px;border-radius:99px;cursor:pointer}'+
+'.aae-cycle.on .aae-cybtn{background:color-mix(in srgb,#c98bb8 22%,var(--panel));border-color:#c98bb8;color:#8E3E77}'+
+'.aae-cymsg{font-size:11.5px;color:#8E3E77}'+
 '</style>';
 s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta progression au jour, à la semaine, au mois</small></div>';
 s+='<div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
+s+=vAaeProgress();
 s+='<div class="spanel"><div class="spl">📅 Grille du mois</div><div class="subhead" style="margin:0 0 10px">Triée par moment de la journée. Vert = fait · rouge = manqué · contour = à venir ou non enregistré · pointillé = non prévu · liseré doré = aujourd\'hui.</div>'+g.html+'</div>';
 s+='<div class="cksec">🗓️ Ma semaine (Armée de l\'Air)</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Séparé en Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait · jours passés grisés.</div>'+aaeWeekTable(ids)+'</div>';
 s+='</div>';return s;}
@@ -3248,6 +3322,17 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-piv]"),function(el){el.onclick=function(){view=el.getAttribute("data-piv");objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
+  // Saisie des progressions EAE : valeurs (physique/mental) et notes /20 (psycho/entretien) + cycle
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;S.aae[p[0]][p[1]]=v;save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaenote]"),function(el){el.onchange=function(){
+    var p=el.getAttribute("data-aaenote").split("|");var v=parseFloat(el.value);if(isNaN(v))return;v=Math.max(0,Math.min(20,v));
+    var store=S.aae[p[0]];(store[p[1]]=store[p[1]]||[]).push(v);
+    var bk=p[0]==="psycho"?"psychoBase":"entretienBase";
+    if(S.aae[bk]==null){var defs=p[0]==="psycho"?["Logique","Numérique","Verbal","Spatial","Attention"]:["parcours","motivation","sic","defense","oral"];
+      var ss=[];defs.forEach(function(k){var a=store[k];if(a&&a.length){var n=a.slice(-3);ss.push(n.reduce(function(x,y){return x+y;},0)/n.length);}});
+      if(ss.length)S.aae[bk]=ss.reduce(function(x,y){return x+y;},0)/ss.length;}
+    save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
