@@ -811,7 +811,8 @@ function load(){
      if(!_A.entretien)_A.entretien={parcours:[],motivation:[],sic:[],defense:[],oral:[]};
      if(!("psychoBase" in _A))_A.psychoBase=null;
      if(!("entretienBase" in _A))_A.entretienBase=null;
-     if(!_A.cycle)_A.cycle=[];}
+     if(!_A.cycle)_A.cycle=[];
+     if(!("cursus" in _A))_A.cursus=0;}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3202,6 +3203,67 @@ function vAaeProgress(){
   s+='<div class="cksec">🎤 Progression entretien</div>'+aaeNotesCard(AAE_ENT,"entretien","entretienBase","#3f9d84","à travailler","solide");
   return s;
 }
+function aaeMonthsUntil(y,m){var t=today();return (y-(+t.slice(0,4)))*12+(m-(+t.slice(5,7)));}
+function aaePhaseIdx(){var t=today();var idx=(+t.slice(0,4)-2026)*12+(+t.slice(5,7)-8);return Math.max(0,Math.min(5,idx));}
+function aaeCountdown(){
+  var dep=Math.max(0,aaeMonthsUntil(2027,1)),ec=Math.max(0,aaeMonthsUntil(2027,9));
+  return '<div class="spanel aae-cd"><div class="aae-cd1"><b>~'+dep+' mois</b><span>Dépôt du dossier · janvier 2027</span></div>'
+    +'<div class="aae-cd1 blue"><b>~'+ec+' mois</b><span>Entrée à l\'école · ~septembre 2027</span></div></div>';
+}
+function aaeTimeline(){
+  var cur=aaePhaseIdx();var ph=[["M1","Fondation"],["M2","Montée"],["M3","Build"],["M4","Pic"],["M5","Affûtage"],["M6","Forge à fond"]];
+  var seg=ph.map(function(p,i){var cls=i<cur?"done":(i===cur?"cur":"");return '<div class="aae-seg '+cls+'"><div class="aae-segbar"></div><div class="aae-segpin"></div><div class="aae-segm">'+p[0]+'</div><div class="aae-segd">'+p[1]+'</div></div>';}).join("");
+  return '<div class="cksec">🗺️ Les 6 phases</div><div class="spanel"><div class="aae-tl">'+seg+'</div>'
+    +'<div class="aae-flags"><span>● Tests CIRFA + dépôt · fin M5 (janvier)</span><span class="blue">● École EAE · après M6 (septembre)</span></div></div>';
+}
+function aaeCursusBlock(){
+  var cur=S.aae.cursus||0,bars="";for(var i=1;i<=24;i++){bars+='<div class="aae-cu'+(i<=cur?" on":"")+'"></div>';}
+  return '<div class="cksec">📚 Cursus militaire</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Cours étudiés</span><span class="aae-moy"><b>'+cur+'</b> / 24</span></div>'
+    +'<div class="aae-curbars">'+bars+'</div>'
+    +'<div class="aae-curblocks"><span>Bloc 1 · 01-07</span><span>Bloc 2 · 08-13</span><span>Bloc 3 · 14-19</span><span>Bloc 4 · 20-24</span></div>'
+    +'<div class="aae-in" style="margin-top:10px"><input class="aae-inp" type="number" inputmode="numeric" min="0" max="24" data-aaeset="cursus" placeholder="cours faits"><span class="aae-hint">nombre de cours étudiés</span></div></div>';
+}
+function aaeFiche(title){
+  var t=(title||"").toLowerCase();
+  if(/recharge matinale|morning recharge/.test(t))return {dur:"~15 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Arm swings (qigong)","2 min","📹 Morning Recharge"],["Hindu pushups 10 → 28","2 min","📹 Calisthenics 05"],["Hindu squats 10 → 56","2 min","📹 06"],["Thoracic bridges 10 → 28","2 min","📹 07"],["100-Up (course)","2 min","📹 Traveling Warrior 36"],["Méditation posture","1 min","📹 Meditation 50"],["Visualisation négative","1 min",""]]};
+  if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~10 min",steps:[["Étirements Flexible Steel (3 séries/drill)","5 min","📹 Evening 42"],["Journal + examen stoïcien","3 min","📹 Evening 41"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Evening 44"]]};
+  if(/sport du jour|sport \(pr/.test(t))return {dur:"~30 min",steps:[["Change chaque jour : Mar VMA · Jeu endurance · Sam navette · Lun/Ven kettlebell","",""],["Échauffement","5 min",""],["Séance","20 min",""],["Retour au calme + gainage","5 min",""]]};
+  if(/psychotechni|exam arena/.test(t))return {dur:"~25 min",steps:[["Session au chrono, famille du jour (Logique · Numérique · Verbal · Spatial · Attention)","20 min",""],["Bilan, note /20 dans la progression","5 min",""]]};
+  if(/cursus|étudier|reviser|réviser/.test(t))return {dur:"30 min",steps:[["Bloc 1 : Incorporation + Combattant (cours 01-07)","",""],["Le cours du jour","30 min","📄 cursus-osc-eae"]]};
+  if(/gainage/.test(t))return {dur:"~5 min",steps:[["Tenues planche + chaise, réparties (grease the groove)","5 min",""],["+10 à 15 s/sem, objectif 168 s","",""]]};
+  if(/marche/.test(t))return {dur:"60 min",steps:[["~7-8000 pas dehors, cadence ~100 pas/min","",""]]};
+  if(/douche froide|froid/.test(t))return {dur:"variable",steps:[["Finir la douche en froid : 15 s → +15 s/sem → 2 min","",""],["Jamais juste après une séance de force","",""]]};
+  if(/orthographe/.test(t))return {dur:"10 min",steps:[["Cours 24 · orthographe / expression","10 min","📄 cursus 24"]]};
+  if(/anglais|english/.test(t))return {dur:"~25 min",steps:[["Cours + lecture (astuce : page stoïcienne du matin en anglais)","",""]]};
+  return null;
+}
+function aaeTodayAgenda(ids){
+  var t=today();
+  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids)&&dueOn(q,t);});
+  var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids)&&q.due===t;});
+  var items=[];
+  dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:true,done:!!q.done});});
+  tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:false,done:false});});
+  if(!items.length)return '<div class="cksec">📅 Aujourd\'hui</div><div class="spanel"><div class="empty">Aucune habitude ni tâche EAE aujourd\'hui. Relie tes journalières à l\'objectif ARMEE DE L\'AIR (⚙).</div></div>';
+  var s='<div class="cksec">📅 Aujourd\'hui</div>';
+  MO.forEach(function(mm){
+    var list=items.filter(function(it){return it.mo===mm[0];});
+    if(!list.length)return;
+    s+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+' tâche'+(list.length>1?'s':'')+'</span></div><div class="spanel aae-agenda">';
+    list.forEach(function(it){
+      var f=aaeFiche(it.q.title),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',ic=it.daily?'🔁 ':'📌 ',doneCls=it.done?' done':'';
+      if(f){
+        var steps=f.steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");
+        s+='<details class="aae-hb'+doneCls+'"><summary><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+      } else {
+        s+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span>'+dur+'</div>';
+      }
+    });
+    s+='</div>';
+  });
+  return s;
+}
 function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
@@ -3267,12 +3329,55 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 '.aae-cybtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel);color:var(--dim);padding:7px 13px;border-radius:99px;cursor:pointer}'+
 '.aae-cycle.on .aae-cybtn{background:color-mix(in srgb,#c98bb8 22%,var(--panel));border-color:#c98bb8;color:#8E3E77}'+
 '.aae-cymsg{font-size:11.5px;color:#8E3E77}'+
+'.aae-cd{display:flex;gap:14px;flex-wrap:wrap}'+
+'.aae-cd1{flex:1;min-width:150px;background:var(--panel-2);border:1px solid var(--brd);border-radius:12px;padding:10px 14px}'+
+'.aae-cd1 b{display:block;font-size:20px;color:var(--gold);line-height:1.1}'+
+'.aae-cd1.blue b{color:#4C7C93}'+
+'.aae-cd1 span{font-size:11.5px;color:var(--dim)}'+
+'.aae-tl{display:grid;grid-template-columns:repeat(6,1fr)}'+
+'.aae-seg{position:relative;padding:20px 3px 2px;text-align:center}'+
+'.aae-segbar{position:absolute;top:9px;left:0;right:0;height:4px;background:var(--panel-3)}'+
+'.aae-seg.done .aae-segbar,.aae-seg.cur .aae-segbar{background:var(--gold)}'+
+'.aae-segpin{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:var(--panel);border:3px solid var(--panel-3)}'+
+'.aae-seg.cur .aae-segpin{border-color:var(--gold);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 22%,transparent)}'+
+'.aae-seg.done .aae-segpin{border-color:var(--gold);background:var(--gold)}'+
+'.aae-segm{font-size:11.5px;font-weight:700;color:var(--txt)}'+
+'.aae-segd{font-size:9.5px;color:var(--dim2)}'+
+'.aae-flags{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:11px;color:var(--dim)}'+
+'.aae-flags .blue{color:#4C7C93}'+
+'.aae-curbars{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin:6px 0}'+
+'.aae-cu{height:22px;border-radius:4px;background:var(--panel-3)}'+
+'.aae-cu.on{background:var(--gold)}'+
+'.aae-curblocks{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-size:10.5px;color:var(--dim2)}'+
+'.aae-ghead{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}'+
+'.aae-gc{color:var(--dim2);font-weight:600;letter-spacing:0;text-transform:none}'+
+'.aae-agenda{padding:8px}'+
+'.aae-hb{border:1px solid var(--brd);border-radius:10px;background:var(--panel);margin-bottom:7px}'+
+'.aae-hb:last-child{margin-bottom:0}'+
+'.aae-hb summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}'+
+'.aae-hb summary::-webkit-details-marker{display:none}'+
+'.aae-hb.flat{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}'+
+'.aae-hn{font-weight:600;color:var(--txt)}'+
+'.aae-hb.done .aae-hn{opacity:.5;text-decoration:line-through}'+
+'.aae-chev{color:var(--dim2);font-size:11px;margin-left:auto;transition:transform .15s}'+
+'details.aae-hb[open] .aae-chev{transform:rotate(90deg)}'+
+'.aae-dur{font-size:11px;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel));padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap;margin-left:8px}'+
+'.aae-hb.flat .aae-dur{margin-left:auto}'+
+'.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
+'.aae-step{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--dim)}'+
+'.aae-stx b{color:var(--txt);font-weight:600}'+
+'.aae-src{color:#4C7C93;font-size:11px}'+
+'.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '</style>';
-s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta progression au jour, à la semaine, au mois</small></div>';
-s+='<div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
+s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
+s+=aaeCountdown();
+s+=aaeTimeline();
 s+=vAaeProgress();
-s+='<div class="spanel"><div class="spl">📅 Grille du mois</div><div class="subhead" style="margin:0 0 10px">Triée par moment de la journée. Vert = fait · rouge = manqué · contour = à venir ou non enregistré · pointillé = non prévu · liseré doré = aujourd\'hui.</div>'+g.html+'</div>';
-s+='<div class="cksec">🗓️ Ma semaine (Armée de l\'Air)</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Séparé en Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait · jours passés grisés.</div>'+aaeWeekTable(ids)+'</div>';
+s+=aaeCursusBlock();
+s+=aaeTodayAgenda(ids);
+s+='<div class="cksec">📈 Régularité</div><div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
+s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
+s+='<div class="cksec">📅 Grille du mois</div><div class="spanel"><div class="subhead" style="margin:0 0 10px">Vert = fait · rouge = manqué · contour = à venir · pointillé = non prévu.</div>'+g.html+'</div>';
 s+='</div>';return s;}
 function vEvolution(){
   var h=S.hunter,rk=rankOf(h.level);
@@ -3323,7 +3428,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-piv]"),function(el){el.onclick=function(){view=el.getAttribute("data-piv");objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Saisie des progressions EAE : valeurs (physique/mental) et notes /20 (psycho/entretien) + cycle
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;S.aae[p[0]][p[1]]=v;save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;if(p[0]==="cursus"){S.aae.cursus=Math.min(24,Math.round(v));}else{S.aae[p[0]][p[1]]=v;}save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaenote]"),function(el){el.onchange=function(){
     var p=el.getAttribute("data-aaenote").split("|");var v=parseFloat(el.value);if(isNaN(v))return;v=Math.max(0,Math.min(20,v));
     var store=S.aae[p[0]];(store[p[1]]=store[p[1]]||[]).push(v);
