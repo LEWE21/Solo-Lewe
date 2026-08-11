@@ -2688,7 +2688,6 @@ function vCockpit(){
   s+=pilotTabs("cockpit");
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
-  s+=aaeCockpitRepere();   // 3 repères EAE (matin/midi/soir) cliquables vers l'onglet EAE
   // Carré "Tâches en retard" : à gauche d'Aujourd'hui, disparaît quand il est vide
   if(overdue.length){
     s+='<div class="spanel latecard"><div class="spl" style="color:var(--red)">⏰ Tâches en retard<span style="flex:1"></span><span>'+overdue.length+'</span></div>';
@@ -2701,24 +2700,37 @@ function vCockpit(){
   s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour
   if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
-  var undoneHab=dueList.filter(function(q){return !doneForToday(q);}).length;
+  var jIds=suiviAaeMissionIds();
+  var jEae=function(q){return isAaeQuest(q,jIds);};
+  var undoneHab=dueList.filter(function(q){return !doneForToday(q)&&!jEae(q);}).length;
+  var jTasks=todayT.filter(function(q){return !jEae(q);});
   var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  var totCount=undoneHab+todayT.length;
-  // ---- Un seul tableau "Ma journée" : par moment, d'abord les habitudes, ensuite les tâches ----
+  // Prépa EAE : un repère agrégé par moment (le détail est dans l'onglet EAE)
+  var eaeMomN={};parts.forEach(function(mo){
+    var h=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q)&&jEae(q);}).length;
+    var tk=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&jEae(q);}).length;
+    eaeMomN[mo[0]]=h+tk;
+  });
+  var eaeRep=parts.filter(function(mo){return eaeMomN[mo[0]]>0;}).length;
+  var totCount=undoneHab+jTasks.length+eaeRep;
+  // ---- Un seul tableau "Ma journée" : par moment, la Prépa EAE puis les habitudes, puis les tâches ----
+  s+='<style>.eae-jrow{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:2px 0;border-radius:9px;cursor:pointer;background:color-mix(in srgb,var(--gold) 9%,var(--panel));border:1px solid color-mix(in srgb,var(--gold) 30%,var(--brd))}.eae-jrow:hover{background:color-mix(in srgb,var(--gold) 16%,var(--panel))}.eae-jic{font-size:15px}.eae-jt{font-weight:700;color:var(--txt);font-size:13px}.eae-jn{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--gold);background:var(--panel);border:1px solid color-mix(in srgb,var(--gold) 30%,var(--brd));min-width:22px;text-align:center;padding:1px 7px;border-radius:99px}.eae-jgo{color:var(--dim2);font-size:14px}</style>';
   s+='<div class="spanel"><div class="spl">📅 Ma journée <span style="font-weight:400;color:var(--dim2)">'+fmtDJ(today())+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+totCount+'</span></div>';
-  if(todayT.length>3)s+='<div class="subhead" style="margin:0 0 8px">'+todayT.length+' tâches aujourd\'hui, c\'est beaucoup. Garde 3 priorités (ton pacte), le reste est du bonus : aucune pression pour tout finir, ce qui reste passera à un autre jour.</div>';
-  var totMins=0;todayT.forEach(function(q){totMins+=(q.mins||0);});
+  if(jTasks.length>3)s+='<div class="subhead" style="margin:0 0 8px">'+jTasks.length+' tâches aujourd\'hui, c\'est beaucoup. Garde 3 priorités (ton pacte), le reste est du bonus : aucune pression pour tout finir, ce qui reste passera à un autre jour.</div>';
+  var totMins=0;jTasks.forEach(function(q){totMins+=(q.mins||0);});
   if(totMins>0)s+='<div class="subhead" style="margin:0 0 8px">⏱ ≈ '+fmtDurMin(totMins)+' de travail estimé aujourd\'hui.'+(totMins>180?' Grosse journée, garde tes 3 priorités.':'')+'</div>';
   parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});   // habitudes non faites du moment
-    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});                       // tâches du moment
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q)&&!jEae(q);});   // habitudes non-EAE non faites du moment
+    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!jEae(q);});                       // tâches non-EAE du moment
     var moPrio=moT.filter(function(q){return isPlan(q);}),moRest=moT.filter(function(q){return !isPlan(q);});
     var ordered=moPrio.concat(moRest);                                                                 // ⭐ priorités du pacte d'abord, puis l'ordre manuel
-    if(mo[0]==="libre"&&!moH.length&&!ordered.length)return;                                           // "À tout moment" seulement s'il a du contenu ; matin/midi/soir toujours (zone de dépôt)
-    var n=moH.length+ordered.length;
+    var eaeN=eaeMomN[mo[0]]||0;
+    if(mo[0]==="libre"&&!moH.length&&!ordered.length&&!eaeN)return;                                    // "À tout moment" seulement s'il a du contenu ; matin/midi/soir toujours (zone de dépôt)
+    var n=moH.length+ordered.length+(eaeN?1:0);
     s+='<div class="daypart" data-daypart="'+mo[0]+'"><div class="dphead">'+mo[1]+(n?' <span class="dpn">'+n+'</span>':'')+'</div>';
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                                        // d'abord les habitudes
-    s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):(moH.length?'':'<div class="dpempty">Dépose une tâche ici</div>'); // puis les tâches (ou zone de dépôt si le moment est vide)
+    if(eaeN)s+='<div class="eae-jrow" data-eaego="1"><span class="eae-jic">🎖️</span><span class="eae-jt">Prépa EAE</span><span class="eae-jn">'+eaeN+'</span><span class="eae-jgo">›</span></div>';  // repère EAE agrégé
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");                                        // puis les habitudes
+    s+=ordered.length?ordered.map(function(q){return questRow(q,0,true,{drag:true});}).join(""):((moH.length||eaeN)?'':'<div class="dpempty">Dépose une tâche ici</div>'); // puis les tâches (ou zone de dépôt si le moment est vide)
     s+='</div>';
   });
   s+='</div>';
@@ -3355,6 +3367,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 'tr.wk-today .wk-day{border-left:1px solid var(--gold);border-radius:10px 0 0 10px}'+
 'tr.wk-today .wk-items{border-right:1px solid var(--gold);border-radius:0 10px 10px 0}'+
 '.aae-card{padding:14px}'+
+'.aae-quote{text-align:center;font-style:italic;font-size:14.5px;color:var(--txt);background:var(--panel-2);border:1px solid var(--brd);border-radius:12px;padding:13px 18px;margin-bottom:14px}'+
 '.aae-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}'+
 '.aae-col{min-width:0}'+
 '.aae-col>.cksec:first-child{margin-top:0}'+
@@ -3452,7 +3465,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-src{color:#4C7C93;font-size:11px}'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '</style>';
-s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
+s+='<div class="solo"><div class="aae-quote">« Comparé à la mort de mon père ce n\'est rien. »</div><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
 s+=aaeCountdown();
 s+=aaeTimeline();
 s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
