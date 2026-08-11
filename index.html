@@ -2688,6 +2688,7 @@ function vCockpit(){
   s+=pilotTabs("cockpit");
   s+='<div class="ckgrid"><div class="ckcol">';
   s+='<div class="spanel"><div class="spl">Profil</div><div class="srank"><div>'+robiAvatar(rk.r,companionMood(),56,true)+'</div><div class="rbig" style="color:'+col+'">'+rk.r+'</div><div class="rt"><div class="who">Joueur · '+esc(h.name)+'</div><div class="sxp"><span>Niveau '+h.level+'</span><span>XP '+h.xp+' / '+need+'</span></div><div class="sbar"><i style="transform:scaleX('+xpfrac+')"></i></div><div class="sxp"><span>Série '+(S.streak||0)+' j</span><span>Combo x'+(S.combo||0)+'</span></div></div></div></div>';
+  s+=aaeCockpitRepere();   // 3 repères EAE (matin/midi/soir) cliquables vers l'onglet EAE
   // Carré "Tâches en retard" : à gauche d'Aujourd'hui, disparaît quand il est vide
   if(overdue.length){
     s+='<div class="spanel latecard"><div class="spl" style="color:var(--red)">⏰ Tâches en retard<span style="flex:1"></span><span>'+overdue.length+'</span></div>';
@@ -3207,6 +3208,18 @@ function vAaeProgress(){
     +'</div>';
   return s;
 }
+function aaeCockpitRepere(){
+  var ids=suiviAaeMissionIds(),t=today();
+  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids)&&dueOn(q,t)&&!doneForToday(q);});
+  var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids)&&q.due===t;});
+  var all=dailies.concat(tasks),cnt={matin:0,midi:0,soir:0,libre:0};
+  all.forEach(function(q){var m=(habMoments(q)[0]||"libre");cnt[m]=(cnt[m]||0)+1;});
+  var MO=[["matin","🌅","Matin"],["midi","☀️","Midi"],["soir","🌙","Soir"]];
+  if(cnt.libre)MO.push(["libre","🕒","À tout moment"]);
+  var rows=MO.map(function(m){var n=cnt[m[0]]||0;return '<div class="eae-rep" data-eaego="1"><span class="eae-repic">'+m[1]+'</span><span class="eae-rept">Entraînement EAE · '+m[2]+'</span><span class="eae-repn">'+n+'</span><span class="eae-repgo">›</span></div>';}).join("");
+  return '<style>.eae-rep{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:8px;cursor:pointer}.eae-rep:hover{background:var(--panel-2)}.eae-repic{font-size:16px}.eae-rept{font-weight:600;color:var(--txt);font-size:13px}.eae-repn{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--panel));min-width:24px;text-align:center;padding:1px 7px;border-radius:99px}.eae-repgo{color:var(--dim2);font-size:14px}</style>'
+    +'<div class="spanel"><div class="spl">🎖️ Prépa EAE<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+all.length+'</span></div>'+rows+'</div>';
+}
 function aaeMonthsUntil(y,m){var t=today();return (y-(+t.slice(0,4)))*12+(m-(+t.slice(5,7)));}
 function aaePhaseIdx(){var t=today();var idx=(+t.slice(0,4)-2026)*12+(+t.slice(5,7)-8);return Math.max(0,Math.min(5,idx));}
 function aaeCountdown(){
@@ -3225,10 +3238,10 @@ function aaeTimeline(){
     +'<div class="aae-flags"><span>● Tests CIRFA + dépôt · fin M5 (janvier)</span><span class="blue">● École EAE · après M6 (septembre)</span></div></div>';
 }
 var AAE_COURS=[
-  {b:1,bl:"Incorporation + Combattant",list:[[1,"Militarité, règlement, cérémonial"],[2,"Armement, tir, sécurité"],[3,"Topographie militaire"],[4,"Transmissions SIC terrain"],[5,"NRBC"],[6,"TIOR, combat, aguerrissement"],[7,"Condition physique et mentale"]]},
-  {b:2,bl:"Devenir aviateur",list:[[8,"Identité et culture aviateur"],[9,"Organisation de l'AAE (1)"],[10,"Organisation de l'AAE (2)"],[11,"Compréhension de l'arme aérienne (1)"],[12,"Compréhension de l'arme aérienne (2)"],[13,"Espace"]]},
-  {b:3,bl:"Commander",list:[[14,"Commandement de l'officier du XXIe"],[15,"Leadership (1)"],[16,"Leadership (2)"],[17,"Leadership (3)"],[18,"Interarmisation"],[19,"Politique de défense française"]]},
-  {b:4,bl:"Conduire une mission + Officier",list:[[20,"Instruction juridique OPEX"],[21,"Gestion des ressources humaines"],[22,"Argumentation"],[23,"Préparation et conduite de mission"],[24,"Orthographe et expression"]]}
+  {b:1,bl:"Incorporation + Combattant",list:[[1,"Militarité, règlement, cérémonial","a"],[2,"Armement, tir, sécurité","l"],[3,"Topographie militaire","l"],[4,"Transmissions SIC terrain","a"],[5,"NRBC","l"],[6,"TIOR, combat, aguerrissement","l"],[7,"Condition physique et mentale","l"]]},
+  {b:2,bl:"Devenir aviateur",list:[[8,"Identité et culture aviateur","a"],[9,"Organisation de l'AAE (1)","a"],[10,"Organisation de l'AAE (2)","a"],[11,"Compréhension de l'arme aérienne (1)","a"],[12,"Compréhension de l'arme aérienne (2)","a"],[13,"Espace","a"]]},
+  {b:3,bl:"Commander",list:[[14,"Commandement de l'officier du XXIe","a"],[15,"Leadership (1)","a"],[16,"Leadership (2)","a"],[17,"Leadership (3)","a"],[18,"Interarmisation","a"],[19,"Politique de défense française","a"]]},
+  {b:4,bl:"Conduire une mission + Officier",list:[[20,"Instruction juridique OPEX","l"],[21,"Gestion des ressources humaines","l"],[22,"Argumentation","a"],[23,"Préparation et conduite de mission","l"],[24,"Orthographe et expression","a"]]}
 ];
 function aaeCursusBlock(){
   var done=S.aae.cursusDone||[],n=done.length;
@@ -3236,8 +3249,8 @@ function aaeCursusBlock(){
   AAE_COURS.forEach(function(bk){
     var bd=bk.list.filter(function(c){return done.indexOf(c[0])>=0;}).length;
     s+='<details class="aae-cblock"'+(bk.b===1?' open':'')+'><summary><span class="aae-cbname">Bloc '+bk.b+' · '+bk.bl+'</span><span class="aae-cbcount">'+bd+'/'+bk.list.length+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">';
-    bk.list.forEach(function(c){var on=done.indexOf(c[0])>=0;
-      s+='<div class="aae-crow'+(on?' on':'')+'" data-aaecourse="'+c[0]+'"><span class="aae-cbox">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(c[0]<10?'0'+c[0]:c[0])+'</span><span class="aae-ctitle">'+esc(c[1])+'</span></div>';});
+    bk.list.forEach(function(c){var on=done.indexOf(c[0])>=0,md=c[2]==='a'?'<span class="aae-cmode ap">🧠 Apprendre</span>':'<span class="aae-cmode li">📖 Lire</span>';
+      s+='<div class="aae-crow'+(on?' on':'')+'" data-aaecourse="'+c[0]+'"><span class="aae-cbox">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(c[0]<10?'0'+c[0]:c[0])+'</span><span class="aae-ctitle">'+esc(c[1])+'</span>'+md+'</div>';});
     s+='</div></details>';
   });
   s+='<div class="aae-hint" style="margin-top:8px">Coche un cours quand tu l\'as appris (compris et capable d\'en parler).</div></div>';
@@ -3402,8 +3415,11 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-cbox{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--brd-hi);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:none}'+
 '.aae-crow.on .aae-cbox{background:var(--mint);border-color:var(--mint)}'+
 '.aae-cnum{font-size:10.5px;color:var(--dim2);font-variant-numeric:tabular-nums;width:18px;flex:none}'+
-'.aae-ctitle{color:var(--txt)}'+
+'.aae-ctitle{color:var(--txt);flex:1;min-width:0}'+
 '.aae-crow.on .aae-ctitle{color:var(--dim);text-decoration:line-through}'+
+'.aae-cmode{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:99px;white-space:nowrap;flex:none}'+
+'.aae-cmode.ap{background:color-mix(in srgb,#8a6fc0 18%,var(--panel));color:#6f52a6}'+
+'.aae-cmode.li{background:var(--panel-2);color:var(--dim)}'+
 '.aae-ghead{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}'+
 '.aae-gc{color:var(--dim2);font-weight:600;letter-spacing:0;text-transform:none}'+
 '.aae-agenda{padding:8px}'+
@@ -3491,6 +3507,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-piv]"),function(el){el.onclick=function(){view=el.getAttribute("data-piv");objSel=null;render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaego]"),function(el){el.onclick=function(){view="suivi";objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Saisie des progressions EAE : valeurs (physique/mental) et notes /20 (psycho/entretien) + cycle
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;if(p[0]==="cursus"){S.aae.cursus=Math.min(24,Math.round(v));}else{S.aae[p[0]][p[1]]=v;}save();render();};});
