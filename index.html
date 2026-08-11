@@ -3191,16 +3191,20 @@ function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
 function vAaeProgress(){
   var A=S.aae,ph=A.phys,me=A.mental,t=today(),onP=A.cycle.indexOf(t)>=0;
   var s='<div class="spanel aae-cycle'+(onP?' on':'')+'"><button class="aae-cybtn" data-aaecycle="1">'+(onP?'🌙 Règles : jour allégé':'🌙 J\'ai mes règles aujourd\'hui')+'</button>'+(onP?'<span class="aae-cymsg">Garde marche, mobilité, respiration, méditation. VMA et kettlebell lourd seulement si tu te sens bien.</span>':'')+'</div>';
-  s+='<div class="cksec">📊 Progression physique</div><div class="spanel aae-card">'
-    +aaeVal("Course · Luc-Léger",ph.course,9,"palier","phys|course","var(--gold)")
-    +aaeVal("Pompes",ph.pompes,50,"","phys|pompes","var(--gold)")
-    +aaeVal("Gainage isométrique",ph.gainage,168,"s","phys|gainage","var(--gold)")+'</div>';
-  s+='<div class="cksec">🧠 Progression mentale</div><div class="spanel aae-card">'
-    +aaeVal("Méditation",me.medit,20,"min","mental|medit","var(--mint)")
-    +aaeVal("Apnée · BOLT",me.bolt,40,"s","mental|bolt","var(--mint)")
-    +aaeVal("Douche froide",me.froid,120,"s","mental|froid","var(--mint)")+'</div>';
-  s+='<div class="cksec">🎯 Progression psychotechnique</div>'+aaeNotesCard(AAE_PSY,"psycho","psychoBase","#8a6fc0","faible","forte");
-  s+='<div class="cksec">🎤 Progression entretien</div>'+aaeNotesCard(AAE_ENT,"entretien","entretienBase","#3f9d84","à travailler","solide");
+  s+='<div class="aae-grid2">'
+    +'<div class="aae-col"><div class="cksec">📊 Progression physique</div><div class="spanel aae-card">'
+      +aaeVal("Course · Luc-Léger",ph.course,9,"palier","phys|course","var(--gold)")
+      +aaeVal("Pompes",ph.pompes,50,"","phys|pompes","var(--gold)")
+      +aaeVal("Gainage isométrique",ph.gainage,168,"s","phys|gainage","var(--gold)")+'</div></div>'
+    +'<div class="aae-col"><div class="cksec">🧠 Progression mentale</div><div class="spanel aae-card">'
+      +aaeVal("Méditation",me.medit,20,"min","mental|medit","var(--mint)")
+      +aaeVal("Apnée · BOLT",me.bolt,40,"s","mental|bolt","var(--mint)")
+      +aaeVal("Douche froide",me.froid,120,"s","mental|froid","var(--mint)")+'</div></div>'
+    +'</div>';
+  s+='<div class="aae-grid2">'
+    +'<div class="aae-col"><div class="cksec">🎯 Progression psychotechnique</div>'+aaeNotesCard(AAE_PSY,"psycho","psychoBase","#8a6fc0","faible","forte")+'</div>'
+    +'<div class="aae-col"><div class="cksec">🎤 Progression entretien</div>'+aaeNotesCard(AAE_ENT,"entretien","entretienBase","#3f9d84","à travailler","solide")+'</div>'
+    +'</div>';
   return s;
 }
 function aaeMonthsUntil(y,m){var t=today();return (y-(+t.slice(0,4)))*12+(m-(+t.slice(5,7)));}
@@ -3310,6 +3314,10 @@ function vSuivi(){var ids=suiviAaeMissionIds();var g=habMonthGrid(ids);var s='<s
 'tr.wk-today .wk-day{border-left:1px solid var(--gold);border-radius:10px 0 0 10px}'+
 'tr.wk-today .wk-items{border-right:1px solid var(--gold);border-radius:0 10px 10px 0}'+
 '.aae-card{padding:14px}'+
+'.aae-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}'+
+'.aae-col{min-width:0}'+
+'.aae-col>.cksec:first-child{margin-top:0}'+
+'@media(max-width:640px){.aae-grid2{grid-template-columns:1fr}}'+
 '.aae-m{margin:0 0 14px}.aae-m:last-child{margin-bottom:0}'+
 '.aae-top{display:flex;align-items:center;gap:8px;font-size:13px}'+
 '.aae-n{font-weight:600;color:var(--txt)}'+
@@ -3375,7 +3383,6 @@ s+=aaeTimeline();
 s+=vAaeProgress();
 s+=aaeCursusBlock();
 s+=aaeTodayAgenda(ids);
-s+='<div class="cksec">📈 Régularité</div><div class="spanel"><div class="sk-rings">'+suiviRing(g.globalPc,"Ce mois","var(--mint)")+suiviRing(g.weekPc,"Cette semaine","var(--gold)")+'</div><div class="evgrid" style="margin-top:14px">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+'</div></div>';
 s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
 s+='<div class="cksec">📅 Grille du mois</div><div class="spanel"><div class="subhead" style="margin:0 0 10px">Vert = fait · rouge = manqué · contour = à venir · pointillé = non prévu.</div>'+g.html+'</div>';
 s+='</div>';return s;}
