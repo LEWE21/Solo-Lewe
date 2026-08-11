@@ -815,7 +815,9 @@ function load(){
      if(!("cursus" in _A))_A.cursus=0;
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
      if(!("stepsDay" in _A))_A.stepsDay=null;
-     if(!_A.stepsSet)_A.stepsSet=[];}
+     if(!_A.stepsSet)_A.stepsSet=[];
+     if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
+     if(!_A.wkStepsSet)_A.wkStepsSet=[];}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3281,12 +3283,19 @@ var AAE_SPORT=[
   {dur:"repos actif",steps:[["Repos actif : marche tranquille, Tai Chi, foam rolling, mobilité, méditation plus longue. On récupère, pas de séance","","📹 Forge 25 Foam Rolling · 30 Joint Mobility"]]}
 ];
 function aaeStepsHtml(steps){return steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");}
+function aaeWkMonday(){return isoPlus(today(),-weekdayMon(today()));}
+function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())return false;return (A.wkStepsSet||[]).indexOf(id)>=0;}
+function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
+  var can=(st[1]!==""||st[2]!==""),sid='d'+di+'#'+(k+offset),on=aaeWkStepDone(sid);
+  var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaewkstep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
+  return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+}).join("");}
 function aaeWeekProgram(){
   var todayWd=weekdayMon(today());
   var s='<div class="cksec">🗓️ Programme The Forge de la semaine</div><div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour.</div>';
   AAE_SPORT.forEach(function(d,i){
     var isToday=(i===todayWd),sess=d.steps[0][0];
-    s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeStepsHtml(d.steps.slice(1))+'</div></details>';
+    s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeWkStepsHtml(d.steps.slice(1),i,1)+'</div></details>';
   });
   return s;
 }
@@ -3572,6 +3581,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(){var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
