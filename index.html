@@ -3244,7 +3244,7 @@ function aaeFiche(title){
   if(/anglais|english/.test(t))return {dur:"~25 min",steps:[["Cours + lecture (astuce : page stoïcienne du matin en anglais)","",""]]};
   return null;
 }
-function aaeTodayAgenda(ids){
+function aaeTodayCard(ids){
   var t=today();
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids)&&dueOn(q,t);});
@@ -3252,24 +3252,36 @@ function aaeTodayAgenda(ids){
   var items=[];
   dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:true,done:!!q.done});});
   tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",q:q,daily:false,done:false});});
-  if(!items.length)return '<div class="cksec">📅 Aujourd\'hui</div><div class="spanel"><div class="empty">Aucune habitude ni tâche EAE aujourd\'hui. Relie tes journalières à l\'objectif ARMEE DE L\'AIR (⚙).</div></div>';
-  var s='<div class="cksec">📅 Aujourd\'hui</div>';
-  MO.forEach(function(mm){
-    var list=items.filter(function(it){return it.mo===mm[0];});
-    if(!list.length)return;
-    s+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+' tâche'+(list.length>1?'s':'')+'</span></div><div class="spanel aae-agenda">';
+  var n=items.length,inner='';
+  if(!n){inner='<div class="empty">Aucune habitude ni tâche EAE aujourd\'hui. Relie tes journalières à l\'objectif ARMEE DE L\'AIR (⚙).</div>';}
+  else MO.forEach(function(mm){
+    var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
+    inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div>';
     list.forEach(function(it){
       var f=aaeFiche(it.q.title),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',ic=it.daily?'🔁 ':'📌 ',doneCls=it.done?' done':'';
       if(f){
         var steps=f.steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");
-        s+='<details class="aae-hb'+doneCls+'"><summary><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+        inner+='<details class="aae-hb'+doneCls+'"><summary><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
-        s+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span>'+dur+'</div>';
+        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(it.q.title)+'</span>'+dur+'</div>';
       }
     });
-    s+='</div>';
   });
-  return s;
+  return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' tâche'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
+}
+function aaeWeekProgressCard(ids){
+  var t=today(),mon=isoPlus(t,-weekdayMon(t)),map=habHistMap();
+  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});
+  var s='<div class="spanel aae-week"><div class="aae-h"><span class="aae-ht">📆 Cette semaine</span><span class="aae-moy" style="font-size:11px;color:var(--dim2)">fait / prévu</span></div>';
+  if(!dailies.length){s+='<div class="empty">Aucune habitude EAE reliée.</div></div>';return s;}
+  dailies.forEach(function(q){
+    var due=0,done=0;
+    for(var i=0;i<7;i++){var ds=isoPlus(mon,i);if(ds>t)break;if(!dueOn(q,ds))continue;due++;
+      if(ds===t){if(q.done)done++;}else{var h=map[ds];if(h&&h.doneIds&&h.doneIds.indexOf(q.id)>=0)done++;}}
+    var pc=due?Math.round(done/due*100):0;
+    s+='<div class="aae-wk"><div class="aae-wktop"><span class="aae-wkn">'+esc(q.title)+'</span><span class="aae-wkv"><b>'+done+'</b> / '+due+'</span></div><div class="aae-track"><i style="width:'+Math.max(4,pc)+'%;background:var(--mint)"></i></div></div>';
+  });
+  s+='</div>';return s;
 }
 function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
@@ -3366,6 +3378,18 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-ghead{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}'+
 '.aae-gc{color:var(--dim2);font-weight:600;letter-spacing:0;text-transform:none}'+
 '.aae-agenda{padding:8px}'+
+'.aae-tw{align-items:start}'+
+'.aae-today>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700;color:var(--txt);font-size:14px}'+
+'.aae-today>summary::-webkit-details-marker{display:none}'+
+'.aae-tcount{font-size:11px;color:var(--dim2);font-weight:600}'+
+'.aae-today .tchev{margin-left:auto;color:var(--dim2);font-size:12px;transition:transform .15s}'+
+'.aae-today[open] .tchev{transform:rotate(90deg)}'+
+'.aae-tbody{margin-top:10px}'+
+'.aae-tbody .aae-ghead:first-child{margin-top:4px}'+
+'.aae-week .aae-wk{margin:0 0 11px}.aae-week .aae-wk:last-child{margin-bottom:0}'+
+'.aae-wktop{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:5px}'+
+'.aae-wkn{color:var(--txt);font-weight:600}'+
+'.aae-wkv{color:var(--dim);white-space:nowrap}.aae-wkv b{color:var(--txt)}'+
 '.aae-hb{border:1px solid var(--brd);border-radius:10px;background:var(--panel);margin-bottom:7px}'+
 '.aae-hb:last-child{margin-bottom:0}'+
 '.aae-hb summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}'+
@@ -3386,7 +3410,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 s+='<div class="solo"><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
 s+=aaeCountdown();
 s+=aaeTimeline();
-s+=aaeTodayAgenda(ids);
+s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
 s+=aaeCursusBlock();
 s+=vAaeProgress();
 s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
