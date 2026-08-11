@@ -812,7 +812,8 @@ function load(){
      if(!("psychoBase" in _A))_A.psychoBase=null;
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
-     if(!("cursus" in _A))_A.cursus=0;}
+     if(!("cursus" in _A))_A.cursus=0;
+     if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3223,12 +3224,24 @@ function aaeTimeline(){
   return '<div class="cksec">🗺️ Les 6 phases</div><div class="spanel"><div class="aae-tl">'+seg+'</div>'
     +'<div class="aae-flags"><span>● Tests CIRFA + dépôt · fin M5 (janvier)</span><span class="blue">● École EAE · après M6 (septembre)</span></div></div>';
 }
+var AAE_COURS=[
+  {b:1,bl:"Incorporation + Combattant",list:[[1,"Militarité, règlement, cérémonial"],[2,"Armement, tir, sécurité"],[3,"Topographie militaire"],[4,"Transmissions SIC terrain"],[5,"NRBC"],[6,"TIOR, combat, aguerrissement"],[7,"Condition physique et mentale"]]},
+  {b:2,bl:"Devenir aviateur",list:[[8,"Identité et culture aviateur"],[9,"Organisation de l'AAE (1)"],[10,"Organisation de l'AAE (2)"],[11,"Compréhension de l'arme aérienne (1)"],[12,"Compréhension de l'arme aérienne (2)"],[13,"Espace"]]},
+  {b:3,bl:"Commander",list:[[14,"Commandement de l'officier du XXIe"],[15,"Leadership (1)"],[16,"Leadership (2)"],[17,"Leadership (3)"],[18,"Interarmisation"],[19,"Politique de défense française"]]},
+  {b:4,bl:"Conduire une mission + Officier",list:[[20,"Instruction juridique OPEX"],[21,"Gestion des ressources humaines"],[22,"Argumentation"],[23,"Préparation et conduite de mission"],[24,"Orthographe et expression"]]}
+];
 function aaeCursusBlock(){
-  var cur=S.aae.cursus||0,bars="";for(var i=1;i<=24;i++){bars+='<div class="aae-cu'+(i<=cur?" on":"")+'"></div>';}
-  return '<div class="cksec">📚 Cursus militaire</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Cours étudiés</span><span class="aae-moy"><b>'+cur+'</b> / 24</span></div>'
-    +'<div class="aae-curbars">'+bars+'</div>'
-    +'<div class="aae-curblocks"><span>Bloc 1 · 01-07</span><span>Bloc 2 · 08-13</span><span>Bloc 3 · 14-19</span><span>Bloc 4 · 20-24</span></div>'
-    +'<div class="aae-in" style="margin-top:10px"><input class="aae-inp" type="number" inputmode="numeric" min="0" max="24" data-aaeset="cursus" placeholder="cours faits"><span class="aae-hint">nombre de cours étudiés</span></div></div>';
+  var done=S.aae.cursusDone||[],n=done.length;
+  var s='<div class="cksec">📚 Cursus militaire</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Cours appris</span><span class="aae-moy"><b>'+n+'</b> / 24</span></div>';
+  AAE_COURS.forEach(function(bk){
+    var bd=bk.list.filter(function(c){return done.indexOf(c[0])>=0;}).length;
+    s+='<details class="aae-cblock"'+(bk.b===1?' open':'')+'><summary><span class="aae-cbname">Bloc '+bk.b+' · '+bk.bl+'</span><span class="aae-cbcount">'+bd+'/'+bk.list.length+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">';
+    bk.list.forEach(function(c){var on=done.indexOf(c[0])>=0;
+      s+='<div class="aae-crow'+(on?' on':'')+'" data-aaecourse="'+c[0]+'"><span class="aae-cbox">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(c[0]<10?'0'+c[0]:c[0])+'</span><span class="aae-ctitle">'+esc(c[1])+'</span></div>';});
+    s+='</div></details>';
+  });
+  s+='<div class="aae-hint" style="margin-top:8px">Coche un cours quand tu l\'as appris (compris et capable d\'en parler).</div></div>';
+  return s;
 }
 function aaeFiche(title){
   var t=(title||"").toLowerCase();
@@ -3375,6 +3388,22 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-cu{height:22px;border-radius:4px;background:var(--panel-3)}'+
 '.aae-cu.on{background:var(--gold)}'+
 '.aae-curblocks{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-size:10.5px;color:var(--dim2)}'+
+'.aae-cblock{border-top:1px solid var(--brd);margin-top:10px;padding-top:10px}'+
+'.aae-cblock:first-of-type{border-top:none;margin-top:12px;padding-top:0}'+
+'.aae-cblock>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px}'+
+'.aae-cblock>summary::-webkit-details-marker{display:none}'+
+'.aae-cbname{font-weight:700;color:var(--txt)}'+
+'.aae-cbcount{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}'+
+'.aae-cblock>summary .aae-chev{margin-left:auto;color:var(--dim2);font-size:11px;transition:transform .15s}'+
+'.aae-cblock[open]>summary .aae-chev{transform:rotate(90deg)}'+
+'.aae-clist{margin:8px 0 2px;display:flex;flex-direction:column;gap:2px}'+
+'.aae-crow{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px}'+
+'.aae-crow:hover{background:var(--panel-2)}'+
+'.aae-cbox{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--brd-hi);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:none}'+
+'.aae-crow.on .aae-cbox{background:var(--mint);border-color:var(--mint)}'+
+'.aae-cnum{font-size:10.5px;color:var(--dim2);font-variant-numeric:tabular-nums;width:18px;flex:none}'+
+'.aae-ctitle{color:var(--txt)}'+
+'.aae-crow.on .aae-ctitle{color:var(--dim);text-decoration:line-through}'+
 '.aae-ghead{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}'+
 '.aae-gc{color:var(--dim2);font-weight:600;letter-spacing:0;text-transform:none}'+
 '.aae-agenda{padding:8px}'+
@@ -3474,6 +3503,7 @@ function bind(){
       if(ss.length)S.aae[bk]=ss.reduce(function(x,y){return x+y;},0)/ss.length;}
     save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(){var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
