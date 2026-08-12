@@ -807,6 +807,7 @@ function load(){
     {var _A=r.aae;
      if(!_A.phys)_A.phys={course:null,pompes:null,gainage:null};
      if(!_A.mental)_A.mental={medit:null,bolt:null,froid:null};
+     if(!_A.mental.boltLog){_A.mental.boltLog=[];if(_A.mental.bolt!=null)_A.mental.boltLog.push(_A.mental.bolt);}
      if(!_A.psycho)_A.psycho={"Logique":[],"Numérique":[],"Verbal":[],"Spatial":[],"Attention":[]};
      if(!_A.entretien)_A.entretien={parcours:[],motivation:[],sic:[],defense:[],oral:[]};
      if(!("psychoBase" in _A))_A.psychoBase=null;
@@ -3189,6 +3190,16 @@ function aaeVal(label,cur,target,unit,path,col){
     +aaeBar(pc,col)
     +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" data-aaeset="'+path+'" placeholder="saisir" min="0"><span class="aae-hint">'+(cur!=null?'dernière mesure':'à mesurer au diagnostic')+'</span></div></div>';
 }
+function aaeBolt(){
+  var log=S.aae.mental.boltLog||[];
+  var last=log.length?log[log.length-1]:null;
+  var recent=log.slice(-7);
+  var avg=recent.length?recent.reduce(function(a,b){return a+b;},0)/recent.length:null;
+  var pc=avg!=null?avg/40*100:5;
+  return '<div class="aae-m"><div class="aae-top"><span class="aae-n">Apnée · BOLT</span><span class="aae-v">moy. 7 j <b>'+(avg!=null?avg.toFixed(1):'—')+'</b> / 40 s</span></div>'
+    +aaeBar(pc,"var(--mint)")
+    +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" data-aaeset="boltlog" placeholder="BOLT du matin (s)" min="0"><span class="aae-hint">'+(last!=null?'dernière : '+last+' s · '+recent.length+' mesure'+(recent.length>1?'s':'')+' dans la moyenne':'à mesurer chaque matin au réveil')+'</span></div></div>';
+}
 function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
   var store=S.aae[storeKey];
   var scores=defs.map(function(d){return {k:d[0],lab:d[1],s:aaeAvg3(store[d[0]])};});
@@ -3215,7 +3226,7 @@ function vAaeProgress(){
       +aaeVal("Gainage isométrique",ph.gainage,168,"s","phys|gainage","var(--gold)")+'</div></div>'
     +'<div class="aae-col"><div class="cksec">🧠 Progression mentale</div><div class="spanel aae-card">'
       +aaeVal("Méditation",me.medit,20,"min","mental|medit","var(--mint)")
-      +aaeVal("Apnée · BOLT",me.bolt,40,"s","mental|bolt","var(--mint)")
+      +aaeBolt()
       +aaeVal("Douche froide",me.froid,120,"s","mental|froid","var(--mint)")+'</div></div>'
     +'</div>';
   s+='<div class="aae-grid2">'
@@ -3569,7 +3580,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaego]"),function(el){el.onclick=function(){view="suivi";objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Saisie des progressions EAE : valeurs (physique/mental) et notes /20 (psycho/entretien) + cycle
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;if(p[0]==="cursus"){S.aae.cursus=Math.min(24,Math.round(v));}else{S.aae[p[0]][p[1]]=v;}save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeset]"),function(el){el.onchange=function(){var p=el.getAttribute("data-aaeset").split("|");var v=parseFloat(el.value);if(isNaN(v))return;if(v<0)v=0;if(p[0]==="cursus"){S.aae.cursus=Math.min(24,Math.round(v));}else if(p[0]==="boltlog"){(S.aae.mental.boltLog=S.aae.mental.boltLog||[]).push(v);}else{S.aae[p[0]][p[1]]=v;}save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaenote]"),function(el){el.onchange=function(){
     var p=el.getAttribute("data-aaenote").split("|");var v=parseFloat(el.value);if(isNaN(v))return;v=Math.max(0,Math.min(20,v));
     var store=S.aae[p[0]];(store[p[1]]=store[p[1]]||[]).push(v);
