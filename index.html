@@ -3169,7 +3169,7 @@ function habDashboard(){
   return s;
 }
 function suiviAaeMissionIds(){var out=[];(S.missions||[]).forEach(function(m){var t=(m.title||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();if(t.indexOf("armee de l air")>=0||t.indexOf("armee de l'air")>=0||(/arm/.test(t)&&/air/.test(t)))out.push(m.id);});return out;}
-function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior|the forge|recharge matinale|morning recharge|evening habits|habitudes du soir|kettlebell|gainage|douche froide|apn[eé]e|m[eé]ditation|marche 1h/i.test(q.title||"");}
+function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior|the forge|recharge matinale|morning recharge|evening habits|habitudes du soir|kettlebell|gainage|douche froide|apn[eé]e|m[eé]ditation|marche 1h|[ée]ponge visage|brossage de dents|cr[èe]me pour la peau/i.test(q.title||"");}
 function habMoments(q){try{if(typeof taskMoments==="function"){var a=taskMoments(q);if(a&&a.length)return a;}}catch(e){}var t=(q.title||"").toLowerCase();if(/matin|r[eé]veil|wake/.test(t))return["matin"];if(/midi/.test(t))return["midi"];if(/soir/.test(t))return["soir"];return["libre"];}
 function momentRank(m){return m==="matin"?0:m==="midi"?1:m==="aprem"?2:m==="soir"?3:4;}
 function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,c=2*Math.PI*r,off=c*(1-v/100);return '<div class="sk-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--panel-3)" stroke-width="7"></circle><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"></circle><text x="32" y="37" text-anchor="middle" font-size="16" font-weight="800" fill="var(--txt)">'+Math.round(v)+'%</text></svg><span class="sk-lab">'+lab+'</span></div>';}
@@ -3380,7 +3380,7 @@ function aaeTodayCard(ids){
         }).join("");
         inner+='<details class="aae-hb'+doneCls+'" open'+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
-        inner+='<div class="aae-hb flat'+doneCls+'"'+drg+'>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
+        inner+='<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
       }
     });
     inner+='</div>';
