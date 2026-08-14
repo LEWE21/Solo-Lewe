@@ -818,7 +818,8 @@ function load(){
      if(!("stepsDay" in _A))_A.stepsDay=null;
      if(!_A.stepsSet)_A.stepsSet=[];
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
-     if(!_A.wkStepsSet)_A.wkStepsSet=[];}
+     if(!_A.wkStepsSet)_A.wkStepsSet=[];
+     if(!("restDay" in _A))_A.restDay=null;}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3288,6 +3289,14 @@ var AAE_SPORT=[
   {dur:"~25 min",steps:[["Course navette (test Luc-Léger)","",""],["Échauffement : 5 min footing, étirements dynamiques, gammes, mobilité chevilles, 2-3 accélérations progressives","10 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],["Séance : navette entre 2 repères de 20 m au rythme qui accélère, va jusqu'à ne plus suivre le rythme. Note ton palier dans la progression physique","10 min",""],["Retour au calme + gainage : marche, fast & loose, étirements complets","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
   {dur:"repos actif",steps:[["Repos actif : marche tranquille, Tai Chi, foam rolling, mobilité, méditation plus longue. On récupère, pas de séance","","📹 Forge 25 Foam Rolling · 30 Joint Mobility"]]}
 ];
+function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
+function aaeDaySchedule(){ // planning [7] de la semaine : repos sur le jour choisi (sinon dimanche par défaut), les 6 séances glissent sur les autres jours
+  var restWd=aaeRestWd();
+  if(restWd==null)return AAE_SPORT.slice();
+  var out=[],s=0;
+  for(var d=0;d<7;d++){ if(d===restWd){out[d]=AAE_SPORT[6];} else {out[d]=AAE_SPORT[s<6?s:6];s++;} }
+  return out;
+}
 function aaeStepsHtml(steps){return steps.map(function(st){return '<div class="aae-step"><span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';}).join("");}
 function aaeWkMonday(){return isoPlus(today(),-weekdayMon(today()));}
 function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())return false;return (A.wkStepsSet||[]).indexOf(id)>=0;}
@@ -3299,7 +3308,7 @@ function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
 function aaeWeekProgram(){
   var todayWd=weekdayMon(today());
   var s='<div class="cksec">🗓️ Programme The Forge de la semaine</div><div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour.</div>';
-  AAE_SPORT.forEach(function(d,i){
+  aaeDaySchedule().forEach(function(d,i){
     var isToday=(i===todayWd),sess=d.steps[0][0];
     s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeWkStepsHtml(d.steps.slice(1),i,1)+'</div></details>';
   });
@@ -3310,7 +3319,7 @@ function aaeFiche(title){
   if(/recharge matinale|morning recharge/.test(t))return {dur:"~18 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Arm swings (qigong)","2 min","📹 Forge 02 · Arm Swings"],["Mobilité articulaire (prévention blessure) : cercles lents cou, épaules, poignets, tronc, hanches, genoux, CHEVILLES — 10 par articulation, sans forcer","3 min","📹 Forge 30 · Flexible Steel Joint Mobility"],["Hindu pushups 10 → 28","2 min","📹 Forge 05 · Hindu Pushups"],["Hindu squats 10 → 56","2 min","📹 Forge 06 · Hindu Squats"],["Thoracic bridges 10 → 28","2 min","📹 Forge 07 · Thoracic Bridges"],["Méditation posture (1 min → 20 min plus tard)","1 min","📹 Forge 50 · Meditation"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],["Douche froide (résilience) : finir la douche en froid, 15 s → +15 s/sem → 2 min","variable","📹 Forge 13 · Cold Exposure"]]};
   if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~12 min",steps:[["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
   if(/sport du jour|sport \(pr/.test(t)){
-    var f=AAE_SPORT[weekdayMon(today())]||AAE_SPORT[1];
+    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SPORT[1];
     if(f.dur==="repos actif")return f;
     var steps=f.steps.slice();
     if(/course/i.test(steps[0][0]||"")){   // jour de course : le 100-Up (technique) juste avant de courir
@@ -3353,23 +3362,30 @@ function aaeTodayCard(ids){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var items=aaeDayItems(ids);
   var n=items.length,inner='';
+  var restWd=aaeRestWd();
+  if(restWd==null)inner+='<div class="aae-restbar"><button class="aae-restbtn" data-aaerest="1">🛌 Prendre mon jour de repos aujourd\'hui</button><span class="aae-resthint">1 fois/semaine, la séance du jour se décale</span></div>';
+  else inner+='<div class="aae-restbar"><span class="aae-restinfo">🛌 Repos '+(restWd===weekdayMon(today())?"aujourd\'hui":"le "+AAE_DAYS[restWd].toLowerCase())+' · pris pour cette semaine</span></div>';
   MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
-    inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div>';
+    inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
     list.forEach(function(it){
       var f=it.fiche,dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=aaeItemFullyDone(it)?' done':'';
-      var gear=(it.key!=="morning"&&it.key!=="evening")?'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>':'';
+      var socle=(it.key==="morning"||it.key==="evening");
+      var gear=socle?'':'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>';
+      var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
+      var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
       if(f){
         var steps=f.steps.map(function(st,idx){
           var can=(st[1]!==""||st[2]!==""),sid=it.key+'#'+idx,on=aaeStepDone(sid);
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
           return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
-        inner+='<details class="aae-hb'+doneCls+'" open><summary><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+        inner+='<details class="aae-hb'+doneCls+'" open'+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
-        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
+        inner+='<div class="aae-hb flat'+doneCls+'"'+drg+'>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
       }
     });
+    inner+='</div>';
   });
   return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' item'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
 }
@@ -3530,6 +3546,16 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-gear{margin-left:8px;color:var(--dim2);font-size:14px;cursor:pointer;flex:none}'+
 '.aae-gear:hover{color:var(--gold)}'+
 '.aae-hb.flat .aae-gear{margin-left:auto}'+
+'.aae-mzone{min-height:6px}'+
+'.aae-mzone.dpover{background:color-mix(in srgb,var(--gold) 10%,transparent);border-radius:10px;outline:2px dashed color-mix(in srgb,var(--gold) 45%,transparent)}'+
+'.aae-hb.dragging{opacity:.45}'+
+'.aae-hb.dropafter{box-shadow:0 2px 0 var(--gold)}'+
+'.aae-grip{color:var(--dim2);cursor:grab;font-size:12px;margin-right:1px;flex:none}'+
+'.aae-restbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}'+
+'.aae-restbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel-2);color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}'+
+'.aae-restbtn:hover{border-color:var(--gold)}'+
+'.aae-resthint{font-size:11px;color:var(--dim2)}'+
+'.aae-restinfo{font-size:12.5px;color:var(--dim);font-weight:600}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
 '.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim)}'+
 '.aae-scheck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--brd-hi);flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}'+
@@ -3614,6 +3640,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaerest]"),function(el){el.onclick=function(){var A=S.aae;if(A.restDay&&A.restDay.week===aaeWkMonday())return;sysConfirm("Prendre ton jour de repos aujourd'hui ?",["Ta séance du jour devient repos, et le reste de la semaine glisse d'un jour.","Tu ne peux le faire qu'une fois par semaine."],function(){A.restDay={week:aaeWkMonday(),day:today()};save();render();});};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
