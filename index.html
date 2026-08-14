@@ -3307,13 +3307,17 @@ function aaeWeekProgram(){
 }
 function aaeFiche(title){
   var t=(title||"").toLowerCase();
-  if(/recharge matinale|morning recharge/.test(t))return {dur:"~18 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Arm swings (qigong)","2 min","📹 Forge 02 · Arm Swings"],["Mobilité articulaire (prévention blessure) : cercles lents cou, épaules, poignets, tronc, hanches, genoux, CHEVILLES — 10 par articulation, sans forcer","3 min","📹 Forge 30 · Flexible Steel Joint Mobility"],["Hindu pushups 10 → 28","2 min","📹 Forge 05 · Hindu Pushups"],["Hindu squats 10 → 56","2 min","📹 Forge 06 · Hindu Squats"],["Thoracic bridges 10 → 28","2 min","📹 Forge 07 · Thoracic Bridges"],["100-Up (technique de course)","2 min","📹 Forge 36 · 100-Up Running"],["Méditation posture (1 min → 20 min plus tard)","1 min","📹 Forge 50 · Meditation"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"]]};
+  if(/recharge matinale|morning recharge/.test(t))return {dur:"~18 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Arm swings (qigong)","2 min","📹 Forge 02 · Arm Swings"],["Mobilité articulaire (prévention blessure) : cercles lents cou, épaules, poignets, tronc, hanches, genoux, CHEVILLES — 10 par articulation, sans forcer","3 min","📹 Forge 30 · Flexible Steel Joint Mobility"],["Hindu pushups 10 → 28","2 min","📹 Forge 05 · Hindu Pushups"],["Hindu squats 10 → 56","2 min","📹 Forge 06 · Hindu Squats"],["Thoracic bridges 10 → 28","2 min","📹 Forge 07 · Thoracic Bridges"],["Méditation posture (1 min → 20 min plus tard)","1 min","📹 Forge 50 · Meditation"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],["Douche froide (résilience) : finir la douche en froid, 15 s → +15 s/sem → 2 min","variable","📹 Forge 13 · Cold Exposure"]]};
   if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~12 min",steps:[["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
   if(/sport du jour|sport \(pr/.test(t)){
     var f=AAE_SPORT[weekdayMon(today())]||AAE_SPORT[1];
     if(f.dur==="repos actif")return f;
-    var steps=f.steps.slice();   // le gainage fait partie de l'effort : on l'insère juste avant le retour au calme (dernière étape)
-    steps.splice(steps.length-1,0,["Gainage isométrique : tenues planche + chaise, +10-15 s/sem, objectif 168 s","5 min",""]);
+    var steps=f.steps.slice();
+    if(/course/i.test(steps[0][0]||"")){   // jour de course : le 100-Up (technique) juste avant de courir
+      var si=2;for(var i=0;i<steps.length;i++){if(/^Séance/.test(steps[i][0])){si=i;break;}}
+      steps.splice(si,0,["100-Up (technique de course) : variante Mineure, juste avant de courir","2 min","📹 Forge 36 · 100-Up Running"]);
+    }
+    steps.splice(steps.length-1,0,["Gainage isométrique : tenues planche + chaise, +10-15 s/sem, objectif 168 s","5 min",""]);   // le gainage avant le retour au calme
     return {dur:f.dur,steps:steps};
   }
   if(/psychotechni|exam arena/.test(t))return {dur:"~25 min",steps:[["Session au chrono, famille du jour (Logique · Numérique · Verbal · Spatial · Attention)","20 min",""],["Bilan, note /20 dans la progression","5 min",""]]};
