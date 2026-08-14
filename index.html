@@ -3358,15 +3358,16 @@ function aaeTodayCard(ids){
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div>';
     list.forEach(function(it){
       var f=it.fiche,dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=aaeItemFullyDone(it)?' done':'';
+      var gear=(it.key!=="morning"&&it.key!=="evening")?'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>':'';
       if(f){
         var steps=f.steps.map(function(st,idx){
           var can=(st[1]!==""||st[2]!==""),sid=it.key+'#'+idx,on=aaeStepDone(sid);
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
           return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
-        inner+='<details class="aae-hb'+doneCls+'" open><summary><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+        inner+='<details class="aae-hb'+doneCls+'" open><summary><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
-        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span></div>';
+        inner+='<div class="aae-hb flat'+doneCls+'"><span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
       }
     });
   });
@@ -3526,6 +3527,9 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 'details.aae-hb[open] .aae-chev{transform:rotate(90deg)}'+
 '.aae-dur{font-size:11px;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel));padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap;margin-left:8px}'+
 '.aae-hb.flat .aae-dur{margin-left:auto}'+
+'.aae-gear{margin-left:8px;color:var(--dim2);font-size:14px;cursor:pointer;flex:none}'+
+'.aae-gear:hover{color:var(--gold)}'+
+'.aae-hb.flat .aae-gear{margin-left:auto}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
 '.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim)}'+
 '.aae-scheck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--brd-hi);flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}'+
@@ -3609,6 +3613,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(){var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
