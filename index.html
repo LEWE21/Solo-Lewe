@@ -2703,8 +2703,6 @@ function vCockpit(){
   }
   if(!moodDone())s+=moodCard();     // humeur du jour ; disparaît une fois validée
   if(sleepToday()==null)s+=sleepCard(); // sommeil de la nuit ; comme l'humeur, disparaît une fois noté
-  s+='<div class="cksec">🎯 Priorités du jour</div>';   // les priorités (colonne de gauche), distinctes des habitudes qui sont dans Aujourd'hui
-  s+=naHtml+pacteHtml;              // Prochaine action + Pacte du jour
   if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
   s+='</div><div class="ckcol">';
   var jIds=suiviAaeMissionIds();
