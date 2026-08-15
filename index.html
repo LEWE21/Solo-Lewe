@@ -3259,10 +3259,10 @@ function aaeTaiChiFiche(){
   if(idx>=L.length)return {dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],["Niveau 1 terminé 🎋 Passe au Niveau 2 (voir la carte Tai chi)","",""],["Pratique libre : forme des 8 postures + respiration","~20 min","🎋 Formation Tai Chi"]]};
   var les=L[idx];
   return {dur:les[1],taichi:true,steps:[
-    ["Tai chi · récupération active (à ton rythme)","",""],
-    ["Niveau 1 · "+les[0],les[1],"🎋 Formation Tai Chi"],
-    ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""],
-    ["Leçon faite ? valide-la dans la carte Tai chi (plus bas) pour passer à la suivante.","",""]
+    ["Tai chi · récupération active","",""],
+    ["Routine courte : 5 → 20 min de Chi Kung, ancre-toi, respire lent. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","5-20 min","🎋 Chi Kung"],
+    ["Leçon de la semaine · Niveau 1 · "+les[0]+" — répète-la 3× avant de passer à la suivante","",les[1]],
+    ["Filme-toi 1×/semaine pour te corriger. Surtout : garde le plaisir, pas de chrono obligatoire.","",""]
   ]};
 }
 function aaeMentalDay(){ // menu mental du jour selon la grille A/B/C/D/E + phase + réserve/repos
@@ -3314,9 +3314,9 @@ function aaeTaiChiCard(){
   var pc=Math.round(Math.min(idx,n)/n*100);
   var s='<style>.aae-tcnow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:10px 0 4px}.aae-tclab{font-size:10.5px;color:var(--dim2);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.aae-tctitle{font-weight:600;color:var(--txt);font-size:13px}.aae-tcdur{margin-left:auto;color:var(--dim2);font-size:11.5px}.aae-tcbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.aae-tcbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid #5a9b8c;background:color-mix(in srgb,#5a9b8c 18%,var(--panel));color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}.aae-tcbtn.ghost{background:var(--panel);border-color:var(--brd);color:var(--dim)}</style>';
   s+='<div class="cksec">🎋 Tai chi · à ton rythme</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Niveau 1</span><span class="aae-moy"><b>'+Math.min(idx,n)+'</b> / '+n+' leçons</span></div>'+aaeBar(Math.max(4,pc),"#5a9b8c");
-  if(cur)s+='<div class="aae-tcnow"><span class="aae-tclab">Leçon en cours</span><span class="aae-tctitle">'+esc(cur[0])+'</span><span class="aae-tcdur">'+esc(cur[1])+'</span></div><div class="aae-tcbtns">'+(idx>0?'<button class="aae-tcbtn ghost" data-aaitaichi="-">◀ précédente</button>':'')+'<button class="aae-tcbtn" data-aaitaichi="+">✓ Leçon faite, suivante</button></div>';
+  if(cur)s+='<div class="aae-tcnow"><span class="aae-tclab">Leçon de la semaine</span><span class="aae-tctitle">'+esc(cur[0])+'</span><span class="aae-tcdur">'+esc(cur[1])+'</span></div><div class="aae-tcbtns">'+(idx>0?'<button class="aae-tcbtn ghost" data-aaitaichi="-">◀ précédente</button>':'')+'<button class="aae-tcbtn" data-aaitaichi="+">✓ Leçon maîtrisée (3×), suivante</button></div>';
   else s+='<div class="aae-tcnow"><span class="aae-tctitle">Niveau 1 terminé 🎋 Passe au Niveau 2 dans ta formation.</span></div><div class="aae-tcbtns"><button class="aae-tcbtn ghost" data-aaitaichi="-">◀ revenir</button></div>';
-  s+='<div class="aae-hint" style="margin-top:8px">Pas d\'échéance. Le tai chi sert de récup active et entraîne ton souffle et ton calme (ton point faible à l\'entretien). Tu avances quand tu veux.</div></div>';
+  s+='<div class="aae-hint" style="margin-top:8px">Méthode Sifu David : <b>1 nouvelle leçon par semaine max</b>, répète chaque leçon 3× avant la suivante. Pratique courte quotidienne (Chi Kung) plutôt qu\'1h une fois. Filme-toi 1×/semaine. Le tai chi entraîne ton souffle et ton calme (ton point faible à l\'entretien). Surtout : que ça reste un plaisir.</div></div>';
   return s;
 }
 function vAaeProgress(){
