@@ -808,11 +808,15 @@ function load(){
      if(!_A.phys)_A.phys={course:null,pompes:null,gainage:null};
      if(!_A.mental)_A.mental={medit:null,bolt:null,froid:null};
      if(!_A.mental.boltLog){_A.mental.boltLog=[];if(_A.mental.bolt!=null)_A.mental.boltLog.push(_A.mental.bolt);}
-     if(!_A.psycho)_A.psycho={"Logique":[],"Numérique":[],"Verbal":[],"Spatial":[],"Attention":[]};
-     if(!_A.entretien)_A.entretien={parcours:[],motivation:[],sic:[],defense:[],oral:[]};
+     if(!_A.psycho)_A.psycho={};
+     ["Raisonnement","Spatial","Arithmétique","Français","Attention","Codage"].forEach(function(k){if(!_A.psycho[k])_A.psycho[k]=[];}); // 6 familles TAMI-C
+     if(!_A.entretien)_A.entretien={};
+     ["parcours","motivation","sic","defense","oral"].forEach(function(k){if(!_A.entretien[k])_A.entretien[k]=[];});
      if(!("psychoBase" in _A))_A.psychoBase=null;
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
+     if(!("reserveDay" in _A))_A.reserveDay=null; // "je suis de réserve aujourd'hui" : jour allégé, ne décale rien
+     if(!_A.taichi)_A.taichi={idx:0};            // pointeur formation tai chi (à son rythme)
      if(!("cursus" in _A))_A.cursus=0;
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
      if(!("stepsDay" in _A))_A.stepsDay=null;
@@ -3177,8 +3181,43 @@ function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,
 function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4),mo=+t.slice(5,7);var dim=daysInMonth(y,mo);var ym=t.slice(0,7);var mon=isoPlus(t,-weekdayMon(t));var DOW="LMMJVSD";var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});if(!dailies.length)return {html:'<div class="empty">Aucune habitude rattachée à l\'Armée de l\'Air. Dans l\'app, touche ⚙ sur une journalière et relie-la à l\'objectif ARMEE DE L\'AIR.</div>',globalPc:0,weekPc:0};var groups={};dailies.forEach(function(q){var m=habMoments(q)[0]||"libre";(groups[m]=groups[m]||[]).push(q);});var totalCols=dim+2;var s='<div class="sk-wrap"><table class="sk-grid"><thead><tr><th class="sk-h">Habitude</th>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);s+='<th class="sk-d'+(wd>=5?' we':'')+(ds===t?' is-today':'')+'"><span class="sk-dow">'+DOW.charAt(wd)+'</span>'+d+'</th>';}s+='<th class="sk-p">Ce mois</th></tr></thead><tbody>';var gT=0,gP=0,wT=0,wP=0;MO.forEach(function(mm){var list=groups[mm[0]];if(!list||!list.length)return;s+='<tr class="sk-sec"><td colspan="'+totalCols+'">'+mm[1]+'</td></tr>';list.forEach(function(q){var done=0,poss=0;var row='<tr><td class="sk-h">'+esc(q.title)+'</td>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);var we=wd>=5;var inWeek=(ds>=mon&&ds<=t);var cls;if(ds>t){cls="fu";}else if(!dueOn(q,ds)){cls="off";}else if(ds===t){if(q.done){cls="ok";poss++;done++;if(inWeek){wP++;wT++;}}else{cls="td";}}else{var h=map[ds];var tracked=h&&h.dueIds&&h.dueIds.indexOf(q.id)>=0;if(!tracked){cls="nd";}else{poss++;var ok=h.doneIds&&h.doneIds.indexOf(q.id)>=0;if(ok)done++;cls=ok?"ok":"no";if(inWeek){wP++;if(ok)wT++;}}}row+='<td class="sk-c '+cls+(we?' we':'')+(ds===t?' is-today':'')+'"><i></i></td>';}var pc=poss?Math.round(done/poss*100):0;gT+=done;gP+=poss;row+='<td class="sk-p"><b>'+pc+'%</b><span class="sk-bar"><i style="width:'+pc+'%"></i></span></td></tr>';s+=row;});});s+='</tbody></table></div>';return {html:s,globalPc:gP?Math.round(gT/gP*100):0,weekPc:wP?Math.round(wT/wP*100):0};}
 function aaeWeekTable(ids){var t=today();var mon=isoPlus(t,-weekdayMon(t));var map=habHistMap();var names=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});var tasks=S.quests.filter(function(q){return !q.daily&&!q.done&&!q.pub&&isAaeQuest(q,ids);});var s='<table class="wk-t"><tbody>';for(var i=0;i<7;i++){var ds=isoPlus(mon,i);var isToday=(ds===t);var isPast=(ds<t);var dayItems=[];dailies.forEach(function(q){if(dueOn(q,ds)){var done=(ds<t)?(function(){var h=map[ds];return !!(h&&h.doneIds&&h.doneIds.indexOf(q.id)>=0);})():(ds===t?!!q.done:false);dayItems.push({mo:habMoments(q)[0]||"libre",cls:"hab"+(done?" done":""),ic:"🔁 ",title:q.title});}});tasks.forEach(function(q){if(q.due===ds){dayItems.push({mo:(habMoments(q)[0]||"libre"),cls:"tsk",ic:"",title:q.title});}});var cell="";MO.forEach(function(mm){var its=dayItems.filter(function(it){return it.mo===mm[0];});if(!its.length)return;cell+='<div class="wk-mo"><span class="wk-mol">'+mm[1]+'</span><span class="wk-chips">'+its.map(function(it){return '<span class="wk-chip '+it.cls+'">'+it.ic+esc(it.title)+'</span>';}).join("")+'</span></div>';});if(!cell)cell='<span class="wk-empty">—</span>';var dn=+ds.slice(8,10);s+='<tr class="'+(isToday?"wk-today":(isPast?"wk-past":""))+'"><td class="wk-day">'+names[i]+'<span class="wk-num">'+dn+'</span></td><td class="wk-items">'+cell+'</td></tr>';}s+='</tbody></table>';var undated=tasks.filter(function(q){return !q.due;});if(undated.length){s+='<div class="spl" style="margin-top:14px">Sans échéance</div>';undated.forEach(function(q){s+='<div class="q cpt"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div></div>';});}return s;}
 /* ---- Progression EAE : 4 blocs (physique, mental, psychotechnique, entretien) + cycle ---- */
-var AAE_PSY=[["Logique","Logique"],["Numérique","Numérique"],["Verbal","Verbal"],["Spatial","Spatial"],["Attention","Attention"]];
-var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (pourquoi l'armée)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Posture & oral (stress)"]];
+var AAE_PSY=[["Raisonnement","Raisonnement"],["Spatial","Spatial"],["Arithmétique","Arithmétique"],["Français","Français"],["Attention","Attention"],["Codage","Vitesse de codage"]]; // 6 familles TAMI-C
+var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (servir, pas réussir pour soi)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Présence sous observation (ton point faible)"]];
+var AAE_ANG=["Temps verbaux","Modaux","Prépositions","Conditionnels","Accords sujet-verbe","Articles & quantificateurs","Pronoms & adjectifs","Vocabulaire pro & connecteurs"]; // briques Chambéry (Exam Arena)
+// Grille mentale hebdo A/B/C/D/E : 1h30/jour, familles réparties pour ne pas tout empiler. Index = jour de la semaine (Lundi=0)
+var AAE_MENTAL_WEEK=[
+  {code:"A",psy:["Raisonnement","Spatial"],ang:true},
+  {code:"B",psy:["Arithmétique","Français"],ang:true},
+  {code:"C",psy:["Attention","Codage"],ang:true},
+  {code:"D",psy:"faible",ent:true},          // "faible" = la famille dont la moyenne est la plus basse
+  {code:"E",exam:true},                        // examen blanc + débrief
+  {code:"S",ang:true,light:true},              // samedi : anglais léger
+  {code:"R",repos:true}                         // dimanche : connaissance de soi / repos mental
+];
+// Formation tai chi, Niveau 1 (27 leçons) : [libellé, durée]. Suivi à son rythme, pointeur S.aae.taichi.idx
+var TAICHI_L1=[
+  ["L1.1 · Loosening exercises & Chi Kung","19 min"],["L1.2 · Tai Chi Commencing & 'Repulse Monkey'","20 min"],
+  ["L2.1 · Loosening 1-4, Chi Kung 1-5","17 min"],["L2.2 · 5 Element stepping, 8 form 'Bow Steps'","28 min"],
+  ["L3.1 · Loosening & 8 Chi Kung 6-8","18 min"],["L3.2 · 5 Element steps, Brush Knee & Push","18 min"],
+  ["L4.1 · Loosening, Chi Kung (souffle)","16 min"],["L4.2 · Stepping forward, 3 premiers mouvements","32 min"],
+  ["L5.1 · 8 Chi Kung, 5 Element en arrière","27 min"],["L5.2 · 8 Posture : 'Part Wild Horse's Mane'","25 min"],
+  ["L6.1 · 5 Element gauche & droite","35 min"],["L6.2 · 8 Posture : 'Wave Hands Like Clouds'","23 min"],
+  ["L7.1 · 5 Element stepping complet","22 min"],["L7.2 · Wave Hands complet, transition","28 min"],
+  ["L8.1 · Arm Circles, Hap Ga Chi Kung","24 min"],["L8.2 · 8 Posture 1re moitié, 'Golden Rooster'","27 min"],
+  ["L9.1 · 5 Element complet (follow along)","20 min"],["L9.2 · Kicking with Heels, 6 postures","32 min"],
+  ["L10.1 · Hap Ga en musique, 5 Element au métronome","22 min"],["L10.2 · Ward Off, Rollback, Press & Push","41 min"],
+  ["L11.1 · 5 Swings, 8 Chi Kung, stepping","19 min"],["L11.2 · 'Grasp Bird's Tail' des deux côtés","28 min"],
+  ["L12.1 · Stepping & révision 3× chaque mouvement","29 min"],["L12.2 · Cross Hands, Closing, 8 Form complète","23 min"],
+  ["L13.1 · 8 Form complète","23 min"],["L13.2 · Pratiquer la 8 Form sur la musique","15 min"],
+  ["Conclusion Niveau 1 & passage au Niveau 2","4 min"]
+];
+function aaeIsReserve(){return S.aae&&S.aae.reserveDay===today();}
+function aaeMentalChrono(){return today()>="2027-01-01";} // Phase 1 (sans chrono) jusqu'à fin 2026, puis Phase 2 (chrono + examens)
+function aaeWeakFamily(){ // famille psycho dont la moyenne des 3 dernières notes est la plus basse
+  var store=S.aae.psycho||{},best=null;
+  AAE_PSY.forEach(function(d){var s=aaeAvg3(store[d[0]]);if(s!=null&&(best==null||s<best.s))best={k:d[0],lab:d[1],s:s};});
+  return best;
+}
 function aaeAvg3(arr){if(!arr||!arr.length)return null;var n=arr.slice(-3);return n.reduce(function(a,b){return a+b;},0)/n.length;}
 function aaeBar(pc,col){return '<div class="aae-track"><i style="width:'+Math.max(5,Math.min(100,pc))+'%;background:'+col+'"></i></div>';}
 function aaeVal(label,cur,target,unit,path,col){
@@ -3213,6 +3252,72 @@ function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
       +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" min="0" max="20" data-aaenote="'+storeKey+'|'+x.k+'" placeholder="note /20"></div></div>';
   }).join("");
   return '<div class="spanel aae-card">'+head+rows+'</div>';
+}
+function aaeDayNum(){return Math.round(Date.parse(today()+"T00:00:00Z")/86400000);}
+function aaeTaiChiFiche(){
+  var idx=(S.aae.taichi&&S.aae.taichi.idx)||0,L=TAICHI_L1;
+  if(idx>=L.length)return {dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],["Niveau 1 terminé 🎋 Passe au Niveau 2 (voir la carte Tai chi)","",""],["Pratique libre : forme des 8 postures + respiration","~20 min","🎋 Formation Tai Chi"]]};
+  var les=L[idx];
+  return {dur:les[1],taichi:true,steps:[
+    ["Tai chi · récupération active (à ton rythme)","",""],
+    ["Niveau 1 · "+les[0],les[1],"🎋 Formation Tai Chi"],
+    ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""],
+    ["Leçon faite ? valide-la dans la carte Tai chi (plus bas) pour passer à la suivante.","",""]
+  ]};
+}
+function aaeMentalDay(){ // menu mental du jour selon la grille A/B/C/D/E + phase + réserve/repos
+  var wd=weekdayMon(today());
+  return {menu:AAE_MENTAL_WEEK[wd],chrono:aaeMentalChrono(),reserve:aaeIsReserve()||aaeRestWd()===wd,wd:wd};
+}
+function aaeMentalDayFiche(){
+  var d=aaeMentalDay(),m=d.menu,chrono=d.chrono;
+  var stage=chrono?"exercices AVEC chrono":"cours puis exercices SANS chrono";
+  var phaseTag=chrono?"Phase 2 · chrono + examens":"Phase 1 · comprendre (sans chrono)";
+  if(d.reserve)return {dur:"~20 min",steps:[
+    ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],
+    ["1 brique courte : révise tes cartes psycho de la semaine + vocab anglais. Pas de nouvel exo, pas de chrono, pas d'examen.","20 min","🎋 jour allégé",1]]};
+  var head=["Mental du jour · Jour "+m.code+" — "+phaseTag,"",""];
+  if(m.repos)return {dur:"repos mental",steps:[head,
+    ["Connaissance de soi : relis ton profil de personnalité, note dans ton journal une situation où tu as bien géré le regard des autres.","","🎤 entretien",1],
+    ["Ou repos mental complet si la semaine a été chargée.","",""]]};
+  if(m.exam){
+    var which=(aaeDayNum()%2===0)?"psychotechnique (une famille au hasard)":"anglais (un test de Chambéry)";
+    return {dur:"~1h30",steps:[head,
+      ["Examen blanc : "+which+", en conditions (chrono, sans pause)","45 min","🎯 Exam Arena · Examens",1],
+      ["Débrief : corrige, repère tes 2 erreurs les plus fréquentes","20 min","",1],
+      ["Note ta performance /20 dans la progression ci-dessous","","",1]]};
+  }
+  var steps=[head];
+  if(m.psy==="faible"){var w=aaeWeakFamily();
+    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+stage,"45 min","🎯 Exam Arena",1]);
+  } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
+    steps.push(["Psycho · "+lab+" — "+stage,"~22 min","🎯 Exam Arena",1]);});}
+  if(m.ang){var br=AAE_ANG[aaeDayNum()%AAE_ANG.length];
+    steps.push(["Anglais Chambéry · "+br+" — "+(chrono?"exos avec chrono":"cours + exos sans chrono"),m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
+  if(m.ent)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
+  steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
+  return {dur:m.light?"~45 min":"~1h30",steps:steps};
+}
+function aaeMentalDayCard(){
+  var f=aaeMentalDayFiche();
+  var rows=f.steps.map(function(st,idx){
+    if(idx===0)return '<div style="font-weight:700;color:var(--txt);margin-bottom:10px">'+esc(st[0])+'</div>';
+    var can=(st[1]!==""||st[2]!==""||st[3]),sid='mental#'+idx,on=aaeStepDone(sid);
+    var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
+    return '<div class="aae-step'+(on?' sdone':'')+'" style="margin:4px 0">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+  }).join("");
+  var hint=aaeMentalChrono()?'':'<div class="aae-hint" style="margin-top:10px">Méthode : cours → exercices sans chrono (comprendre) → avec chrono (vitesse) → examens complets. On ne passe au chrono que quand le sans-chrono est solide.</div>';
+  return '<div class="cksec">🧠 Mental du jour · la grille</div><div class="spanel aae-card">'+rows+hint+'</div>';
+}
+function aaeTaiChiCard(){
+  var idx=(S.aae.taichi&&S.aae.taichi.idx)||0,L=TAICHI_L1,n=L.length,cur=idx<n?L[idx]:null;
+  var pc=Math.round(Math.min(idx,n)/n*100);
+  var s='<style>.aae-tcnow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:10px 0 4px}.aae-tclab{font-size:10.5px;color:var(--dim2);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.aae-tctitle{font-weight:600;color:var(--txt);font-size:13px}.aae-tcdur{margin-left:auto;color:var(--dim2);font-size:11.5px}.aae-tcbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.aae-tcbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid #5a9b8c;background:color-mix(in srgb,#5a9b8c 18%,var(--panel));color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}.aae-tcbtn.ghost{background:var(--panel);border-color:var(--brd);color:var(--dim)}</style>';
+  s+='<div class="cksec">🎋 Tai chi · à ton rythme</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Niveau 1</span><span class="aae-moy"><b>'+Math.min(idx,n)+'</b> / '+n+' leçons</span></div>'+aaeBar(Math.max(4,pc),"#5a9b8c");
+  if(cur)s+='<div class="aae-tcnow"><span class="aae-tclab">Leçon en cours</span><span class="aae-tctitle">'+esc(cur[0])+'</span><span class="aae-tcdur">'+esc(cur[1])+'</span></div><div class="aae-tcbtns">'+(idx>0?'<button class="aae-tcbtn ghost" data-aaitaichi="-">◀ précédente</button>':'')+'<button class="aae-tcbtn" data-aaitaichi="+">✓ Leçon faite, suivante</button></div>';
+  else s+='<div class="aae-tcnow"><span class="aae-tctitle">Niveau 1 terminé 🎋 Passe au Niveau 2 dans ta formation.</span></div><div class="aae-tcbtns"><button class="aae-tcbtn ghost" data-aaitaichi="-">◀ revenir</button></div>';
+  s+='<div class="aae-hint" style="margin-top:8px">Pas d\'échéance. Le tai chi sert de récup active et entraîne ton souffle et ton calme (ton point faible à l\'entretien). Tu avances quand tu veux.</div></div>';
+  return s;
 }
 function vAaeProgress(){
   var A=S.aae,ph=A.phys,me=A.mental;
@@ -3284,15 +3389,28 @@ function aaeCursusBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-var AAE_SPORT=[
-  {dur:"~21 min",steps:[["Kettlebell (force) · jour léger","",""],["Échauffement : foam rolling, resets, arm swings + mobilité (hanches/épaules/chevilles), 2×5 soulevés de terre légers","6 min","📹 Forge 25 Foam Rolling · 26 Resets · 30 Joint Mobility · 17 Deadlift"],["Séance : swings à 2 mains, 10 balancements/min, 10 à 12 séries. Dos droit, la force vient des hanches, pas des bras","12 min","📹 Forge 18 · Two-Arm Swing"],["Retour au calme + gainage : planche 2×, gainage latéral 2×/côté, fast & loose, étirements légers","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"~30 min",steps:[["Course VMA (intervalles)","",""],["Échauffement : 2 min marche rapide, 5 min footing lent, étirements dynamiques (montées de genoux, talons-fesses), mobilité chevilles, 2 accélérations 20 m","10 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],["Séance : intervalles 30/30 — 30 s rapide (souffle court mais tenable) / 30 s footing lent ou marche. 8 répétitions au début, monte vers 12","15 min",""],["Retour au calme + gainage : 3 min footing très lent, planche + gainage latéral, fast & loose, étirements mollets/psoas/cuisses","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"~16 min",steps:[["Kettlebell léger + mobilité","",""],["Échauffement : foam rolling, resets, mobilité Flexible Steel (cou → chevilles)","5 min","📹 Forge 25 Foam Rolling · 26 Resets · 30 Joint Mobility"],["Séance : swings légers, 8 séries de 10 (jour à 50 %, tu restes fraîche), technique propre","8 min","📹 Forge 18 · Two-Arm Swing"],["Retour au calme : fast & loose + étirements Flexible Steel","3 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"~30 min",steps:[["Course endurance","",""],["Échauffement : 2 min marche, 3 min footing progressif, étirements dynamiques, mobilité chevilles","5 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],["Séance : course continue FACILE, allure conversation (tu dois pouvoir parler sans t'essouffler). Trop dur ? alterne 3 min course / 1 min marche","20 min",""],["Retour au calme + gainage : 3 min marche, planche + gainage latéral, fast & loose, étirements","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"~26 min",steps:[["Kettlebell (force) · jour lourd + développé","",""],["Échauffement : foam rolling, resets, arm swings, mobilité, 2×5 soulevés de terre","6 min","📹 Forge 25 Foam Rolling · 26 Resets · 30 Joint Mobility · 17 Deadlift"],["Séance : swings 10/min, autant de séries que la puissance tient (~14-16). Puis épaulé + développé militaire 3-5 reps/bras, poids poussé ~8 fois max, 3 séries","15 min","📹 Forge 21 Clean · 22 Military Press"],["Retour au calme + gainage : planche + gainage latéral, fast & loose, étirements","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"~25 min",steps:[["Course navette (test Luc-Léger)","",""],["Échauffement : 5 min footing, étirements dynamiques, gammes, mobilité chevilles, 2-3 accélérations progressives","10 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],["Séance : navette entre 2 repères de 20 m au rythme qui accélère, va jusqu'à ne plus suivre le rythme. Note ton palier dans la progression physique","10 min",""],["Retour au calme + gainage : marche, fast & loose, étirements complets","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]},
-  {dur:"repos actif",steps:[["Repos actif : marche tranquille, Tai Chi, foam rolling, mobilité, méditation plus longue. On récupère, pas de séance","","📹 Forge 25 Foam Rolling · 30 Joint Mobility"]]}
-];
+// Rotation sport : 4 couleurs de journée. Séances intenses cappées à ~30 min, exercices The Forge ciblant Luc Léger / pompes / Killy. Index = jour de la semaine (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
+var AAE_SP_FHAUT={dur:"~30 min",steps:[["Force haut · pompes (test Pompes)","",""],
+  ["Échauffement : resets, arm swings, mobilité épaules/poignets, 10 pompes hindoues lentes","5 min","📹 Forge 26 Resets · 02 Arm Swings · 05 Hindu Pushups"],
+  ["Pompes hindoues : 3 séries à qualité max, repos 1 min","6 min","📹 Forge 05 · Hindu Pushups"],
+  ["Progression pompes strictes (le test) : négatives lentes ou sur genoux → strictes, 4 séries, viser +1 rep/semaine","7 min","📹 Forge 33 · One-Arm Pushups (progression)"],
+  ["Épaulé + développé militaire kettlebell/haltère : 3 séries de 5/bras, charge poussée ~8 fois max","7 min","📹 Forge 21 Clean · 22 Military Press"],
+  ["Gainage : planche + gainage latéral, +10-15 s/semaine, objectif 168 s","5 min",""]]};
+var AAE_SP_ENDUR={dur:"~30 min",steps:[["Endurance · Luc Léger (test course navette)","",""],
+  ["Échauffement dynamique : montées de genoux, talons-fesses, mobilité chevilles, 2 accélérations","6 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],
+  ["100-Up (technique de course), juste avant de courir","2 min","📹 Forge 36 · 100-Up Running"],
+  ["Intervalles 30/30 : 30 s rapide / 30 s footing lent. 8 répétitions au début, monte vers 12 (rythme type paliers Luc-Léger)","17 min",""],
+  ["Retour au calme : footing très lent + étirements mollets/psoas/cuisses","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]};
+var AAE_SP_FBAS={dur:"~30 min",steps:[["Force bas · Killy (test squat isométrique)","",""],
+  ["Échauffement : mobilité hanches/chevilles, 10 squats hindous","5 min","📹 Forge 30 Joint Mobility · 06 Hindu Squats"],
+  ["Squats hindous + progression squat 1 jambe (pistol) assisté à une chaise, 4 séries","8 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
+  ["Swings kettlebell 10/min + soulevé de terre, 8 à 10 séries. Force des hanches, dos droit","10 min","📹 Forge 18 Two-Arm Swing · 17 Deadlift"],
+  ["Killy (squat isométrique dos au mur, cuisses à l'horizontale) : tenues, +10-15 s/semaine","4 min",""],
+  ["Gainage : planche + gainage latéral","3 min",""]]};
+var AAE_SP_TAICHI={dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],
+  ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
+  ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
+var AAE_SPORT=[AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_FBAS,AAE_SP_TAICHI,AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_TAICHI];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine : repos sur le jour choisi (sinon dimanche par défaut), les 6 séances glissent sur les autres jours
   var restWd=aaeRestWd();
@@ -3323,17 +3441,12 @@ function aaeFiche(title){
   if(/recharge matinale|morning recharge/.test(t))return {dur:"~18 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Arm swings (qigong)","2 min","📹 Forge 02 · Arm Swings"],["Mobilité articulaire (prévention blessure) : cercles lents cou, épaules, poignets, tronc, hanches, genoux, CHEVILLES — 10 par articulation, sans forcer","3 min","📹 Forge 30 · Flexible Steel Joint Mobility"],["Hindu pushups 10 → 28","2 min","📹 Forge 05 · Hindu Pushups"],["Hindu squats 10 → 56","2 min","📹 Forge 06 · Hindu Squats"],["Thoracic bridges 10 → 28","2 min","📹 Forge 07 · Thoracic Bridges"],["Méditation posture (1 min → 20 min plus tard)","1 min","📹 Forge 50 · Meditation"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],["Douche froide (résilience) : finir la douche en froid, 15 s → +15 s/sem → 2 min","variable","📹 Forge 13 · Cold Exposure"]]};
   if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~16 min",steps:[["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
   if(/sport du jour|sport \(pr/.test(t)){
-    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SPORT[1];
-    if(f.dur==="repos actif")return f;
-    var steps=f.steps.slice();
-    if(/course/i.test(steps[0][0]||"")){   // jour de course : le 100-Up (technique) juste avant de courir
-      var si=2;for(var i=0;i<steps.length;i++){if(/^Séance/.test(steps[i][0])){si=i;break;}}
-      steps.splice(si,0,["100-Up (technique de course) : variante Mineure, juste avant de courir","2 min","📹 Forge 36 · 100-Up Running"]);
-    }
-    steps.splice(steps.length-1,0,["Gainage isométrique : tenues planche + chaise, +10-15 s/sem, objectif 168 s","5 min",""]);   // le gainage avant le retour au calme
-    return {dur:f.dur,steps:steps};
+    if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
+    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_ENDUR;
+    if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
+    return f;                                                    // séance intense (30 min, 100-Up et gainage déjà inclus)
   }
-  if(/psychotechni|exam arena/.test(t))return {dur:"~25 min",steps:[["Session au chrono, famille du jour (Logique · Numérique · Verbal · Spatial · Attention)","20 min",""],["Bilan, note /20 dans la progression","5 min",""]]};
+  if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
     var cc=aaeCurrentCourse();
     if(!cc)return {dur:"—",steps:[["Cursus terminé : 24/24 🎉","",""],["Révision générale de tes sets Quizlet","",""]]};
@@ -3381,6 +3494,10 @@ function aaeTodayCard(ids){
   var restWd=aaeRestWd();
   if(restWd==null)inner+='<div class="aae-restbar"><button class="aae-restbtn" data-aaerest="1">🛌 Prendre mon jour de repos aujourd\'hui</button><span class="aae-resthint">1 fois/semaine, la séance du jour se décale</span></div>';
   else inner+='<div class="aae-restbar"><span class="aae-restinfo">🛌 Repos '+(restWd===weekdayMon(today())?"aujourd\'hui":"le "+AAE_DAYS[restWd].toLowerCase())+' · pris pour cette semaine</span></div>';
+  var resv=aaeIsReserve();
+  inner+='<div class="aae-restbar">'+(resv
+    ?'<span class="aae-restinfo">🎖️ Réserve aujourd\'hui · jour allégé : tai chi + 1 brique mentale, rien n\'est décalé</span><button class="aae-restbtn ghost" data-aaereserve="off">Annuler</button>'
+    :'<button class="aae-restbtn" data-aaereserve="on">🎖️ Je suis de réserve aujourd\'hui</button><span class="aae-resthint">Allège la journée sans rien arrêter ni décaler</span>')+'</div>';
   MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
@@ -3581,6 +3698,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-restbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}'+
 '.aae-restbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel-2);color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}'+
 '.aae-restbtn:hover{border-color:var(--gold)}'+
+'.aae-restbtn.ghost{background:var(--panel);color:var(--dim);font-weight:500}'+
 '.aae-resthint{font-size:11px;color:var(--dim2)}'+
 '.aae-restinfo{font-size:12.5px;color:var(--dim);font-weight:600}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
@@ -3600,7 +3718,9 @@ s+=aaeTimeline();
 s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
 s+=aaeWeekProgram();
 s+=aaeCursusBlock();
+s+=aaeMentalDayCard();
 s+=vAaeProgress();
+s+=aaeTaiChiCard();
 s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
 s+='</div>';return s;}
 function vEvolution(){
@@ -3658,7 +3778,7 @@ function bind(){
     var p=el.getAttribute("data-aaenote").split("|");var v=parseFloat(el.value);if(isNaN(v))return;v=Math.max(0,Math.min(20,v));
     var store=S.aae[p[0]];(store[p[1]]=store[p[1]]||[]).push(v);
     var bk=p[0]==="psycho"?"psychoBase":"entretienBase";
-    if(S.aae[bk]==null){var defs=p[0]==="psycho"?["Logique","Numérique","Verbal","Spatial","Attention"]:["parcours","motivation","sic","defense","oral"];
+    if(S.aae[bk]==null){var defs=p[0]==="psycho"?["Raisonnement","Spatial","Arithmétique","Français","Attention","Codage"]:["parcours","motivation","sic","defense","oral"];
       var ss=[];defs.forEach(function(k){var a=store[k];if(a&&a.length){var n=a.slice(-3);ss.push(n.reduce(function(x,y){return x+y;},0)/n.length);}});
       if(ss.length)S.aae[bk]=ss.reduce(function(x,y){return x+y;},0)/ss.length;}
     save();render();};});
@@ -3669,6 +3789,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaerest]"),function(el){el.onclick=function(){var A=S.aae;if(A.restDay&&A.restDay.week===aaeWkMonday())return;sysConfirm("Prendre ton jour de repos aujourd'hui ?",["Ta séance du jour devient repos, et le reste de la semaine glisse d'un jour.","Tu ne peux le faire qu'une fois par semaine."],function(){A.restDay={week:aaeWkMonday(),day:today()};save();render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaereserve]"),function(el){el.onclick=function(){S.aae.reserveDay=(el.getAttribute("data-aaereserve")==="on")?today():null;save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaitaichi]"),function(el){el.onclick=function(){var A=S.aae;A.taichi=A.taichi||{idx:0};if(el.getAttribute("data-aaitaichi")==="+")A.taichi.idx=Math.min(TAICHI_L1.length,(A.taichi.idx||0)+1);else A.taichi.idx=Math.max(0,(A.taichi.idx||0)-1);save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
