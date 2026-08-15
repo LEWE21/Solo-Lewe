@@ -3340,11 +3340,11 @@ function aaeFiche(title){
     var typ=cc.mode==="a"?"~1 semaine":"~3-4 jours";
     return {dur:"30 min",steps:[
       ["Cours en cours : "+(cc.num<10?"0"+cc.num:cc.num)+" · "+cc.title+" ("+typ+")","",""],
-      ["Lire le cours en entier, surligner l'essentiel","",""],
-      ["Créer / compléter ton set Quizlet","",""],
+      ["Lire le cours en entier, surligner l'essentiel","","",1],
+      ["Créer / compléter ton set Quizlet","","",1],
       ["Réviser 15 min (mode Apprendre, répétition espacée)","30 min",""],
-      ["Te faire interroger par Claude : demande des questions difficiles, réponds sans regarder tes cartes, fais-toi corriger","",""],
-      ["Fin du cours : mode Test, puis coche-le dans le cursus","",""]
+      ["Te faire interroger par Claude : demande des questions difficiles, réponds sans regarder tes cartes, fais-toi corriger","","",1],
+      ["Fin du cours : mode Test, puis coche-le dans le cursus","","",1]
     ]};
   }
   if(/gainage/.test(t))return {dur:"~5 min",steps:[["Tenues planche + chaise, réparties (grease the groove)","5 min",""],["+10 à 15 s/sem, objectif 168 s","",""]]};
@@ -3392,7 +3392,7 @@ function aaeTodayCard(ids){
       var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
       if(f){
         var steps=f.steps.map(function(st,idx){
-          var can=(st[1]!==""||st[2]!==""),sid=it.key+'#'+idx,on=aaeStepDone(sid);
+          var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid);
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
           return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
