@@ -819,7 +819,8 @@ function load(){
      if(!_A.stepsSet)_A.stepsSet=[];
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
      if(!_A.wkStepsSet)_A.wkStepsSet=[];
-     if(!("restDay" in _A))_A.restDay=null;}
+     if(!("restDay" in _A))_A.restDay=null;
+     if(!_A.cursusLinks)_A.cursusLinks={};}
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3264,17 +3265,22 @@ var AAE_COURS=[
   {b:3,bl:"Commander",list:[[14,"Commandement de l'officier du XXIe","a"],[15,"Leadership (1)","a"],[16,"Leadership (2)","a"],[17,"Leadership (3)","a"],[18,"Interarmisation","a"],[19,"Politique de défense française","a"]]},
   {b:4,bl:"Conduire une mission + Officier",list:[[20,"Instruction juridique OPEX","l"],[21,"Gestion des ressources humaines","l"],[22,"Argumentation","a"],[23,"Préparation et conduite de mission","l"],[24,"Orthographe et expression","a"]]}
 ];
+function aaeCurrentCourse(){var done=S.aae.cursusDone||[];for(var b=0;b<AAE_COURS.length;b++){var l=AAE_COURS[b].list;for(var i=0;i<l.length;i++){if(done.indexOf(l[i][0])<0)return {num:l[i][0],title:l[i][1],mode:l[i][2]};}}return null;}
 function aaeCursusBlock(){
-  var done=S.aae.cursusDone||[],n=done.length;
+  var done=S.aae.cursusDone||[],n=done.length,links=S.aae.cursusLinks||{},cur=aaeCurrentCourse();
   var s='<div class="cksec">📚 Cursus militaire</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Cours appris</span><span class="aae-moy"><b>'+n+'</b> / 24</span></div>';
   AAE_COURS.forEach(function(bk){
     var bd=bk.list.filter(function(c){return done.indexOf(c[0])>=0;}).length;
     s+='<details class="aae-cblock"'+(bk.b===1?' open':'')+'><summary><span class="aae-cbname">Bloc '+bk.b+' · '+bk.bl+'</span><span class="aae-cbcount">'+bd+'/'+bk.list.length+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">';
-    bk.list.forEach(function(c){var on=done.indexOf(c[0])>=0,md=c[2]==='a'?'<span class="aae-cmode ap">🧠 Apprendre</span>':'<span class="aae-cmode li">📖 Lire</span>';
-      s+='<div class="aae-crow'+(on?' on':'')+'" data-aaecourse="'+c[0]+'"><span class="aae-cbox">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(c[0]<10?'0'+c[0]:c[0])+'</span><span class="aae-ctitle">'+esc(c[1])+'</span>'+md+'</div>';});
+    bk.list.forEach(function(c){
+      var num=c[0],on=done.indexOf(num)>=0,isCur=cur&&cur.num===num,typ=c[2]==='a'?'~1 sem':'~3-4 j',lk=links[num]||'';
+      var body='<div class="aae-cdem">Démarche : 1) lire le cours · 2) créer ton set Quizlet · 3) réviser 15 min/jour · 4) te faire interroger par Claude (questions difficiles, tu réponds sans regarder) · 5) cocher.</div>'
+        +'<div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-aaequizlet="'+num+'" placeholder="colle le lien de ton set Quizlet" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
+      s+='<details class="aae-crow2'+(on?' on':'')+(isCur?' cur':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-aaecourse="'+num+'">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(num<10?'0'+num:num)+'</span><span class="aae-ctitle">'+esc(c[1])+'</span>'+(isCur?'<span class="aae-curtag">en cours</span>':'')+'<span class="aae-cmode">'+typ+'</span><span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
+    });
     s+='</div></details>';
   });
-  s+='<div class="aae-hint" style="margin-top:8px">Coche un cours quand tu l\'as appris (compris et capable d\'en parler).</div></div>';
+  s+='<div class="aae-hint" style="margin-top:8px">Ouvre un cours pour sa démarche et le lien de ton set Quizlet. Coche-le quand tu le connais.</div></div>';
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
@@ -3328,7 +3334,19 @@ function aaeFiche(title){
     return {dur:f.dur,steps:steps};
   }
   if(/psychotechni|exam arena/.test(t))return {dur:"~25 min",steps:[["Session au chrono, famille du jour (Logique · Numérique · Verbal · Spatial · Attention)","20 min",""],["Bilan, note /20 dans la progression","5 min",""]]};
-  if(/cursus|étudier|reviser|réviser/.test(t))return {dur:"30 min",steps:[["Bloc 1 : Incorporation + Combattant (cours 01-07)","",""],["Le cours du jour","30 min","📄 cursus-osc-eae"]]};
+  if(/cursus|étudier|reviser|réviser/.test(t)){
+    var cc=aaeCurrentCourse();
+    if(!cc)return {dur:"—",steps:[["Cursus terminé : 24/24 🎉","",""],["Révision générale de tes sets Quizlet","",""]]};
+    var typ=cc.mode==="a"?"~1 semaine":"~3-4 jours";
+    return {dur:"30 min",steps:[
+      ["Cours en cours : "+(cc.num<10?"0"+cc.num:cc.num)+" · "+cc.title+" ("+typ+")","",""],
+      ["Lire le cours en entier, surligner l'essentiel","",""],
+      ["Créer / compléter ton set Quizlet","",""],
+      ["Réviser 15 min (mode Apprendre, répétition espacée)","30 min",""],
+      ["Te faire interroger par Claude : demande des questions difficiles, réponds sans regarder tes cartes, fais-toi corriger","",""],
+      ["Fin du cours : mode Test, puis coche-le dans le cursus","",""]
+    ]};
+  }
   if(/gainage/.test(t))return {dur:"~5 min",steps:[["Tenues planche + chaise, réparties (grease the groove)","5 min",""],["+10 à 15 s/sem, objectif 168 s","",""]]};
   if(/marche/.test(t))return {dur:"60 min",steps:[["~7-8000 pas dehors, cadence ~100 pas/min","60 min",""]]};
   if(/douche froide|froid/.test(t))return {dur:"variable",steps:[["Finir la douche en froid : 15 s → +15 s/sem → 2 min","","📹 Forge 13 · Cold Exposure"],["Jamais juste après une séance de force","",""]]};
@@ -3512,9 +3530,20 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-crow.on .aae-ctitle{color:var(--dim);text-decoration:line-through}'+
 '.aae-wp-h{font-weight:700;color:var(--txt);font-size:12.5px;margin:10px 0 4px}.aae-wp-h:first-child{margin-top:2px}'+
 '.aae-wp-today>summary .aae-cbname{color:var(--gold)}'+
-'.aae-cmode{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:99px;white-space:nowrap;flex:none}'+
-'.aae-cmode.ap{background:color-mix(in srgb,#8a6fc0 18%,var(--panel));color:#6f52a6}'+
-'.aae-cmode.li{background:var(--panel-2);color:var(--dim)}'+
+'.aae-cmode{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;flex:none;background:var(--panel-2);color:var(--dim2)}'+
+'.aae-crow2{border-radius:8px}'+
+'.aae-crow2>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:7px 8px;font-size:12.5px}'+
+'.aae-crow2>summary::-webkit-details-marker{display:none}'+
+'.aae-crow2:hover{background:var(--panel-2)}'+
+'.aae-crow2.cur>summary{background:color-mix(in srgb,var(--gold) 10%,transparent)}'+
+'.aae-crow2.on .aae-ctitle{color:var(--dim);text-decoration:line-through}'+
+'.aae-crow2>summary .aae-chev{margin-left:0}'+
+'.aae-curtag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;background:color-mix(in srgb,var(--gold) 18%,var(--panel));color:var(--gold);padding:1px 6px;border-radius:99px;white-space:nowrap;flex:none}'+
+'.aae-cbody{padding:2px 8px 12px 34px;display:flex;flex-direction:column;gap:8px}'+
+'.aae-cdem{font-size:11.5px;color:var(--dim)}'+
+'.aae-qrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}'+
+'.aae-qin{flex:1;min-width:160px;max-width:none;width:auto}'+
+'.aae-qlink{font-size:12px;color:#6f52a6;font-weight:600;white-space:nowrap}'+
 '.aae-ghead{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:14px 0 6px}'+
 '.aae-gc{color:var(--dim2);font-weight:600;letter-spacing:0;text-transform:none}'+
 '.aae-agenda{padding:8px}'+
@@ -3634,7 +3663,8 @@ function bind(){
       if(ss.length)S.aae[bk]=ss.reduce(function(x,y){return x+y;},0)/ss.length;}
     save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(){var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaequizlet]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaequizlet");var v=(el.value||"").trim();S.aae.cursusLinks=S.aae.cursusLinks||{};if(v)S.aae.cursusLinks[num]=v;else delete S.aae.cursusLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
