@@ -3385,7 +3385,7 @@ function aaeTodayCard(ids){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
     list.forEach(function(it){
-      var f=it.fiche,dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=aaeItemFullyDone(it)?' done':'';
+      var f=it.fiche,fdone=aaeItemFullyDone(it),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=fdone?' done':'',opn=fdone?'':' open';
       var socle=(it.key==="morning"||it.key==="evening");
       var gear=socle?'':'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>';
       var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
@@ -3396,7 +3396,7 @@ function aaeTodayCard(ids){
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
           return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
-        inner+='<details class="aae-hb'+doneCls+'" open'+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+        inner+='<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
         inner+='<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
       }
