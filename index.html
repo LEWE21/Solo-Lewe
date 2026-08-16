@@ -816,7 +816,8 @@ function load(){
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
      if(!("reserveDay" in _A))_A.reserveDay=null; // "je suis de réserve aujourd'hui" : jour allégé, ne décale rien
-     if(!_A.taichi)_A.taichi={idx:0};            // pointeur formation tai chi (à son rythme)
+     if(!_A.taichi)_A.taichi={idx:0,reps:0};     // pointeur formation tai chi (à son rythme) + répétitions de la leçon en cours
+     if(typeof _A.taichi.reps!=="number")_A.taichi.reps=0;
      if(!("cursus" in _A))_A.cursus=0;
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
      if(!("stepsDay" in _A))_A.stepsDay=null;
@@ -3312,9 +3313,14 @@ function aaeMentalDayCard(){
 function aaeTaiChiCard(){
   var idx=(S.aae.taichi&&S.aae.taichi.idx)||0,L=TAICHI_L1,n=L.length,cur=idx<n?L[idx]:null;
   var pc=Math.round(Math.min(idx,n)/n*100);
-  var s='<style>.aae-tcnow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:10px 0 4px}.aae-tclab{font-size:10.5px;color:var(--dim2);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.aae-tctitle{font-weight:600;color:var(--txt);font-size:13px}.aae-tcdur{margin-left:auto;color:var(--dim2);font-size:11.5px}.aae-tcbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.aae-tcbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid #5a9b8c;background:color-mix(in srgb,#5a9b8c 18%,var(--panel));color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}.aae-tcbtn.ghost{background:var(--panel);border-color:var(--brd);color:var(--dim)}</style>';
+  var s='<style>.aae-tcnow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:10px 0 4px}.aae-tclab{font-size:10.5px;color:var(--dim2);font-weight:700;text-transform:uppercase;letter-spacing:.05em}.aae-tctitle{font-weight:600;color:var(--txt);font-size:13px}.aae-tcdur{margin-left:auto;color:var(--dim2);font-size:11.5px}.aae-tcbtns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.aae-tcbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid #5a9b8c;background:color-mix(in srgb,#5a9b8c 18%,var(--panel));color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}.aae-tcbtn.ghost{background:var(--panel);border-color:var(--brd);color:var(--dim)}.aae-tcreps{font-size:12.5px;color:var(--dim);margin:8px 0 2px}.aae-tcreps b{color:var(--txt)}.aae-tcok{color:#5a9b8c;font-weight:600}.aae-tcnote{color:var(--dim2);font-size:11.5px}</style>';
   s+='<div class="cksec">🎋 Tai chi · à ton rythme</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Niveau 1</span><span class="aae-moy"><b>'+Math.min(idx,n)+'</b> / '+n+' leçons</span></div>'+aaeBar(Math.max(4,pc),"#5a9b8c");
-  if(cur)s+='<div class="aae-tcnow"><span class="aae-tclab">Leçon de la semaine</span><span class="aae-tctitle">'+esc(cur[0])+'</span><span class="aae-tcdur">'+esc(cur[1])+'</span></div><div class="aae-tcbtns">'+(idx>0?'<button class="aae-tcbtn ghost" data-aaitaichi="-">◀ précédente</button>':'')+'<button class="aae-tcbtn" data-aaitaichi="+">✓ Leçon maîtrisée (3×), suivante</button></div>';
+  var reps=(S.aae.taichi&&S.aae.taichi.reps)||0,ready=reps>=3;
+  if(cur){
+    s+='<div class="aae-tcnow"><span class="aae-tclab">Leçon en cours</span><span class="aae-tctitle">'+esc(cur[0])+'</span><span class="aae-tcdur">'+esc(cur[1])+'</span></div>';
+    s+='<div class="aae-tcreps">Répétitions : <b>'+reps+'</b> / 3'+(ready?' <span class="aae-tcok">✓ prête à avancer</span>':' <span class="aae-tcnote">répète jusqu\'à la faire sans suivre la vidéo</span>')+'</div>';
+    s+='<div class="aae-tcbtns"><button class="aae-tcbtn" data-aaitaichi="rep">+1 répétition faite</button><button class="aae-tcbtn'+(ready?'':' ghost')+'" data-aaitaichi="+">'+(ready?'✓ Maîtrisée, leçon suivante':'Passer quand même à la suivante')+'</button>'+(idx>0?'<button class="aae-tcbtn ghost" data-aaitaichi="-">◀ précédente</button>':'')+'</div>';
+  }
   else s+='<div class="aae-tcnow"><span class="aae-tctitle">Niveau 1 terminé 🎋 Passe au Niveau 2 dans ta formation.</span></div><div class="aae-tcbtns"><button class="aae-tcbtn ghost" data-aaitaichi="-">◀ revenir</button></div>';
   s+='<div class="aae-hint" style="margin-top:8px">Méthode Sifu David : <b>1 nouvelle leçon par semaine max</b>, répète chaque leçon 3× avant la suivante. Pratique courte quotidienne (Chi Kung) plutôt qu\'1h une fois. Filme-toi 1×/semaine. Le tai chi entraîne ton souffle et ton calme (ton point faible à l\'entretien). Surtout : que ça reste un plaisir.</div></div>';
   return s;
@@ -3797,7 +3803,11 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaerest]"),function(el){el.onclick=function(){var A=S.aae;if(A.restDay&&A.restDay.week===aaeWkMonday())return;sysConfirm("Prendre ton jour de repos aujourd'hui ?",["Ta séance du jour devient repos, et le reste de la semaine glisse d'un jour.","Tu ne peux le faire qu'une fois par semaine."],function(){A.restDay={week:aaeWkMonday(),day:today()};save();render();});};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaereserve]"),function(el){el.onclick=function(){S.aae.reserveDay=(el.getAttribute("data-aaereserve")==="on")?today():null;save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaitaichi]"),function(el){el.onclick=function(){var A=S.aae;A.taichi=A.taichi||{idx:0};if(el.getAttribute("data-aaitaichi")==="+")A.taichi.idx=Math.min(TAICHI_L1.length,(A.taichi.idx||0)+1);else A.taichi.idx=Math.max(0,(A.taichi.idx||0)-1);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaitaichi]"),function(el){el.onclick=function(){var A=S.aae;A.taichi=A.taichi||{idx:0,reps:0};var d=el.getAttribute("data-aaitaichi");
+    if(d==="rep"){A.taichi.reps=(A.taichi.reps||0)+1;}
+    else if(d==="+"){A.taichi.idx=Math.min(TAICHI_L1.length,(A.taichi.idx||0)+1);A.taichi.reps=0;}
+    else{A.taichi.idx=Math.max(0,(A.taichi.idx||0)-1);A.taichi.reps=0;}
+    save();render();};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
     el.addEventListener("dragstart",function(e){try{e.dataTransfer.setData("text/plain",el.getAttribute("data-drag"));e.dataTransfer.effectAllowed="move";}catch(_){}el.classList.add("dragging");});
