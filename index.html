@@ -3391,10 +3391,11 @@ function aaeCursusBlock(){
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 // Rotation sport : 4 couleurs de journée. Séances intenses cappées à ~30 min, exercices The Forge ciblant Luc Léger / pompes / Killy. Index = jour de la semaine (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
 var AAE_SP_FHAUT={dur:"~30 min",steps:[["Force haut · pompes (test Pompes)","",""],
-  ["Échauffement : resets, arm swings, mobilité épaules/poignets, ponts thoraciques 10, 10 pompes hindoues lentes","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges · 05 Hindu Pushups"],
+  ["Échauffement : resets, arm swings, mobilité épaules/poignets, ponts thoraciques ×10, 10 pompes hindoues lentes","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges · 05 Hindu Pushups"],
   ["Pompes hindoues : 3 séries à qualité max, repos 1 min","6 min","📹 Forge 05 · Hindu Pushups"],
-  ["Progression pompes strictes (le test) : négatives lentes ou sur genoux → strictes, 4 séries, viser +1 rep/semaine","7 min","📹 Forge 33 · One-Arm Pushups (progression)"],
-  ["Épaulé + développé militaire kettlebell/haltère : 3 séries de 5/bras, charge poussée ~8 fois max","7 min","📹 Forge 21 Clean · 22 Military Press"],
+  ["Progression pompes strictes (le test) : négatives lentes → strictes → 1 bras, 4 séries, +1 rep/semaine","6 min","📹 Forge 33 · One-Arm Pushups"],
+  ["Épaulé + développé militaire, kettlebell OU haltère : 3 séries de 5/bras, charge poussée ~8 fois max","6 min","📹 Forge 21-22 Kettlebell Clean & Press · 23-24 Haltère Clean & Press"],
+  ["Suspension à la barre (décompression, grip, épaules) : 2-3 tenues de 30 s, gaine-toi et descends sans sauter","2 min","📹 Forge 28 · Hanging"],
   ["Gainage : planche + gainage latéral, +10-15 s/semaine, objectif 168 s","5 min",""]]};
 var AAE_SP_ENDUR={dur:"~30 min",steps:[["Endurance · Luc Léger (test course navette)","",""],
   ["Échauffement dynamique : montées de genoux, talons-fesses, mobilité chevilles, 2 accélérations","6 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],
@@ -3402,15 +3403,21 @@ var AAE_SP_ENDUR={dur:"~30 min",steps:[["Endurance · Luc Léger (test course na
   ["Intervalles 30/30 : 30 s rapide / 30 s footing lent. 8 répétitions au début, monte vers 12 (rythme type paliers Luc-Léger)","17 min",""],
   ["Retour au calme : footing très lent + étirements mollets/psoas/cuisses","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]};
 var AAE_SP_FBAS={dur:"~30 min",steps:[["Force bas · Killy (test squat isométrique)","",""],
-  ["Échauffement : mobilité hanches/chevilles, 10 squats hindous","5 min","📹 Forge 30 Joint Mobility · 06 Hindu Squats"],
-  ["Squats hindous + progression squat 1 jambe (pistol) assisté à une chaise, 4 séries","8 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
-  ["Swings kettlebell 10/min + soulevé de terre, 8 à 10 séries. Force des hanches, dos droit","10 min","📹 Forge 18 Two-Arm Swing · 17 Deadlift"],
+  ["Échauffement : mobilité hanches/chevilles, 10 squats hindous","4 min","📹 Forge 30 Joint Mobility · 06 Hindu Squats"],
+  ["Squats hindous + progression squat 1 jambe (pistol) assisté à une chaise, 4 séries","7 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
+  ["Swings 10/min + soulevé de terre, 8 à 10 séries. Progression : 2 mains → 1 bras → haltère. Force des hanches, dos droit","8 min","📹 Forge 18 Two-Arm Swing · 19 One-Arm Swing · 20 Haltère Swing · 17 Deadlift"],
   ["Killy (squat isométrique dos au mur, cuisses à l'horizontale) : tenues, +10-15 s/semaine","4 min",""],
-  ["Gainage : planche + gainage latéral","3 min",""]]};
+  ["Crawling (gainage full-body, le 'X') : à ta progression, genoux → leopard → spider-man","5 min","📹 Forge 35 · Crawling"]]};
+var AAE_SP_COMBAT={dur:"~30 min",steps:[["Cardio & combatives · défouloir (bonus réserviste)","",""],
+  ["Échauffement : mobilité + footing léger ou corde à sauter","5 min","📹 Forge 30 · Joint Mobility"],
+  ["Bases debout : garde (mains hautes, menton bas), jeu de jambes, jab / direct / crochet / overhand, esquive. Technique avant vitesse et puissance","10 min","📹 Forge 45 Garde & Frappes · 46 Kicks, Takedown, Sprawl"],
+  ["Shadowboxing puis sac de frappe : enchaînements, rounds de 2-3 min","10 min","📹 Forge 47 Combinaisons · 48 Heavy Bag Drills"],
+  ["Retour au calme : fast & loose + étirements","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]};
 var AAE_SP_TAICHI={dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],
   ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
   ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
-var AAE_SPORT=[AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_FBAS,AAE_SP_TAICHI,AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_TAICHI];
+// Semaine : Lun Force haut · Mar Endurance · Mer Force bas · Jeu Tai chi · Ven Cardio/combatives · Sam Endurance · Dim Tai chi (aussi le repli jour de repos)
+var AAE_SPORT=[AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_FBAS,AAE_SP_TAICHI,AAE_SP_COMBAT,AAE_SP_ENDUR,AAE_SP_TAICHI];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine : repos sur le jour choisi (sinon dimanche par défaut), les 6 séances glissent sur les autres jours
   var restWd=aaeRestWd();
