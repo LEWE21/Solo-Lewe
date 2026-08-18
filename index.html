@@ -3272,7 +3272,7 @@ function aaeMentalDay(){ // menu mental du jour selon la grille A/B/C/D/E + phas
 }
 function aaeMentalDayFiche(){
   var d=aaeMentalDay(),m=d.menu,chrono=d.chrono;
-  var stage=chrono?"exercices AVEC chrono":"cours puis exercices SANS chrono";
+  var stage=chrono?"1-2 exercices AVEC chrono":"le cours puis 1 exercice SANS chrono (bien compris, corrige chaque erreur)";
   var phaseTag=chrono?"Phase 2 · chrono + examens":"Phase 1 · comprendre (sans chrono)";
   if(d.reserve)return {dur:"~20 min",steps:[
     ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],
@@ -3290,11 +3290,11 @@ function aaeMentalDayFiche(){
   }
   var steps=[head];
   if(m.psy==="faible"){var w=aaeWeakFamily();
-    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+stage,"45 min","🎯 Exam Arena",1]);
+    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+(chrono?"3 exercices AVEC chrono":"2 exercices SANS chrono, à fond sur les corrections"),"45 min","🎯 Exam Arena",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
     steps.push(["Psycho · "+lab+" — "+stage,"~22 min","🎯 Exam Arena",1]);});}
   if(m.ang){var br=AAE_ANG[aaeDayNum()%AAE_ANG.length];
-    steps.push(["Anglais Chambéry · "+br+" — "+(chrono?"exos avec chrono":"cours + exos sans chrono"),m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
+    steps.push(["Anglais Chambéry · "+br+" — "+(chrono?"2-3 exercices AVEC chrono":"le cours + 1-2 exercices SANS chrono"),m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
   if(m.ent)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
   return {dur:m.light?"~45 min":"~1h30",steps:steps};
