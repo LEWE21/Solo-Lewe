@@ -812,6 +812,8 @@ function load(){
      ["Raisonnement","Spatial","Arithmétique","Français","Attention","Codage"].forEach(function(k){if(!_A.psycho[k])_A.psycho[k]=[];}); // 6 familles TAMI-C
      if(!_A.entretien)_A.entretien={};
      ["parcours","motivation","sic","defense","oral"].forEach(function(k){if(!_A.entretien[k])_A.entretien[k]=[];});
+     if(!_A.anglais)_A.anglais={score:[]};        // suivi anglais (notes de test blanc /20), à part des familles psycho
+     if(!_A.anglais.score)_A.anglais.score=[];
      if(!("psychoBase" in _A))_A.psychoBase=null;
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
@@ -3185,6 +3187,7 @@ function aaeWeekTable(ids){var t=today();var mon=isoPlus(t,-weekdayMon(t));var m
 var AAE_PSY=[["Raisonnement","Raisonnement"],["Spatial","Spatial"],["Arithmétique","Arithmétique"],["Français","Français"],["Attention","Attention"],["Codage","Vitesse de codage"]]; // 6 familles TAMI-C
 var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (servir, pas réussir pour soi)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Présence sous observation (ton point faible)"]];
 var AAE_ANG=["Temps verbaux","Modaux","Prépositions","Conditionnels","Accords sujet-verbe","Articles & quantificateurs","Pronoms & adjectifs","Vocabulaire pro & connecteurs"]; // briques Chambéry (Exam Arena)
+var AAE_ANG_PRIO=["Prépositions (at/on/in + après verbes)","Passé continu (was/were + -ing)","Modaux (must/can + base)"]; // priorités issues du test blanc : à revoir en premier
 // Grille mentale hebdo A/B/C/D/E : 1h30/jour, familles réparties pour ne pas tout empiler. Index = jour de la semaine (Lundi=0)
 var AAE_MENTAL_WEEK=[
   {code:"A",psy:["Raisonnement","Spatial"],ang:true},
@@ -3302,7 +3305,7 @@ function aaeMentalDayFiche(){
     steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
     steps.push(["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
-  if(m.ang){var br=AAE_ANG[aaeDayNum()%AAE_ANG.length];
+  if(m.ang){var day=aaeDayNum(),br=(day%2===0)?AAE_ANG_PRIO[Math.floor(day/2)%AAE_ANG_PRIO.length]:AAE_ANG[day%AAE_ANG.length]; // 1 jour/2 → brique prioritaire (test blanc), sinon rotation normale
     steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
   if(m.ent)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
@@ -3334,6 +3337,13 @@ function aaeTaiChiCard(){
   s+='<div class="aae-hint" style="margin-top:8px">Méthode Sifu David : <b>1 nouvelle leçon par semaine max</b>, répète chaque leçon 3× avant la suivante. Pratique courte quotidienne (Chi Kung) plutôt qu\'1h une fois. Filme-toi 1×/semaine. Le tai chi entraîne ton souffle et ton calme (ton point faible à l\'entretien). Surtout : que ça reste un plaisir.</div></div>';
   return s;
 }
+function aaeAnglaisRow(){ // suivi anglais (test blanc /20), affiché dans la Progression psychotechnique mais stocké à part
+  var arr=(S.aae.anglais&&S.aae.anglais.score)||[],moy=aaeAvg3(arr),last=arr.length?arr[arr.length-1]:null;
+  var pc=moy!=null?moy/20*100:5;
+  return '<div class="spanel aae-card" style="margin-top:10px"><div class="aae-m"><div class="aae-top"><span class="aae-n">🇬🇧 Anglais · test blanc (Chambéry)</span><span class="aae-v"><b>'+(moy!=null?moy.toFixed(1):'—')+'</b> / 20</span></div>'
+    +aaeBar(pc,"#4C7C93")
+    +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" min="0" max="20" data-aaenote="anglais|score" placeholder="note /20"><span class="aae-hint">'+(last!=null?'dernier : '+last+'/20 · moyenne des 3 derniers':'note tes tests blancs d\'anglais /20')+'</span></div></div></div>';
+}
 function vAaeProgress(){
   var A=S.aae,ph=A.phys,me=A.mental;
   var s='<div class="aae-grid2">'
@@ -3347,7 +3357,7 @@ function vAaeProgress(){
       +aaeVal("Douche froide",me.froid,120,"s","mental|froid","var(--mint)")+'</div></div>'
     +'</div>';
   s+='<div class="aae-grid2">'
-    +'<div class="aae-col"><div class="cksec">🎯 Progression psychotechnique</div>'+aaeNotesCard(AAE_PSY,"psycho","psychoBase","#8a6fc0","faible","forte")+'</div>'
+    +'<div class="aae-col"><div class="cksec">🎯 Progression psychotechnique</div>'+aaeNotesCard(AAE_PSY,"psycho","psychoBase","#8a6fc0","faible","forte")+aaeAnglaisRow()+'</div>'
     +'<div class="aae-col"><div class="cksec">🎤 Progression entretien</div>'+aaeNotesCard(AAE_ENT,"entretien","entretienBase","#3f9d84","à travailler","solide")+'</div>'
     +'</div>';
   return s;
