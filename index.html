@@ -3213,7 +3213,13 @@ var TAICHI_L1=[
   ["Conclusion Niveau 1 & passage au Niveau 2","4 min"]
 ];
 function aaeIsReserve(){return S.aae&&S.aae.reserveDay===today();}
-function aaeMentalChrono(){return today()>="2027-01-01";} // Phase 1 (sans chrono) jusqu'à fin 2026, puis Phase 2 (chrono + examens)
+function aaeMentalChrono(){return today()>="2027-01-01";} // (conservé pour compat)
+function aaeMentalPhase(){ // montée progressive vers l'échéance : 1 découverte (sans chrono) · 2 consolidation (sans + avec chrono) · 3 sprint (tout chrono)
+  var t=today();
+  if(t>="2027-02-01")return 3;   // sprint : chrono + examens complets (avant les tests du printemps)
+  if(t>="2026-12-01")return 2;   // consolidation : mix sans chrono + avec chrono
+  return 1;                       // découverte : sans chrono, mais 1 examen blanc chrono/semaine
+}
 function aaeWeakFamily(){ // famille psycho dont la moyenne des 3 dernières notes est la plus basse
   var store=S.aae.psycho||{},best=null;
   AAE_PSY.forEach(function(d){var s=aaeAvg3(store[d[0]]);if(s!=null&&(best==null||s<best.s))best={k:d[0],lab:d[1],s:s};});
@@ -3271,9 +3277,12 @@ function aaeMentalDay(){ // menu mental du jour selon la grille A/B/C/D/E + phas
   return {menu:AAE_MENTAL_WEEK[wd],chrono:aaeMentalChrono(),reserve:aaeIsReserve()||aaeRestWd()===wd,wd:wd};
 }
 function aaeMentalDayFiche(){
-  var d=aaeMentalDay(),m=d.menu,chrono=d.chrono;
-  var stage=chrono?"1-2 exercices AVEC chrono":"le cours puis 1 exercice SANS chrono (bien compris, corrige chaque erreur)";
-  var phaseTag=chrono?"Phase 2 · chrono + examens":"Phase 1 · comprendre (sans chrono)";
+  var d=aaeMentalDay(),m=d.menu,ph=aaeMentalPhase();
+  var phaseTag=ph===3?"Phase 3 · sprint (chrono + examens)":ph===2?"Phase 2 · consolidation (sans + avec chrono)":"Phase 1 · découverte (sans chrono)";
+  // dosage sans chrono / avec chrono selon la phase, appliqué à TOUS les jours
+  var psyStage=ph===3?"1-2 exercices AVEC chrono":ph===2?"1 exercice SANS chrono (revoir) + 1 AVEC chrono (vitesse)":"le cours puis 1 exercice SANS chrono (bien compris, corrige chaque erreur)";
+  var faibleStage=ph===3?"3 exercices AVEC chrono":ph===2?"1 exercice SANS chrono + 2 AVEC chrono":"2 exercices SANS chrono, à fond sur les corrections";
+  var angStage=ph===3?"2-3 exercices AVEC chrono":ph===2?"1 exercice SANS chrono + 1 AVEC chrono":"le cours + 1-2 exercices SANS chrono";
   if(d.reserve)return {dur:"~20 min",steps:[
     ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],
     ["1 brique courte, rien de nouveau : refais 1-2 exercices psycho déjà vus (ou relis tes corrections de la semaine) + révise ton vocabulaire anglais. Pas de chrono, pas d'examen.","20 min","🎋 jour allégé",1]]};
@@ -3284,17 +3293,17 @@ function aaeMentalDayFiche(){
   if(m.exam){
     var which=(aaeDayNum()%2===0)?"psychotechnique (une famille au hasard)":"anglais (un test de Chambéry)";
     return {dur:"~1h30",steps:[head,
-      ["Examen blanc : "+which+", en conditions (chrono, sans pause)","45 min","🎯 Exam Arena · Examens",1],
+      ["Examen blanc au CHRONO, en conditions réelles (sans pause) : "+which+". Chaque semaine, même en phase découverte, pour t'habituer à la pression du temps.","45 min","🎯 Exam Arena · Examens",1],
       ["Débrief : corrige, repère tes 2 erreurs les plus fréquentes","20 min","",1],
       ["Note ta performance /20 dans la progression ci-dessous","","",1]]};
   }
   var steps=[head];
   if(m.psy==="faible"){var w=aaeWeakFamily();
-    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+(chrono?"3 exercices AVEC chrono":"2 exercices SANS chrono, à fond sur les corrections"),"45 min","🎯 Exam Arena",1]);
+    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
-    steps.push(["Psycho · "+lab+" — "+stage,"~22 min","🎯 Exam Arena",1]);});}
+    steps.push(["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
   if(m.ang){var br=AAE_ANG[aaeDayNum()%AAE_ANG.length];
-    steps.push(["Anglais Chambéry · "+br+" — "+(chrono?"2-3 exercices AVEC chrono":"le cours + 1-2 exercices SANS chrono"),m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
+    steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
   if(m.ent)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
   return {dur:m.light?"~45 min":"~1h30",steps:steps};
