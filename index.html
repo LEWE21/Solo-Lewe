@@ -3249,14 +3249,12 @@ function aaeBolt(){
 function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
   var store=S.aae[storeKey];
   var scores=defs.map(function(d){return {k:d[0],lab:d[1],s:aaeAvg3(store[d[0]])};});
-  var ws=scores.filter(function(x){return x.s!=null;}).slice().sort(function(a,b){return a.s-b.s;});
-  var low={},high={};ws.slice(0,2).forEach(function(x){low[x.k]=1;});ws.slice(-2).forEach(function(x){high[x.k]=1;});
   var got=scores.filter(function(x){return x.s!=null;});
   var moy=got.length?got.reduce(function(a,x){return a+x.s;},0)/got.length:null;
   var base=S.aae[baseKey],delta=(moy!=null&&base!=null)?(moy-base):null;
   var head='<div class="aae-h"><span class="aae-ht">Moyenne</span><span class="aae-moy">'+(moy!=null?'<b>'+moy.toFixed(1)+'</b>':'<b>—</b>')+' / 20'+(delta!=null?' <em class="aae-d" style="color:'+(delta>=0?'var(--mint)':'var(--red)')+'">'+(delta>=0?'+':'')+delta.toFixed(1)+' pts</em>':'')+'</span></div>';
   var rows=scores.map(function(x){
-    var tag=x.s!=null&&low[x.k]?'<span class="aae-tag lo">'+lowLab+'</span>':(x.s!=null&&high[x.k]?'<span class="aae-tag hi">'+highLab+'</span>':'');
+    var tag=(x.s!=null&&x.s<12)?'<span class="aae-tag lo">'+lowLab+'</span>':((x.s!=null&&x.s>=16)?'<span class="aae-tag hi">'+highLab+'</span>':''); // seuils absolus : faible <12/20, fort >=16/20
     return '<div class="aae-m"><div class="aae-top"><span class="aae-n">'+esc(x.lab)+'</span>'+tag+'<span class="aae-v"><b>'+(x.s!=null?x.s.toFixed(1):'—')+'</b> / 20</span></div>'
       +aaeBar(x.s!=null?x.s/20*100:5,col)
       +'<div class="aae-in"><input class="aae-inp" type="number" inputmode="decimal" min="0" max="20" data-aaenote="'+storeKey+'|'+x.k+'" placeholder="note /20"></div></div>';
@@ -3302,7 +3300,7 @@ function aaeMentalDayFiche(){
   }
   var steps=[head];
   if(m.psy==="faible"){var w=aaeWeakFamily();
-    steps.push(["Psycho · ta famille la plus faible : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
+    steps.push(["Psycho · ta famille la moins avancée : "+(w?w.lab:"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
     steps.push(["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
   if(m.ang){var day=aaeDayNum(),br=(day%2===0)?AAE_ANG_PRIO[Math.floor(day/2)%AAE_ANG_PRIO.length]:AAE_ANG[day%AAE_ANG.length]; // 1 jour/2 → brique prioritaire (test blanc), sinon rotation normale
