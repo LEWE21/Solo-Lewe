@@ -827,7 +827,9 @@ function load(){
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
      if(!_A.wkStepsSet)_A.wkStepsSet=[];
      if(!("restDay" in _A))_A.restDay=null;
-     if(!_A.cursusLinks)_A.cursusLinks={};}
+     if(!_A.cursusLinks)_A.cursusLinks={};
+     if(!_A.mathDone)_A.mathDone=[];              // chapitres d'arithmétique appris (prépa test CSO)
+     if(!_A.mathLinks)_A.mathLinks={};}           // set Quizlet par chapitre d'arithmétique
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3302,9 +3304,12 @@ function aaeMentalDayFiche(){
   }
   var steps=[head];
   if(m.psy==="faible"){var w=aaeWeakFamily();
-    steps.push(["Psycho · ta famille la moins avancée : "+(w?w.lab+(w.untested?" (à découvrir)":""):"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
+    var mstep=(w&&w.k==="Arithmétique")?aaeMathStep(faibleStage,"45 min"):null;
+    if(mstep)steps.push(mstep);
+    else steps.push(["Psycho · ta famille la moins avancée : "+(w?w.lab+(w.untested?" (à découvrir)":""):"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
-    steps.push(["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
+    var ms=(k==="Arithmétique")?aaeMathStep(psyStage,"~22 min"):null;
+    steps.push(ms||["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
   if(m.ang){var day=aaeDayNum(),br=(day%2===0)?AAE_ANG_PRIO[Math.floor(day/2)%AAE_ANG_PRIO.length]:AAE_ANG[day%AAE_ANG.length]; // 1 jour/2 → brique prioritaire (test blanc), sinon rotation normale
     steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
   if(m.ent){var cursusN=(S.aae.cursusDone||[]).length; // l'entretien n'apparaît que vers la fin de l'apprentissage du cursus (20/24)
@@ -3397,6 +3402,60 @@ var AAE_COURS=[
   {b:3,bl:"Commander",list:[[14,"Commandement de l'officier du XXIe","a"],[15,"Leadership (1)","a"],[16,"Leadership (2)","a"],[17,"Leadership (3)","a"],[18,"Interarmisation","a"],[19,"Politique de défense française","a"]]},
   {b:4,bl:"Conduire une mission + Officier",list:[[20,"Instruction juridique OPEX","l"],[21,"Gestion des ressources humaines","l"],[22,"Argumentation","a"],[23,"Préparation et conduite de mission","l"],[24,"Orthographe et expression","a"]]}
 ];
+/* ---- Arithmétique : 13 chapitres en 4 blocs, un par semaine sur le créneau du mardi (jour B) ----
+   L'ordre suit le poids de chaque thème dans le test du CSO, pas l'ordre du cursus Exam Arena. */
+var AAE_MATH=[
+  {b:1,bl:"Automatismes",bilan:"bilan 27 sept.",list:[
+    [1,"Calcul mental : regroupement, décomposition, raccourcis"],
+    [2,"Expressions et priorités opératoires"],
+    [3,"Division euclidienne et critères de divisibilité"],
+    [4,"PGCD, PPCM et facteurs premiers"]]},
+  {b:2,bl:"Proportions",bilan:"bilan 25 oct.",list:[
+    [5,"Fractions : opérations, simplification, comparaison"],
+    [6,"Proportionnalité, produit en croix, échelles"],
+    [7,"Pourcentages, taux de variation, intérêts"],
+    [8,"Unités de mesure : longueurs, surfaces, volumes, temps"]]},
+  {b:3,bl:"Mesures et algèbre",bilan:"bilan 22 nov.",list:[
+    [9,"Vitesse, distance, temps et débit"],
+    [10,"Périmètres, aires et figures composites"],
+    [11,"Équations, systèmes et inéquations"]]},
+  {b:4,bl:"Données et hasard",bilan:"bilan 20 déc.",list:[
+    [12,"Moyenne, médiane, taux et données groupées"],
+    [13,"Probabilités, arbres et tirages"]]}
+];
+function aaeMathCurrent(){var done=S.aae.mathDone||[];for(var b=0;b<AAE_MATH.length;b++){var l=AAE_MATH[b].list;for(var i=0;i<l.length;i++){if(done.indexOf(l[i][0])<0)return l[i][0];}}return null;}
+/* Étape "Mental du jour" quand la séance porte sur l'Arithmétique : on affiche le chapitre en cours
+   du programme, pas un renvoi générique. Il avance tout seul dès que le chapitre est coché dans l'onglet EAE. */
+function aaeMathStep(stage,dur){
+  var done=(S.aae.mathDone||[]),cur=aaeMathCurrent();
+  if(cur==null)return ["Psycho · Arithmétique — les 13 chapitres sont appris. Bilan : 25 questions en 18 min, puis note ta famille.",dur,"🧮 bilan · 13/13",1];
+  var ch=null,bl="";
+  for(var b=0;b<AAE_MATH.length&&!ch;b++){var l=AAE_MATH[b].list;
+    for(var i=0;i<l.length;i++){if(l[i][0]===cur){ch=l[i];bl=AAE_MATH[b].bl;break;}}}
+  if(!ch)return null;
+  var num=(cur<10?"0"+cur:""+cur);
+  return ["Psycho · Arithmétique — chapitre "+num+" · "+ch[1]+" — "+stage,dur,"🧮 "+bl+" · "+done.length+"/13",1];
+}
+function aaeMathBlock(){
+  var done=S.aae.mathDone||[],n=done.length,links=S.aae.mathLinks||{},cur=aaeMathCurrent();
+  var ph=aaeMentalPhase(),phTxt=ph===1?"Phase découverte : pas de chronomètre avant le 30 novembre.":(ph===2?"Phase consolidation : alterne avec et sans chronomètre.":"Phase sprint : tout au chronomètre.");
+  var s='<div class="cksec">🧮 Arithmétique · prépa CSO</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Chapitres appris</span><span class="aae-moy"><b>'+n+'</b> / 13</span></div>';
+  s+='<div class="subhead" style="margin:0 0 8px">Un chapitre par semaine, sur ta séance du mardi (jour B). '+phTxt+'</div>';
+  AAE_MATH.forEach(function(bk){
+    var bd=bk.list.filter(function(ch){return done.indexOf(ch[0])>=0;}).length;
+    s+='<details class="aae-cblock"'+(bk.b===1?' open':'')+'><summary><span class="aae-cbname">Bloc '+bk.b+' · '+bk.bl+'</span><span class="aae-cbcount">'+bd+'/'+bk.list.length+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">';
+    bk.list.forEach(function(ch){
+      var num=ch[0],on=done.indexOf(num)>=0,isCur=cur===num,lk=links[num]||'';
+      var body='<div class="aae-cdem">Démarche : 1) lire le cours · 2) créer ton set Quizlet · 3) faire la fiche d\'exercices sans chrono · 4) le chapitre passe en répétition espacée · 5) cocher.</div>'
+        +'<div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-aaemathq="'+num+'" placeholder="colle le lien de ton set Quizlet" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
+      s+='<details class="aae-crow2'+(on?' on':'')+(isCur?' cur':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-aaemath="'+num+'">'+(on?'✓':'')+'</span><span class="aae-cnum">'+(num<10?'0'+num:num)+'</span><span class="aae-ctitle">'+esc(ch[1])+'</span>'+(isCur?'<span class="aae-curtag">en cours</span>':'')+'<span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
+    });
+    s+='<div class="aae-hint" style="margin:6px 0 2px">🎯 '+bk.bilan+' : 25 questions d\'arithmétique en 18 min, d\'affilée, puis tu notes ta famille Arithmétique ci-dessous.</div>';
+    s+='</div></details>';
+  });
+  s+='<div class="aae-hint" style="margin-top:8px">Ouvre un chapitre pour sa démarche et le lien de ton set Quizlet. Coche-le quand tu le connais.</div></div>';
+  return s;
+}
 function aaeCurrentCourse(){var done=S.aae.cursusDone||[];for(var b=0;b<AAE_COURS.length;b++){var l=AAE_COURS[b].list;for(var i=0;i<l.length;i++){if(done.indexOf(l[i][0])<0)return {num:l[i][0],title:l[i][1],mode:l[i][2]};}}return null;}
 function aaeCursusBlock(){
   var done=S.aae.cursusDone||[],n=done.length,links=S.aae.cursusLinks||{},cur=aaeCurrentCourse();
@@ -3752,6 +3811,7 @@ s+=aaeTimeline();
 s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
 s+=aaeWeekProgram();
 s+=aaeCursusBlock();
+s+=aaeMathBlock();
 s+=aaeMentalDayCard();
 s+=vAaeProgress();
 s+=aaeTaiChiCard();
@@ -3819,6 +3879,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecycle]"),function(el){el.onclick=function(){var t=today();var i=S.aae.cycle.indexOf(t);if(i>=0)S.aae.cycle.splice(i,1);else S.aae.cycle.push(t);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaecourse]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaecourse");var d=S.aae.cursusDone||(S.aae.cursusDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaequizlet]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaequizlet");var v=(el.value||"").trim();S.aae.cursusLinks=S.aae.cursusLinks||{};if(v)S.aae.cursusLinks[num]=v;else delete S.aae.cursusLinks[num];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemath]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaemath");var d=S.aae.mathDone||(S.aae.mathDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
