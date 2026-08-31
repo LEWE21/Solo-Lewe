@@ -7,23 +7,23 @@
    ========================================================================= */
 
 :root{
-  /* Sombre premium : bleu nuit profond, jamais noir pur */
-  --ground:#0a1526;
-  --panel:rgba(22,38,64,.55);      /* cartes en verre dépoli sombre */
-  --panel-2:rgba(32,52,84,.72);    /* survol / carte en avant */
-  --modal-bg:rgba(12,22,42,.975);  /* fenêtres qui s'ouvrent : presque opaques */
-  --panel-3:rgba(150,190,240,.06); /* creux : pistes, champs */
-  --brd:rgba(150,190,240,.14);
-  --brd-hi:rgba(150,190,240,.30);
-  --track:rgba(150,190,240,.12);
+  /* Sombre premium : sarcelle (teal) profond, coloré, jamais noir */
+  --ground:#0b2926;
+  --panel:rgba(18,52,48,.55);      /* cartes en verre dépoli teal */
+  --panel-2:rgba(26,66,60,.72);    /* survol / carte en avant */
+  --modal-bg:rgba(9,34,31,.975);   /* fenêtres qui s'ouvrent : presque opaques */
+  --panel-3:rgba(150,225,210,.06); /* creux : pistes, champs */
+  --brd:rgba(150,225,210,.14);
+  --brd-hi:rgba(150,225,210,.30);
+  --track:rgba(150,225,210,.12);
   --blur:blur(24px) saturate(1.3);
   --inset:inset 0 1px 0 rgba(255,255,255,.08);
-  --shadow:0 24px 60px -28px rgba(0,0,0,.66);
-  --shadow-lg:0 40px 90px -34px rgba(0,0,0,.72);
+  --shadow:0 24px 60px -28px rgba(0,0,0,.6);
+  --shadow-lg:0 40px 90px -34px rgba(0,0,0,.66);
 
-  --txt:#eaf1fb;             /* blanc bleute doux */
-  --dim:#a4b7d4;             /* texte secondaire */
-  --dim2:#6c81a3;            /* micro-labels, hints */
+  --txt:#e7f4ef;             /* blanc légèrement teal */
+  --dim:#a0c6bb;             /* texte secondaire */
+  --dim2:#6e968c;            /* micro-labels, hints */
 
   /* Capacites : une couleur par capacite, la meme partout */
   --c-physique:#5cc8ff; --c-mental:#a98bff; --c-creativite:#ff86cf;
@@ -48,9 +48,9 @@ body{
   margin:0;height:100dvh;overflow:hidden;color:var(--txt);
   font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;
   background:
-    radial-gradient(1200px 720px at 15% -8%, rgba(121,208,255,.12), transparent 60%),
-    radial-gradient(1000px 640px at 90% 116%, rgba(255,180,87,.14), transparent 62%),
-    linear-gradient(180deg,#0a1526,#0b1830);
+    radial-gradient(1200px 720px at 15% -8%, rgba(95,230,208,.12), transparent 60%),
+    radial-gradient(1000px 640px at 90% 116%, rgba(255,180,87,.13), transparent 62%),
+    linear-gradient(180deg,#0b2926,#0a221f);
   background-attachment:fixed;
 }
 
@@ -58,7 +58,7 @@ body{
 #app{max-width:1560px;margin:0 auto;height:100dvh;display:flex;flex-direction:row}
 .sidebar{flex:none;width:var(--rail);height:100dvh;display:flex;flex-direction:column;
   padding:calc(18px + env(safe-area-inset-top,0px)) 14px 16px calc(14px + env(safe-area-inset-left,0px));
-  background:linear-gradient(180deg,rgba(16,28,50,.72),rgba(10,20,38,.62));
+  background:linear-gradient(180deg,rgba(14,46,42,.72),rgba(9,32,29,.62));
   border-right:1px solid var(--brd);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   box-shadow:24px 0 60px -40px rgba(0,0,0,.7)}
 .main{flex:1;min-width:0;height:100dvh;display:flex;flex-direction:column;
@@ -581,9 +581,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
       <div class="hud-status"><span class="dot"></span><span id="hud-clock"></span></div>
       <div class="tools">
         <div class="icobtn" id="btn-settings" title="Paramètres">⚙</div>
-        <div class="icobtn" id="btn-export" title="Exporter">⇩</div>
-        <div class="icobtn" id="btn-import" title="Importer">⇧</div>
-        <input type="file" id="file-import" accept="application/json" hidden>
       </div>
     </div>
   </aside>
@@ -3704,9 +3701,6 @@ function bind(){
 
 renderNav();
 /* réinitialisation retirée à la demande de Mathilde */
-document.getElementById("btn-export").onclick=function(){var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="systeme_mathilde.json";a.click();toast("Statut exporté");};
-document.getElementById("btn-import").onclick=function(){document.getElementById("file-import").click();};
-document.getElementById("file-import").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var d=JSON.parse(r.result);if(d&&d.hunter){S=d;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});if(!S.journal)S.journal=[];if(!S.focus)S.focus={sessions:0,totalMin:0};if(!S.log)S.log=[];if(typeof S.combo!=="number")S.combo=0;save();render();toast("Statut importé");}else{toast("Fichier invalide");}}catch(err){toast("Fichier invalide");}};r.readAsText(f);};
 
 /* ---- Écran d'accueil de ROBI (ouverture façon Iron Man / JARVIS) ---- */
 var BOOT_GREETS=["À votre service, quand vous le souhaitez.","Tout est prêt, je vous laisse commencer.","Je reste à votre entière disposition.","Prenez votre temps, je m'occupe du reste."];
