@@ -874,7 +874,7 @@ function syncPull(force){
     return false;
   }).catch(function(){return false;});
 }
-function loadFeed(){if(!getLink())return Promise.resolve();return robiStore("feed").then(function(r){ROBI_FEED=(r&&r.feed)||[];if(view==="statut"||view==="evolution")render();}).catch(function(){});}
+function loadFeed(){if(!getLink())return Promise.resolve();return robiStore("feed").then(function(r){ROBI_FEED=(r&&r.feed)||[];}).catch(function(){});}
 // Tâches poussées par ton Claude perso (à partir de CONTEXT.md) : on les crée dans ROBI, rattachées au bon objectif.
 function ingestTasks(){
   if(!getLink())return Promise.resolve();
@@ -942,15 +942,13 @@ function bumpPace(statKey,gain){ // trace l'effort validé du jour, par capacit�
   if(p.date!==today()){p.hist.unshift(p.today);if(p.hist.length>14)p.hist.length=14;p.today=0;p.date=today();}
   p.today+=gain;
 }
-function gainXP(statKey,gain,label){
+function gainXP(statKey,gain,label){ // dé-gamifié : simple trace d'activité, plus de XP/niveau/rang visible
   var st=S.stats[statKey]||(S.stats[statKey]={level:1,xp:0,weeks:[]});
   bumpPace(statKey,gain);
-  st.xp+=gain;                 // effort cumulé : sert d'historique, plus de niveau
-  var su=touchCap(statKey);    // le niveau monte d'un cran la première fois de la semaine
-  var h=S.hunter,beforeRank=rankOf(h.level).r,lu=0;
-  h.xp+=gain;while(h.xp>=xpNeed(h.level)){h.xp-=xpNeed(h.level);h.level++;lu++;}
-  log(label+" (+"+gain+" XP "+STATS[statKey].name+")");save();
-  return {gain:gain,statKey:statKey,statLeveled:su>0,statLevel:st.level,leveled:lu>0,level:h.level,rankChanged:rankOf(h.level).r!==beforeRank,rank:rankOf(h.level).r};
+  st.xp+=gain;                 // effort cumulé (historique d'activité neutre)
+  touchCap(statKey);           // garde la trace de la semaine active (donnée, non affichée)
+  log(label);save();
+  return {gain:gain,statKey:statKey,statLeveled:false,leveled:false,rankChanged:false};
 }
 /* ---- Sons (Web Audio, synthétisés, aucun fichier à charger) ---- */
 var AUDIO=null;
@@ -968,24 +966,16 @@ function sfx(name){
   else if(name==="urgent"){tone(880,0,0.13,"square",0.13);tone(880,0.2,0.13,"square",0.13);tone(1175,0.4,0.16,"square",0.12);}
   else if(name==="secret"){[330,392,494,587,740,988].forEach(function(f,i){tone(f,i*0.085,0.32,"sine",0.13);});tone(1319,0.6,0.6,"sine",0.1);}
 }
-function afterGain(r){
-  if(r.rankChanged){flash("rank","PALIER "+r.rank,"Membre promu");sfx("rank");}
-  else if(r.leveled){flash("level","LEVEL UP","⟪ NIVEAU "+r.level+" ⟫ · Tu es devenue plus forte"+(r.statLeveled?" · +1 "+STATS[r.statKey].name:""));sysNotify("⟪ ROBI ⟫","Niveau "+r.level+" atteint",["ROBI reconnaît ta croissance, Membre."]);sfx("level");}
-}
+function afterGain(r){} // dé-gamifié : plus de "LEVEL UP" / "PALIER"
 function award(q){
   if(q.pub){var pm=find(S.missions,q.mission);if(pm&&pm.pubDates)pm.pubDates=pm.pubDates.filter(function(d){return d!==q.pubDate;});S.quests=S.quests.filter(function(x){return x.id!==q.id;});log("Vidéo publiée : "+q.title);}
-  S.doneCount++;S.combo++;
-  var mult=comboMult();
-  var gain=Math.max(1,Math.round(q.base*mult));
-  urgentBonus(q);
+  S.doneCount++;
   var ck=questCap(q); // la capacité du projet prime sur celle devinée depuis le titre
-  var r=gainXP(ck,gain,"Tâche : "+q.title);
-  var m=STATS[ck];
-  var lines=["+"+r.gain+" XP · "+m.name,"COMBO x"+S.combo+(mult>1?" (×"+mult.toFixed(2)+" XP)":"")];
-  if(r.statLeveled)lines.push(m.name+" niv "+r.statLevel);
-  sysNotify("Tâche accomplie",esc(q.title),lines);
-  afterGain(r);
-  q._award={gain:r.gain,cap:ck}; // trace du gain pour pouvoir réactiver la tâche (annuler l'XP) si validée par erreur
+  var gain=Math.max(1,q.base);
+  urgentBonus(q);
+  gainXP(ck,gain,"Tâche : "+q.title);
+  sysNotify("Tâche accomplie",esc(q.title),[]);
+  q._award={gain:gain,cap:ck}; // trace pour la réactivation
   sfx(q.pub?"success":"check");
   save();
 }
@@ -993,11 +983,7 @@ function award(q){
 function reactivateTask(q){
   if(!q)return false;
   if(q._award){
-    var g=q._award.gain||0,ck=q._award.cap||questCap(q),st=S.stats[ck];
-    if(st)st.xp=Math.max(0,st.xp-g);
-    var h=S.hunter;h.xp-=g;while(h.xp<0&&h.level>1){h.level--;h.xp+=xpNeed(h.level);}if(h.xp<0)h.xp=0;
     S.doneCount=Math.max(0,S.doneCount-1);
-    S.combo=Math.max(0,S.combo-1);
     delete q._award;
   }
   if(isMulti(q)){
@@ -1068,7 +1054,6 @@ function validateTask(q){
   q.done=true;award(q);return true;
 }
 /* ---- Mécanique : combo (progression) ---- */
-function comboMult(){return 1+Math.min(10,Math.max(0,S.combo-1))*0.05;}
 
 /* ---- Quêtes urgentes imposées par le Système (Solo Lewe) ---- */
 /* Intensité "équilibrée" : ~1 tous les 2-3 jours, échéance, +XP si réussie, petit malus si ignorée. */
@@ -1086,20 +1071,7 @@ function genUrgent(){
   S.urgent={id:uid(),qid:b.qid,title:b.title,stat:b.stat,mission:b.mission,xp:35,penalty:15,createdTs:now,dueTs:now+44*3600*1000,status:"active",seen:false};
   log("⚠ Quête urgente imposée par le Système : "+b.title);sfx("urgent");save();
 }
-function urgentTick(){
-  if(urgentActive()&&Date.now()>S.urgent.dueTs){
-    S.urgent.status="failed";S.hunter.xp=Math.max(0,S.hunter.xp-S.urgent.penalty);
-    log("Quête urgente expirée : -"+S.urgent.penalty+" XP");
-    sysNotify("⟪ Système ⟫","Quête urgente expirée",["-"+S.urgent.penalty+" XP","« "+S.urgent.title+" »"]);
-    sfx("penalty");S.urgentNext=isoPlus(today(),1);save();return;
-  }
-  if(urgentActive())return;
-  if(!S.urgentNext){S.urgentNext=isoPlus(today(),1);save();return;}
-  if(today()>=S.urgentNext){
-    if(urgentEligible().length){genUrgent();S.urgentNext=isoPlus(today(),2+((S.doneCount)%2));save();}
-    else{S.urgentNext=isoPlus(today(),1);save();}
-  }
-}
+function urgentTick(){ if(S.urgent){S.urgent=null;save();} } // module de quêtes urgentes désactivé (dé-gamifié)
 function urgentComplete(){
   if(!urgentActive())return;var u=S.urgent;
   if(u.qid){var q=find(S.quests,u.qid);if(q&&!q.done){validateTask(q);}}
@@ -1128,15 +1100,6 @@ function urgentBonus(q){ // le bonus tombe quand tu valides la tache elle-meme
   sysNotify("⟪ Système ⟫","Quête urgente accomplie",["+"+u.xp+" XP bonus · "+STATS[ck].name,"Le Système reconnaît ta réactivité."]);
   flash("rank","QUÊTE ACCOMPLIE","+"+u.xp+" XP · Le Système est satisfait");
   sfx("success");afterGain(r);save();
-}
-function urgentBanner(){
-  if(!urgentActive())return "";
-  var u=S.urgent,mn=u.mission?((find(S.missions,u.mission)||{}).title||""):"";
-  return '<div class="uquest"><div class="uqh">⚠ QUÊTE URGENTE · IMPOSÉE PAR LE SYSTÈME</div>'+
-    '<div class="uqt">'+esc(u.title)+'</div>'+
-    '<div class="uqmeta">'+(mn?'⟡ '+esc(mn)+' · ':'')+'Récompense <b>+'+u.xp+' XP</b> · Échec <b>-'+u.penalty+' XP</b></div>'+
-    '<div class="uqtimer">⏳ Temps restant : <b id="uq-count">'+urgentCountdown()+'</b></div>'+
-    '<button class="btn" data-uq-do style="width:100%;margin-top:10px">⚔ Accomplir la quête</button></div>';
 }
 function updateUrgentBadge(){var b=document.getElementById("ubadge");if(b)b.hidden=!urgentActive();}
 
@@ -1191,94 +1154,6 @@ function initTheme(){applyTheme();var g=document.getElementById("btn-settings");
 /* ---- Moment de la journée (matin / journée / soir) ---- */
 function momentOf(){var h=gameNow().getUTCHours();if(h>=18||h<5)return "soir";if(h<11)return "matin";return "journee";}
 
-/* ---- Humeur du compagnon, à partir des vraies données ---- */
-function companionMood(){
-  var m=momentOf();
-  if(m==="soir")return "soir";
-  var di=dailyInfo();
-  if(di.tot>0&&di.done>=di.tot)return "radieux";
-  if(di.done>0)return "content";
-  if(m==="journee"&&(S.streak||0)===0&&di.done===0)return "attend";
-  return "neutre";
-}
-function companionLine(mood){
-  return {
-    radieux:"Radieux. Tu enchaînes, je suis au sommet de ma forme.",
-    content:"Content. On avance tranquillement, continue comme ça.",
-    neutre:"Éveillé. Prêt quand vous voulez, on commence par quoi ?",
-    soir:"Il est temps de se reposer. Note ta journée avant de dormir.",
-    attend:"Content de te revoir. On reprend en douceur ?"
-  }[mood]||"";
-}
-function moodLabel(mood){return {radieux:"Radieux",content:"Content",neutre:"Éveillé",soir:"En veille",attend:"Il t'attendait"}[mood]||"";}
-
-/* ---- Avatar lapin : visage (humeur) + équipement (rang) ---- */
-function avFace(mood,dark){
-  var fc=dark?"#a9ecff":"#3a3550"; // yeux / bouche / nez
-  var fur=dark?"#242b46":"#c68a5e"; // fourrure
-  var acc=dark?"#4db8ff":"#ff9bd4"; // intérieur oreilles / joues
-  var eyeGlow=dark?' style="filter:drop-shadow(0 0 2.4px #4db8ff)"':'';
-  var eyes;
-  if(mood==="radieux"||mood==="content")eyes='<g><path d="M22.5 42 Q26 38.3 29.5 42" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/><path d="M34.5 42 Q38 38.3 41.5 42" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/></g>';
-  else if(mood==="soir")eyes='<g><path d="M22.5 42 Q26 44.2 29.5 42" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/><path d="M34.5 42 Q38 44.2 41.5 42" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/></g>';
-  else if(mood==="attend")eyes='<g><circle cx="26" cy="43" r="2.1" fill="'+fc+'"/><circle cx="38" cy="43" r="2.1" fill="'+fc+'"/></g>';
-  else eyes='<g><circle cx="26" cy="42" r="2.4" fill="'+fc+'"/><circle cx="38" cy="42" r="2.4" fill="'+fc+'"/><circle cx="26.9" cy="41.1" r=".8" fill="#fff"/><circle cx="38.9" cy="41.1" r=".8" fill="#fff"/></g>';
-  var mouth;
-  if(mood==="radieux")mouth='<path d="M26.5 49 Q32 56 37.5 49" fill="none" stroke="'+fc+'" stroke-width="2.4" stroke-linecap="round"/>';
-  else if(mood==="content")mouth='<path d="M28 50 Q32 54.5 36 50" fill="none" stroke="'+fc+'" stroke-width="2.2" stroke-linecap="round"/>';
-  else if(mood==="soir")mouth='<ellipse cx="32" cy="51" rx="2.1" ry="2.7" fill="'+fc+'"/>';
-  else if(mood==="attend")mouth='<path d="M29.5 51.4 Q32 50.4 34.5 51.4" fill="none" stroke="'+fc+'" stroke-width="2" stroke-linecap="round"/>';
-  else mouth='<path d="M30 50.5 Q32 52.6 34 50.5" fill="none" stroke="'+fc+'" stroke-width="2" stroke-linecap="round"/>';
-  var blush=dark?.32:({radieux:.85,content:.62,neutre:.45,soir:.4,attend:.42}[mood]||.45);
-  return '<g class="ears"><g fill="'+fur+'"><ellipse cx="25" cy="19" rx="6.2" ry="16" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.2" ry="16" transform="rotate(13 39 18)"/></g><g fill="'+acc+'" opacity="'+(dark?.55:.85)+'"><ellipse cx="25" cy="20" rx="2.6" ry="9" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.6" ry="9" transform="rotate(13 39 19)"/></g></g>'
-    +(dark?'<ellipse cx="32" cy="42" rx="18" ry="16" fill="none" stroke="#4db8ff" stroke-width="1" opacity=".45"/>':'')
-    +'<ellipse cx="32" cy="42" rx="17" ry="15" fill="'+fur+'"/>'
-    +'<circle cx="21.5" cy="46.5" r="2.8" fill="'+acc+'" opacity="'+blush+'"/><circle cx="42.5" cy="46.5" r="2.8" fill="'+acc+'" opacity="'+blush+'"/>'
-    +'<g'+eyeGlow+'>'+eyes+'</g><ellipse cx="32" cy="46.5" rx="1.9" ry="1.4" fill="'+fc+'"/>'+mouth;
-}
-function avHeadwear(rank,col){
-  if(rank==="E")return '<path d="M16 33 Q32 29 48 33 L48 36.5 Q32 32.5 16 36.5 Z" fill="'+col+'"/><path d="M48 34 l5 -3 -1 4 4 1 -5 2z" fill="'+col+'"/>';
-  if(rank==="D")return '<path d="M15 33 Q32 29 49 33 L49 36.5 Q32 32.5 15 36.5 Z" fill="'+col+'"/><path d="M15 34 l-6 -2 1 4 -3 2 7 -1z" fill="'+col+'"/>';
-  if(rank==="C")return '<path d="M16 42 Q16 24 32 24 Q48 24 48 42" fill="none" stroke="#7b5cff" stroke-width="3.2" stroke-linecap="round"/><rect x="11" y="38" width="8" height="12" rx="4" fill="#7b5cff"/><rect x="45" y="38" width="8" height="12" rx="4" fill="#7b5cff"/>';
-  if(rank==="B")return '<path d="M15 40 Q15 25 32 25 Q49 25 49 40" fill="none" stroke="'+col+'" stroke-width="3.4"/><line x1="32" y1="27" x2="32" y2="40" stroke="'+col+'" stroke-width="1.6"/>';
-  if(rank==="A")return '<path d="M15 40 Q15 24 32 24 Q49 24 49 40" fill="none" stroke="'+col+'" stroke-width="3.6"/><line x1="32" y1="26" x2="32" y2="40" stroke="'+col+'" stroke-width="1.8"/><path d="M15 32 l-7 -3 2 6z" fill="'+col+'"/><path d="M49 32 l7 -3 -2 6z" fill="'+col+'"/>';
-  return '<path d="M14 40 Q14 22 32 22 Q50 22 50 40" fill="none" stroke="'+col+'" stroke-width="3.8" style="filter:drop-shadow(0 0 3px #ffe08a)"/><line x1="32" y1="24" x2="32" y2="40" stroke="'+col+'" stroke-width="2"/><path d="M14 30 l-9 -4 3 8z" fill="'+col+'"/><path d="M50 30 l9 -4 -3 8z" fill="'+col+'"/><path d="M26 22 l2 -6 4 5 4 -5 2 6z" fill="'+col+'"/>';
-}
-function avMoodFx(mood){
-  if(mood==="radieux")return '<path class="fx" d="M50 19 l1.5 3.2 3.4 .4 -2.6 2.4 .7 3.4 -3 -1.8 -3 1.8 .7 -3.4 -2.6 -2.4 3.4 -.4z" fill="#ffd08a"/><path class="fx d1" d="M12 25 c-1.8 -1.9 -4.6 0 -2.7 2.7 l2.7 2.8 2.7 -2.8 c1.9 -2.7 -.9 -4.6 -2.7 -2.7z" fill="#ff7fb8"/>';
-  if(mood==="content")return '<g class="fx"><path d="M50 21 v7" stroke="#7b5cff" stroke-width="1.5" fill="none"/><circle cx="48.6" cy="28" r="1.8" fill="#7b5cff"/></g>';
-  if(mood==="soir")return '<text class="fx" x="45" y="23" font-size="9" fill="#9ec6ff" font-family="system-ui" font-weight="800">z</text><text class="fx d1" x="50" y="15" font-size="6.5" fill="#9ec6ff" font-family="system-ui" font-weight="800">z</text>';
-  if(mood==="attend")return '<text class="fx" x="47" y="24" font-size="10" fill="#a2b6d3" font-family="system-ui" font-weight="800">?</text>';
-  return "";
-}
-function robiAvatar(rank,mood,px,dark){
-  var order=["E","D","C","B","A","S"],i=order.indexOf(rank);if(i<0){i=0;rank="E";}
-  var col={E:"#8aa0b8",D:"#5fd3ac",C:"#34c9ee",B:"#6ea8ff",A:"#a07bff",S:"#ffcf4d"}[rank];
-  var hasShoulder=i>=1,hasPauldron=i>=2,hasChest=i>=3,hasCape=i>=3,hasSword=i>=1,swordGlow=i>=4,hasAura=i>=4,elite=i>=5;
-  var s='<svg viewBox="0 0 64 84" width="'+px+'" height="'+Math.round(px*84/64)+'">';
-  s+='<defs><linearGradient id="irav'+rank+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6fb5"/><stop offset=".4" stop-color="#7b5cff"/><stop offset=".7" stop-color="#3b6bff"/><stop offset="1" stop-color="#22c9ee"/></linearGradient></defs>';
-  if(hasAura)s+='<circle cx="32" cy="40" r="'+(elite?32:27)+'" fill="'+col+'" opacity="'+(elite?.2:.14)+'"/>';
-  if(elite)s+='<circle class="rrot" cx="32" cy="40" r="30" fill="none" stroke="url(#iravS)" stroke-width="1.6" stroke-dasharray="2 6" opacity=".85"/>';
-  s+='<g class="breathe">';
-  if(hasCape)s+='<path d="M18 58 Q9 74 15 84 L49 84 Q55 74 46 58 Z" fill="'+col+'" opacity=".45"/>';
-  if(hasShoulder){s+='<path d="M13 84 Q13 61 32 59 Q51 61 51 84 Z" fill="'+col+'" opacity=".85"/>';if(hasChest)s+='<path d="M26 84 L26 66 Q32 63 38 66 L38 84" fill="#0e1a30" opacity=".22"/><circle cx="32" cy="70" r="2.4" fill="'+(elite?"#fff2c8":"#eaf1fb")+'" opacity=".9"/>';}
-  if(hasPauldron)s+='<ellipse cx="15" cy="61" rx="6" ry="5" fill="'+col+'"/><ellipse cx="49" cy="61" rx="6" ry="5" fill="'+col+'"/>';
-  if(hasSword){var blade=i<3?"#b98a4a":(elite?"url(#iravS)":(i>=4?col:"#cfd8e6"));var glow=swordGlow?' style="filter:drop-shadow(0 0 3px '+(elite?"#ffe08a":col)+')"':'';s+='<g'+glow+'><line x1="50" y1="52" x2="'+(elite?61:59)+'" y2="'+(elite?20:25)+'" stroke="'+blade+'" stroke-width="'+(elite?3.4:2.6)+'" stroke-linecap="round"/><line x1="46.5" y1="49.5" x2="54" y2="52.5" stroke="#6b4a2a" stroke-width="2.4" stroke-linecap="round"/><line x1="47" y1="50" x2="44.5" y2="55" stroke="#6b4a2a" stroke-width="2.6" stroke-linecap="round"/></g>';}
-  s+=avFace(mood,dark);
-  s+=avHeadwear(rank,col);
-  s+='</g>';
-  s+=avMoodFx(mood)+((elite&&mood!=="soir")?'<path class="fx" d="M11 20 l1.2 2.6 2.8 .3 -2.1 1.9 .6 2.8 -2.5 -1.5 -2.5 1.5 .6 -2.8 -2.1 -1.9 2.8 -.3z" fill="#ffe08a"/>':"");
-  s+='</svg>';
-  return s;
-}
-function warriorLadder(){
-  var order=["E","D","C","B","A","S"],names={E:"Recrue",D:"Apprenti",C:"Écuyer",B:"Chevalier",A:"Champion",S:"Élite"};
-  var cols={E:"#8aa0b8",D:"#5fd3ac",C:"#34c9ee",B:"#6ea8ff",A:"#a07bff",S:"#ffcf4d"};
-  var cur=rankOf(S.hunter.level).r;
-  return '<div class="ladder">'+order.map(function(r){
-    return '<div class="step'+(r===cur?" cur":"")+'">'+robiAvatar(r,r===cur?"radieux":"content",56,true)+'<div class="rr" style="color:'+cols[r]+'">'+r+'</div><div class="nn">'+names[r]+'</div></div>';
-  }).join("")+'</div>';
-}
 
 /* ---- Roue de la chance : une tâche libre au hasard ---- */
 function isBlocked(q){
@@ -1431,7 +1306,7 @@ function openTaskSet(qId){
   var dd=document.getElementById("ts-duedel");if(dd)dd.onclick=function(){var e2=document.getElementById("ts-due");if(e2)e2.value="";};
   var td=document.getElementById("ts-timedel");if(td)td.onclick=function(){var e3=document.getElementById("ts-time");if(e3)e3.value="";};
   var del=document.getElementById("ts-del");if(del)del.onclick=function(){
-    sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){
+    sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement."],function(){
       S.quests=S.quests.filter(function(x){return x.id!==q.id;});TSETCAP=null;save();closeModal();render();toast("Tâche supprimée");});
   };
   function commit(){
@@ -1524,7 +1399,7 @@ function wireRoue(){
       sfx("success");
       var d=document.getElementById("roue-do");
       if(d)d.onclick=function(){
-        sysConfirm("Tu as fait ce ménage ?",["<b>« "+esc(q.title)+" »</b>","","Le Système ne récompense que le réel."],
+        sysConfirm("Tu as fait ce ménage ?",["<b>« "+esc(q.title)+" »</b>","","Sois honnête avec toi-même."],
           function(){var qq=find(S.quests,q.id);if(qq&&!qq.done){validateTask(qq);}render();});
       };
       var ag=document.getElementById("roue-again");
@@ -1601,7 +1476,7 @@ function wireWheel(){
     if(res)res.innerHTML='<span class="nm">La roue tourne...</span>';
     setTimeout(function(){var q=elig[idx];if(!q||!res)return;
       res.innerHTML='ROBI a choisi <span class="tsk">« '+esc(q.title)+' »</span><button class="btn" id="wheel-do">Je m\'y mets</button>';
-      var d=document.getElementById("wheel-do");if(d)d.onclick=function(){sysConfirm("Tu as accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();});};
+      var d=document.getElementById("wheel-do");if(d)d.onclick=function(){sysConfirm("Tu as accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Sois honnête avec toi-même."],function(){validateTask(q);render();});};
     },3700);
   };
 }
@@ -1738,7 +1613,7 @@ function loadCitation(){
   var objs=(S.missions||[]).map(function(m){return {title:m.title,note:m.note||""};});
   gm("citation",{state:apiState(),objectives:objs}).then(function(r){
     CITBUSY=false;
-    if(r&&r.line){S.quote=r.line;S.quoteDate=today();save();if(view==="statut")render();}
+    if(r&&r.line){S.quote=r.line;S.quoteDate=today();save();}
   }).catch(function(){CITBUSY=false;});
 }
 
@@ -1882,7 +1757,7 @@ function addCapTask(forced){
   S.quests.push(q);save();
   var mn=q.mission?((find(S.missions,q.mission)||{}).title||"Aucun objectif"):"Aucun objectif";
   var quand=dates.length>1?(dates.length+" jours choisis"):(dates.length===1?("le "+fmtD(dates[0])):(daily?"Journalière":"Priorité "+q.prio));
-  sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+quand+" · +"+q.base+" XP","Objectif : "+mn]);
+  sysNotify("Tâche classée",esc(t),[STATS[q.stat].name+" · "+quand,"Objectif : "+mn]);
   render();return true;
 }
 function addCapProject(forced){
@@ -1972,7 +1847,7 @@ function openDungeon(mId){
   h+='<div class="addrow"><input type="text" id="dq-title" placeholder="Nouvelle tâche pour cet objectif..."><button class="btn" id="dq-add">Ajouter</button></div>';
   openModal(h,rk.c);
   DGOPEN=mId; // le menu ⋯ des lignes redessine cette fenêtre au lieu de la vue derrière
-  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","ROBI ne récompense que le réel."],function(){validateTask(q);render();openDungeon(mId);});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Sois honnête avec toi-même."],function(){validateTask(q);render();openDungeon(mId);});};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-del]"),function(el){el.onclick=function(){S.quests=S.quests.filter(function(q){return q.id!==el.dataset.del;});save();render();openDungeon(mId);};});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
   var dc=document.getElementById("dg-convo");if(dc)dc.onclick=function(){openConvo("obj",mId);};
@@ -2041,9 +1916,9 @@ function claimEpreuve(){
   if(S.lastEpreuve&&S.lastEpreuve>=today()){toast("Une épreuve récompensée par jour. Reviens demain.");return;}
   S.lastEpreuve=today();S.epreuveOn=null;
   var r=gainXP("mental",25,"Épreuve d'Épictète relevée");
-  sysNotify("Épreuve relevée","+25 XP · Mental",["La liberté se gagne par l'exercice"]);
+  sysNotify("Épreuve relevée","Bien joué",["La liberté se gagne par l'exercice"]);
   afterGain(r);save();
-  pushChat("assistant","✔ Épreuve validée. +25 XP Mental. Ce n'est pas l'épreuve qui compte, mais de l'avoir traversée en homme libre.");
+  pushChat("assistant","✔ Épreuve validée. Ce n'est pas l'épreuve qui compte, mais de l'avoir traversée en homme libre.");
   render();
 }
 function debriefLearning(){
@@ -2121,7 +1996,7 @@ function vMaitre(){
     var canDebrief=(!S.lastLearning||S.lastLearning<today());
     s+='<div class="mgrouplab">Rituels du jour</div><div class="mgroup">';
     if(canStartEp)s+='<button class="btn ghost" id="c-epreuve">'+(coach==="epictete"?"⚡ Épreuve d\'Épictète":"⚡ Défi du jour")+'</button>';
-    if(canClaim)s+='<button class="btn" id="c-claim">✔ Défi relevé (+25 XP)</button>';
+    if(canClaim)s+='<button class="btn" id="c-claim">✔ Défi relevé</button>';
     if(doneEp)s+='<span class="mdone">✔ Défi du jour fait</span>';
     s+='<button class="btn ghost" id="c-debrief">📖 Débrief du jour'+(canDebrief?' (+15 XP)':'')+'</button></div>';
     s+='<div class="mgrouplab">Tes projets</div><div class="mgroup"><button class="btn'+(due?'':' ghost')+'" id="c-review-start">📋 '+reviewLabel()+(due?' •':'')+'</button><button class="btn ghost" id="c-suggest">💡 Évoluer mon setup</button><button class="btn ghost" id="c-valider">✔ Créer une tâche</button></div>';
@@ -2138,7 +2013,6 @@ function render(){
   var html;
   if(view.indexOf("cap:")===0)html=vCap(view.slice(4));
   else if(view==="maitre")html=vMaitre();
-  else if(view==="evolution")html=vEvolution();
   else if(view==="objectifs")html=vObjectifs();
   else if(view==="priorites")html=vPriorites();
   else if(view==="suivi")html=vSuivi();
@@ -2164,8 +2038,7 @@ function renderNav(){
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],v="cap:"+k;
     h+='<button data-v="'+v+'" class="capnav'+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+'">'+
-       '<span class="ni">'+m.ic+'</span><span class="nl">'+esc(NAVSHORT[k]||m.name)+'</span>'+
-       '<span class="nlv">Niv '+capLevel(k)+'</span></button>';
+       '<span class="ni">'+m.ic+'</span><span class="nl">'+esc(NAVSHORT[k]||m.name)+'</span></button>';
   });
   n.innerHTML=h;
   Array.prototype.forEach.call(n.querySelectorAll("button"),function(b){b.onclick=function(){view=b.dataset.v;objSel=null;render();};});
@@ -2228,16 +2101,6 @@ function convoMakeTask(mid){
 }
 /* ---- SOLO LEWE : le Système secret (phase 1) ---- */
 function rankColor(r){return (RANKS.filter(function(x){return x.r===r;})[0]||RANKS[0]).c;}
-function unlockedTitles(){
-  var t=["L'Éveillée"],st=S.streak||0,lvl=S.hunter.level,rk=rankOf(lvl).r;
-  if(st>=3)t.push("La Constante");
-  if(st>=7)t.push("Celle qui se lève avant le soleil");
-  if(rankOrder(rk)>=2)t.push("La Solitaire du Pacifique");
-  if(S.stats.mental&&S.stats.mental.level>=5)t.push("L'Esprit Aiguisé");
-  if(rankOrder(rk)>=5)t.push("Souveraine du Système");
-  return t;
-}
-function soloStat(val,lab){return '<div class="sstat"><b>'+val+'</b><span>'+lab+'</span></div>';}
 var objSel=null,OBJBUSY=false;
 /* ================= SYSTÈME UNIQUE (mode jeu) : Cockpit + un onglet par Capacité ================= */
 function projGroup(pr,qs){
@@ -2337,11 +2200,11 @@ function nextAction(){ // la prochaine action DU JOUR : par moment (matin d'abor
 function openPlan(){
   var cand=urgencyRank();
   if(PLANSEL===null)PLANSEL=planIds().length?planIds().filter(function(id){var q=find(S.quests,id);return q&&!q.done;}):suggestPlan(PLAN_MAX);
-  var h='<div class="mtag">▸ Mon pacte du jour</div>';
+  var h='<div class="mtag">▸ Mes priorités du jour</div>';
   h+='<div class="subhead" style="margin:8px 0 12px">Coche au maximum '+PLAN_MAX+' tâches à faire aujourd\'hui. ROBI a pré-choisi pour toi : retards et priorités d\'abord, puis tes objectifs les plus importants. Ajuste comme tu veux, le reste devient du bonus.</div>';
   if(!cand.length)h+='<div class="empty">Aucune tâche en retard ou datée à prioriser. Ajoute des tâches, ou profite de ta journée.</div>';
   h+=cand.map(function(q){var m=STATS[questCap(q)]||STATS.mental;var on=PLANSEL.indexOf(q.id)>=0;return '<div class="planopt'+(on?" on":"")+'" data-planpick="'+q.id+'"><span class="pkbox">'+(on?"✓":"")+'</span><div class="body" style="flex:1;min-width:0"><div class="ttl">'+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div></div>';}).join("");
-  h+='<div class="rowbtn"><button class="btn" id="plan-save">Valider mon pacte ('+PLANSEL.length+'/'+PLAN_MAX+')</button><button class="btn ghost" id="plan-robi">💬 En parler à ROBI</button></div>';
+  h+='<div class="rowbtn"><button class="btn" id="plan-save">Valider mes priorités ('+PLANSEL.length+'/'+PLAN_MAX+')</button><button class="btn ghost" id="plan-robi">💬 En parler à ROBI</button></div>';
   openModal(h);
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-planpick]"),function(el){el.onclick=function(){
     var id=el.getAttribute("data-planpick"),i=PLANSEL.indexOf(id);
@@ -2362,7 +2225,7 @@ function planWithRobi(){ // idée 3 + Ray Dalio : trier la journée avec la mét
 function reflectWithRobi(){ // Ray Dalio : douleur + réflexion = progrès
   var pt=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean);
   var faits=pt.filter(function(q){return q.done;}),reste=pt.filter(function(q){return !q.done;});
-  var recap=pt.length?("Mon pacte du jour était :\n"+pt.map(function(q){return "- "+(q.done?"[fait] ":"[pas fait] ")+q.title;}).join("\n")):"Je n'avais pas posé de pacte aujourd'hui.";
+  var recap=pt.length?("Mes priorités du jour était :\n"+pt.map(function(q){return "- "+(q.done?"[fait] ":"[pas fait] ")+q.title;}).join("\n")):"Je n'avais pas posé de pacte aujourd'hui.";
   view="maitre";render();
   sendChat("Fais mon bilan du soir selon Ray Dalio : douleur + réflexion = progrès. Sois honnête, pas complaisant.\n\n"+recap+"\n\n1) Demande-moi ce que j'ai vraiment accompli et ce qui a coincé.\n2) Aide-moi à trouver la cause racine (le vrai pourquoi, pas l'excuse) de ce qui n'a pas été fait.\n3) Tire une leçon, une seule, à retenir.\n4) Un ajustement concret pour demain ("+(reste.length?reste.length+" priorité(s) non faite(s)":"pacte tenu")+").\n\nCourt, direct, en français.");
 }
@@ -2394,7 +2257,7 @@ function doneTodayList(){
 function doneBlock(){
   var list=doneTodayList(),open=!WKFOLD.wdone;
   var s='<div class="spanel"><div class="spl wkhead" data-wkfold="wdone" title="'+(open?"Replier":"Déplier")+'">Tâches terminées<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span><span class="wkchev">'+(open?"▾":"▸")+'</span></div>';
-  if(open)s+=list.length?list.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="xpv">+'+q.base+'</span><span class="gear" data-reopen="'+q.id+'" title="Réactiver (validée par erreur)">↩</span></div>';}).join(""):'<div class="empty">Rien de terminé aujourd\'hui pour l\'instant.</div>';
+  if(open)s+=list.length?list.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="gear" data-reopen="'+q.id+'" title="Réactiver (validée par erreur)">↩</span></div>';}).join(""):'<div class="empty">Rien de terminé aujourd\'hui pour l\'instant.</div>';
   s+='</div>';
   return s;
 }
@@ -2479,7 +2342,7 @@ function vPriorites(){
   if(!pool.length)s+='<div class="empty">Aucune tâche active pour l\'instant.</div>';
   else pool.forEach(function(q){
     var m=STATS[questCap(q)]||STATS.mental;var obj=q.mission?find(S.missions,q.mission):null;var rk=obj?(RANKS.filter(function(r){return r.r===obj.rank;})[0]||RANKS[0]):null;
-    s+='<div class="q cpt'+(isPlan(q)?" prio":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(isPlan(q)?"⭐ ":"")+esc(q.title)+'</div><div class="meta">'+(obj?'<span class="tag" style="color:'+rk.c+';border-color:'+rk.c+'55" title="'+esc(RANKMEAN[obj.rank]||"")+'">'+obj.rank+' · '+esc(obj.title)+'</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">sans objectif</span>')+'<span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
+    s+='<div class="q cpt'+(isPlan(q)?" prio":"")+'" style="--tc:'+m.col+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">'+(isPlan(q)?"⭐ ":"")+esc(q.title)+'</div><div class="meta">'+(obj?'<span class="tag" style="color:'+rk.c+';border-color:'+rk.c+'55" title="'+esc(RANKMEAN[obj.rank]||"")+'">'+obj.rank+' · '+esc(obj.title)+'</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">sans objectif</span>')+'<span class="tag" style="color:'+m.col+';border-color:'+m.col+'55">'+m.ic+' '+m.name+'</span>'+dueBadge(q)+'</div></div>'+rowActs(q)+'</div>';
   });
   s+='</div></div>';
   s+='<div style="flex:1;min-width:280px">'+dateReviewCard()+'</div>';
@@ -2517,7 +2380,7 @@ function vCockpit(){
     naHtml+='</div>';
   }
   var pAll=planIds().map(function(id){return find(S.quests,id);}).filter(Boolean),pDone=pAll.filter(function(q){return doneForToday(q);}).length;
-  var opp=!WKFOLD.pacte,pacteHtml='<div class="spanel"><div class="spl wkhead" data-wkfold="pacte" title="'+(opp?"Replier":"Déplier")+'">⭐ Mon pacte du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'<span class="wkchev">'+(opp?"▾":"▸")+'</span></div>';
+  var opp=!WKFOLD.pacte,pacteHtml='<div class="spanel"><div class="spl wkhead" data-wkfold="pacte" title="'+(opp?"Replier":"Déplier")+'">⭐ Mes priorités du jour<span style="flex:1"></span>'+(pAll.length?'<span style="font-weight:400;color:var(--dim2)">'+pDone+'/'+pAll.length+'</span>':'')+'<span class="wkchev">'+(opp?"▾":"▸")+'</span></div>';
   if(opp){
     if(!pAll.length){
       pacteHtml+='<div class="subhead" style="margin:0 0 10px">Tu peux presque tout obtenir, mais pas tout à la fois (Ray Dalio). Choisis 3 priorités maximum, le reste devient du bonus.</div><button class="btn" data-openplan="1" style="width:100%">Choisir mes priorités du jour</button>';
@@ -2659,12 +2522,12 @@ function questRow(q,depth,compact,ctx){
   depth=depth||0;ctx=ctx||{};
   if(q.pub){
     var plate=today()>q.pubDate;
-    return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:var(--pink);border-color:rgba(255,107,138,.35)">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div><span class="xpv">+'+q.base+'</span></div>';
+    return '<div class="q pubrow'+(plate?" late":"")+'"><div class="check" data-check="'+q.id+'">✓</div><div class="body"><div class="ttl">📅 '+esc(q.title)+'</div><div class="meta"><span class="tag" style="color:var(--pink);border-color:rgba(255,107,138,.35)">▶ Publication</span>'+(plate?'<span class="tag" style="color:var(--pink);border-color:var(--pink)">⚠ en retard</span>':'<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">reste jusqu\'à validation</span>')+'</div></div></div>';
   }
   var m=STATS[questCap(q)]||STATS.mental;var pc=PCOL[q.prio||"low"];
   var mact=!isMulti(q)||(!doneForToday(q)&&multiPending(q).length>0); // cochable tant qu'il reste un jour à faire, une fois par jour
   var chk=mact?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>';
-  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+minsChip(q)+rowActs(q)+'</div>';}
+  if(compact){var db=dueBadge(q,ctx.win);var drag=ctx.drag?' draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"':'';return '<div class="q cpt'+(q.done?" done":"")+(ctx.drag?" draggable":"")+(isPlan(q)?" prio":"")+'"'+drag+' style="--tc:'+m.col+'">'+chk+'<div class="body"><div class="ttl">'+(isPlan(q)?'<span title="priorité du jour">⭐ </span>':"")+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(db?'<div class="meta">'+db+'</div>':'')+'</div>'+minsChip(q)+rowActs(q)+'</div>';}
   var blk=isBlocked(q),dn=depName(q);
   var sib=q.mission?S.quests.filter(function(x){return x.mission===q.mission&&x.id!==q.id;}).length:0;
   var tags="";
@@ -2672,7 +2535,7 @@ function questRow(q,depth,compact,ctx){
   if(q.mission&&!ctx.hideProj)tags+='<span class="tag" style="color:var(--dim);border-color:var(--line-soft)">▲ '+esc((find(S.missions,q.mission)||{}).title||"")+'</span>';
   tags+=dueBadge(q);
   if(q.dependsOn&&blk)tags+='<span class="tag deptag">🔒 après « '+esc(dn)+' »</span>';
-  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div><span class="xpv">+'+q.base+'</span>'+rowActs(q)+'</div>';
+  return '<div class="q'+(q.done?" done":"")+(blk?" blkrow":"")+(depth?" sub":"")+'" style="--tc:'+m.col+'"'+(depth?' style="margin-left:'+(depth*18)+'px"':'')+'>'+chk+'<div class="body"><div class="ttl">'+(depth?'<span style="color:var(--dim2)">↳ </span>':'')+urgentDot(q)+esc(q.title)+' <span style="color:'+pc+';font-size:11px" title="priorité">⚑</span></div>'+(tags?'<div class="meta">'+tags+'</div>':'')+'</div>'+rowActs(q)+'</div>';
 }
 function questTree(list,ctx){
   list=list.filter(function(q){return !q.done;}); // une tâche ponctuelle terminée disparaît tout de suite (les tâches à jours choisis, elles, reviennent : q.done reste false)
@@ -2699,7 +2562,7 @@ function subStepsHTML(q,m){
 }
 function dailyRow(q,compact){
   var m=STATS[questCap(q)]||STATS.mental;var due=dueToday(q);
-  var hasSubs=!!(q.subs&&q.subs.length),xp=hasSubs?subBadge(q):'<span class="xpv">+'+q.base+'</span>';
+  var hasSubs=!!(q.subs&&q.subs.length),xp=hasSubs?subBadge(q):'';
   if(compact)return '<div class="q cpt'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+(due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+'<div class="body"><div class="ttl">'+urgentDot(q)+esc(q.title)+'</div></div>'+xp+rowActs(q)+'</div>'+subStepsHTML(q,m);
   return '<div class="q'+(q.done?" done":"")+(due?"":" off")+'" style="--tc:'+m.col+'">'+
     (due?'<div class="check" data-check="'+q.id+'">✓</div>':'<div class="check off">·</div>')+
@@ -2895,21 +2758,6 @@ function habDayActive(d,map){if(d===today())return habActiveToday();var e=map[d]
 function habWeekActive(){var mon=isoPlus(today(),-weekdayMon(today()));var map=habHistMap();var n=0;for(var i=0;i<7;i++){var d=isoPlus(mon,i);if(d>today())break;if(habDayActive(d,map))n++;}return n;}
 function habFrise(){var map=habHistMap();var out="";for(var i=29;i>=0;i--){var d=isoPlus(today(),-i);var known=(map[d]!=null)||(d===today());var a=habDayActive(d,map);var col=a?"#5fe0aa":(known?"rgba(150,190,240,.16)":"rgba(150,190,240,.06)");out+='<span title="'+d+'" style="width:13px;height:13px;border-radius:3px;background:'+col+';display:inline-block"></span>';}return out;}
 function habRate(q){var due=0,done=0;(S.history||[]).forEach(function(e){if(e.dueIds&&e.dueIds.indexOf(q.id)>=0){due++;if(e.doneIds&&e.doneIds.indexOf(q.id)>=0)done++;}});if(dueToday(q)){due++;if(q.done)done++;}return due?Math.round(done/due*100):null;}
-function habDashboard(){
-  var dailies=S.quests.filter(function(q){return q.daily;});
-  var wk=habWeekActive();
-  var s='<div class="win"><div class="win-h"><span class="t">Progression des habitudes</span><span class="ln"></span><span class="r">'+wk+'/7 cette sem.</span></div>';
-  s+='<div class="evgrid">'+kpi((S.streak||0)+" j","Série")+kpi((S.best||0)+" j","Record")+kpi(wk+"/7","Cette semaine")+'</div>';
-  s+='<div class="plab" style="margin-top:14px">30 derniers jours</div>';
-  s+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+habFrise()+'</div>';
-  s+='<div class="subhead" style="margin-top:6px">Chaque case verte = un jour où tu as fait au moins une habitude.</div>';
-  s+='<div class="plab" style="margin-top:14px">Par habitude</div>';
-  if(!dailies.length)s+='<div class="empty">Aucune habitude pour l\'instant.</div>';
-  else{s+='<div class="sys">';dailies.forEach(function(q){var r=habRate(q);var done=dueToday(q)&&q.done;var pf=(r==null?0:r/100);s+='<div class="sysrow"><span class="n">'+(done?"✓ ":"")+esc(q.title)+'</span><span class="track"><i style="transform:scaleX('+pf+');background:linear-gradient(90deg,#5fe0aa88,#5fe0aa)"></i></span><span class="p">'+(r==null?"—":r+"%")+'</span></div>';});s+='</div>';}
-  s+='<div class="subhead" style="margin-top:6px">Le taux par habitude se remplit à partir de maintenant.</div>';
-  s+='</div>';
-  return s;
-}
 function suiviAaeMissionIds(){var out=[];(S.missions||[]).forEach(function(m){var t=(m.title||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();if(t.indexOf("armee de l air")>=0||t.indexOf("armee de l'air")>=0||(/arm/.test(t)&&/air/.test(t)))out.push(m.id);});return out;}
 function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior|the forge|recharge matinale|morning recharge|evening habits|habitudes du soir|kettlebell|gainage|douche froide|apn[eé]e|m[eé]ditation|marche 1h/i.test(q.title||"");}
 function habMoments(q){try{if(typeof taskMoments==="function"){var a=taskMoments(q);if(a&&a.length)return a;}}catch(e){}var t=(q.title||"").toLowerCase();if(/matin|r[eé]veil|wake/.test(t))return["matin"];if(/midi/.test(t))return["midi"];if(/soir/.test(t))return["soir"];return["libre"];}
@@ -3538,29 +3386,10 @@ s+=vAaeProgress();
 s+=aaeTaiChiCard();
 s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
 s+='</div>';return s;}
-function vEvolution(){
-  var h=S.hunter,rk=rankOf(h.level);
-  var s=habDashboard()+'<div class="win"><div class="win-h"><span class="t">Évolution</span><span class="ln"></span><span class="r">Progression</span></div>';
-  s+='<div class="evgrid">'+kpi(h.level,"Niveau")+kpi(rk.r,"Palier")+kpi(S.doneCount,"Tâches")+kpi(S.best,"Record série")+'</div>';
-  s+='<div class="subhead" style="margin-top:6px">Coût API estimé cumulé : $'+(S.costUsd||0).toFixed(3)+'</div>';
-  s+='<div class="plab" style="margin-top:16px">Ton lapin guerrier</div>'+warriorLadder();
-  s+='<div class="plab" style="margin-top:14px">Systèmes</div><div class="sys">';
-  Object.keys(STATS).forEach(function(k){var st=S.stats[k],m=STATS[k];var p=pct(st.xp,statNeed(st.level))/100;
-    s+='<div class="sysrow"><span class="n">'+m.ic+' '+m.name+'</span><span class="track"><i style="transform:scaleX('+p+');background:linear-gradient(90deg,'+m.col+'88,'+m.col+')"></i></span><span class="p">'+Math.round(p*100)+'%</span></div>';});
-  s+='</div></div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Rapports de ROBI</span><span class="ln"></span><span class="r">'+(syncOn()?ROBI_FEED.length:"—")+'</span></div>';
-  s+='<div class="subhead">Ce que ton Claude t\'a rapporté.'+(syncOn()?'':' Active la liaison dans l\'onglet Journal pour les recevoir.')+'</div>';
-  s+=(syncOn()&&ROBI_FEED.length)?ROBI_FEED.slice(0,15).map(function(e){return '<div class="logline"><span class="tm">'+esc((e.at||"").slice(0,10))+'</span>'+esc(e.text)+'</div>';}).join(""):(syncOn()?'<div class="empty">Aucun rapport pour l\'instant.</div>':'');
-  s+='</div>';
-  s+='<div class="win"><div class="win-h"><span class="t">Journal de ROBI</span><span class="ln"></span><span class="r">'+S.log.length+'</span></div>';
-  s+=S.log.length?S.log.slice(0,20).map(function(l){return '<div class="logline"><span class="tm">'+l.t+'</span>'+esc(l.text)+'</div>';}).join(""):'<div class="empty">Aucune activité.</div>';
-  s+='</div>';
-  return s;
-}
 
 function bind(){
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ton niveau ne reflète que tes vrais efforts. ROBI ne récompense que le réel."],function(){validateTask(q);render();});};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement. Tu ne gagneras aucun XP."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-check]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.check);if(!q||doneForToday(q))return;sysConfirm("As-tu vraiment accompli cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Inutile de tricher : ce tableau ne reflète que tes vrais efforts."],function(){validateTask(q);render();});};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-del]"),function(el){el.onclick=function(){var q=find(S.quests,el.dataset.del);if(!q)return;sysConfirm("Supprimer cette tâche ?",["<b>« "+esc(q.title)+" »</b>","","Elle sera retirée définitivement."],function(){S.quests=S.quests.filter(function(x){return x.id!==q.id;});save();render();toast("Tâche supprimée");});};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-info]"),function(el){el.onclick=function(ev){ev.stopPropagation();showInfo(el.dataset.info);};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-dungeon]"),function(el){el.onclick=function(){openDungeon(el.dataset.dungeon);};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-tset]"),function(el){el.onclick=function(){TSETCAP=null;openTaskSet(el.dataset.tset);};});
