@@ -3390,8 +3390,7 @@ if(eaeTab==="sport"){
   s+=vAaeProgress();
   s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
 }else{ // aujourd'hui
-  s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
-  s+=aaeMentalDayCard();
+  s+=aaeTodayCard(ids);
 }
 s+='</div>';return s;}
 
