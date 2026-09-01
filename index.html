@@ -3101,10 +3101,23 @@ function aaeWeekProgram(){
   });
   return s;
 }
+function aaeIsForceDay(){ // jour de force = renfo complet (mer) ou Simple & Sinister (jeu) → douche froide le soir, pas le matin
+  var f=aaeDaySchedule()[weekdayMon(today())];
+  return f===AAE_SP_RENFO||f===AAE_SP_SS;
+}
 function aaeFiche(title){
   var t=(title||"").toLowerCase();
-  if(/recharge matinale|morning recharge/.test(t))return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],["Douche froide (résilience) : finir la douche en froid, 15 s → +15 s/sem → 2 min","variable","📹 Forge 13 · Cold Exposure"]]};
-  if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~20 min",steps:[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
+  if(/recharge matinale|morning recharge/.test(t)){
+    var dmDouche=aaeIsForceDay()
+      ?["🚿 Douche froide : PAS ce matin (jour de force, le froid juste après la muscu freinerait tes gains). Tu la prends ce soir → routine du soir.","","📹 Forge 13 · Cold Exposure"]
+      :["🚿 Douche froide (résilience) : finis ta douche du matin par du froid, 15 s → +15 s/sem → 2 min. Commence par les pieds, remonte, respire lentement.","variable","📹 Forge 13 · Cold Exposure"];
+    return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
+  }
+  if(/evening|habitudes du soir|routine du soir/.test(t)){
+    var evSteps=[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
+    if(aaeIsForceDay())evSteps.splice(1,0,["🚿 Douche froide (résilience) : ce soir, car jour de force. 15 s → +15 s/sem → 2 min, commence par les pieds, respire lentement.","variable","📹 Forge 13 · Cold Exposure"]);
+    return {dur:"~20 min",steps:evSteps};
+  }
   if(/sport du jour|sport \(pr/.test(t)){
     if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
     var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;
