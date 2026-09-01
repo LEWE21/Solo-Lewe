@@ -2898,17 +2898,6 @@ function aaeMentalDayFiche(){
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
   return {dur:m.light?"~45 min":"~1h30",steps:steps};
 }
-function aaeMentalDayCard(){
-  var f=aaeMentalDayFiche();
-  var rows=f.steps.map(function(st,idx){
-    if(idx===0)return '<div style="font-weight:700;color:var(--txt);margin-bottom:10px">'+esc(st[0])+'</div>';
-    var can=(st[1]!==""||st[2]!==""||st[3]),sid='mental#'+idx,on=aaeStepDone(sid);
-    var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-    return '<div class="aae-step'+(on?' sdone':'')+'" style="margin:4px 0">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
-  }).join("");
-  var hint=aaeMentalChrono()?'':'<div class="aae-hint" style="margin-top:10px">Méthode : cours → exercices sans chrono (comprendre) → avec chrono (vitesse) → examens complets. On ne passe au chrono que quand le sans-chrono est solide.</div>';
-  return '<div class="cksec">🧠 Mental du jour · la grille</div><div class="spanel aae-card">'+rows+hint+'</div>';
-}
 function aaeTaiChiCard(){
   var idx=(S.aae.taichi&&S.aae.taichi.idx)||0,L=TAICHI_L1,n=L.length,cur=idx<n?L[idx]:null;
   var pc=Math.round(Math.min(idx,n)/n*100);
@@ -3153,13 +3142,6 @@ function aaeTodayCard(ids){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var items=aaeDayItems(ids);
   var n=items.length,inner='';
-  var restWd=aaeRestWd();
-  if(restWd==null)inner+='<div class="aae-restbar"><button class="aae-restbtn" data-aaerest="1">🛌 Prendre mon jour de repos aujourd\'hui</button><span class="aae-resthint">1 fois/semaine, la séance du jour se décale</span></div>';
-  else inner+='<div class="aae-restbar"><span class="aae-restinfo">🛌 Repos '+(restWd===weekdayMon(today())?"aujourd\'hui":"le "+AAE_DAYS[restWd].toLowerCase())+' · pris pour cette semaine</span></div>';
-  var resv=aaeIsReserve();
-  inner+='<div class="aae-restbar">'+(resv
-    ?'<span class="aae-restinfo">🎖️ Réserve aujourd\'hui · jour allégé : tai chi + 1 brique mentale, rien n\'est décalé</span><button class="aae-restbtn ghost" data-aaereserve="off">Annuler</button>'
-    :'<button class="aae-restbtn" data-aaereserve="on">🎖️ Je suis de réserve aujourd\'hui</button><span class="aae-resthint">Allège la journée sans rien arrêter ni décaler</span>')+'</div>';
   MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
@@ -3183,20 +3165,6 @@ function aaeTodayCard(ids){
     inner+='</div>';
   });
   return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' item'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
-}
-function aaeWeekProgressCard(ids){
-  var t=today(),mon=isoPlus(t,-weekdayMon(t)),map=habHistMap();
-  var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});
-  var s='<div class="spanel aae-week"><div class="aae-h"><span class="aae-ht">📆 Cette semaine</span><span class="aae-moy" style="font-size:11px;color:var(--dim2)">fait / prévu</span></div>';
-  if(!dailies.length){s+='<div class="empty">Aucune habitude EAE reliée.</div></div>';return s;}
-  dailies.forEach(function(q){
-    var due=0,done=0;
-    for(var i=0;i<7;i++){var ds=isoPlus(mon,i);if(ds>t)break;if(!dueOn(q,ds))continue;due++;
-      if(ds===t){if(q.done)done++;}else{var h=map[ds];if(h&&h.doneIds&&h.doneIds.indexOf(q.id)>=0)done++;}}
-    var pc=due?Math.round(done/due*100):0;
-    s+='<div class="aae-wk"><div class="aae-wktop"><span class="aae-wkn">'+esc(q.title)+'</span><span class="aae-wkv"><b>'+done+'</b> / '+due+'</span></div><div class="aae-track"><i style="width:'+Math.max(4,pc)+'%;background:var(--mint)"></i></div></div>';
-  });
-  s+='</div>';return s;
 }
 var eaeTab="aujourdhui"; // sous-onglet actif de la vue EAE (aujourdhui / sport / apprendre / progression)
 function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
@@ -3358,12 +3326,6 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-hb.dragging{opacity:.45}'+
 '.aae-hb.dropafter{box-shadow:0 2px 0 var(--gold)}'+
 '.aae-grip{color:var(--dim2);cursor:grab;font-size:12px;margin-right:1px;flex:none}'+
-'.aae-restbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 12px}'+
-'.aae-restbtn{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel-2);color:var(--txt);padding:7px 13px;border-radius:99px;cursor:pointer}'+
-'.aae-restbtn:hover{border-color:var(--gold)}'+
-'.aae-restbtn.ghost{background:var(--panel);color:var(--dim);font-weight:500}'+
-'.aae-resthint{font-size:11px;color:var(--dim2)}'+
-'.aae-restinfo{font-size:12.5px;color:var(--dim);font-weight:600}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
 '.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim)}'+
 '.aae-scheck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--brd-hi);flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}'+
@@ -3442,8 +3404,6 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaerest]"),function(el){el.onclick=function(){var A=S.aae;if(A.restDay&&A.restDay.week===aaeWkMonday())return;sysConfirm("Prendre ton jour de repos aujourd'hui ?",["Ta séance du jour devient repos, et le reste de la semaine glisse d'un jour.","Tu ne peux le faire qu'une fois par semaine."],function(){A.restDay={week:aaeWkMonday(),day:today()};save();render();});};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaereserve]"),function(el){el.onclick=function(){S.aae.reserveDay=(el.getAttribute("data-aaereserve")==="on")?today():null;save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaitaichi]"),function(el){el.onclick=function(){var A=S.aae;A.taichi=A.taichi||{idx:0,reps:0};var d=el.getAttribute("data-aaitaichi");
     if(d==="rep"){A.taichi.reps=(A.taichi.reps||0)+1;}
     else if(d==="+"){A.taichi.idx=Math.min(TAICHI_L1.length,(A.taichi.idx||0)+1);A.taichi.reps=0;}
