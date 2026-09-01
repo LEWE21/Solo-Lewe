@@ -3057,46 +3057,34 @@ function aaeCursusBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-// Programme SÉRIEUX façon "Intégrer l'armée", calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) et PROGRESSIF par phases (voir aaeSportPhase). Base = endurance fondamentale, complété par fractionné/seuil, renforcement fonctionnel au poids du corps, natation, marche chargée, tai chi en récup. Index = jour (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
-var AAE_SP_EF={dur:"~45 min",steps:[["Endurance fondamentale · base aérobie (Luc Léger)","",""],
-  ["Échauffement articulaire + montées de genoux, talons-fesses, mobilité chevilles","6 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],
-  ["Endurance fondamentale, Zone 2 (60-75% FCmax, tu cours en parlant sans t'essouffler) : 30 min → monte vers 45-60 min selon la phase. C'est 70-80% de ton volume, la base de tout.","30-45 min",""],
-  ["Technique de foulée : cadence 165-180 pas/min, foulée courte (pose du pied sous le bassin), buste droit légèrement incliné, épaules et visage relâchés","",""],
-  ["Gammes : montées de genoux, talons-fesses, griffé, pas chassés, foulée bondissante","6 min","📹 Forge 36 · 100-Up Running"],
+// Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
+var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
+  ["Échauffement dynamique ≥ 10 min : montées de genoux, talons-fesses, mobilité chevilles, 2-3 accélérations","10 min","📹 Forge 08 Dynamic Stretching · 36 100-Up Running"],
+  ["Selon la phase : Phase 1 endurance fondamentale Zone 2 (60-75% FCmax, tu cours en parlant), 30-40 min ; Phase 2 fractionné court 2×10×30 s rapide/30 s lent ; Phase 3 fractionné long 10×400 m récup 1 min OU seuil 20 min. Objectif ≥ 6 min près de ta VMA. Cours pendant la récup.","20-40 min",""],
+  ["Technique de foulée : cadence 165-180 pas/min, foulée courte (pied sous le bassin), buste droit, épaules relâchées. Demi-tours : ralentir avant le plot, appui jambe intérieure, rebond","",""],
   ["Retour au calme : footing très lent + étirements mollets/psoas/cuisses","5 min","📹 Forge 42 · Stretching"]]};
-var AAE_SP_FHAUT={dur:"~40 min",steps:[["Renforcement HAUT + core · cible Pompes","",""],
-  ["Échauffement : resets, arm swings, mobilité épaules/poignets, ponts thoraciques ×10","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges"],
+var AAE_SP_RENFO={dur:"~45 min",steps:[["Renforcement complet · Pompes + Killy","",""],
+  ["Échauffement : arm swings, mobilité épaules/poignets, ponts thoraciques, 10 squats hindous","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges · 06 Hindu Squats"],
   ["POMPES, le test (objectif 50) : négatives lentes → pompes strictes → +1 rep/semaine, 4 séries à qualité max, repos 1 min","10 min","📹 Forge 05 Hindu Pushups · 33 One-Arm Pushups"],
-  ["Épaulé + développé militaire (kettlebell ou haltère) : 3-4 séries de 5, charge poussée ~8 fois max","7 min","📹 Forge 21-24 · Clean & Press"],
-  ["Tirage : rowing inversé (barre basse, dos contracté, descente lente) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
-  ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""],
-  ["Option récup : quelques minutes de tai chi lent pour clore la séance","",""]]};
-var AAE_SP_FRACT={dur:"~35 min",steps:[["Fractionné · VMA (Luc Léger)","",""],
-  ["Échauffement complet ≥ 15 min (footing lent + gammes + 2-3 accélérations) — obligatoire avant tout fractionné","15 min",""],
-  ["Fractionné (monte selon la phase) : Phase 1 court 2×10×30 s rapide / 30 s lent ; Phases 2-3 long 10×400 m, récup 1 min. Objectif ≥ 6 min près de ta VMA par séance. Cours pendant la récup (mieux pour le cœur).","15 min",""],
-  ["Technique de demi-tour : ralentir avant le plot, appui sur la jambe intérieure pour rebondir, regard haut. Séries de 10-15 sur 20 m","",""],
-  ["Retour au calme : footing très lent + fast & loose","5 min","📹 Forge 27 · Fast & Loose"]]};
-var AAE_SP_NAT={dur:"~35 min",steps:[["Natation · cardio sans impact (maintien)","",""],
-  ["Tu as 8 ans de natation : à maintenir, pas à reconstruire. Crawl + brasse (les 2 plus utiles en militaire), technique et respiration","",""],
-  ["Intervalles : longueurs rapides / récup douce ; option force aquatique (palmes/gants)","25 min",""],
-  ["Sans impact : laisse récupérer articulations et tendons. Pas de piscine cette semaine ? Remplace par mobilité + tai chi","",""],
-  ["Étirements doux en fin","5 min",""]]};
-var AAE_SP_FBAS={dur:"~40 min",steps:[["Renforcement BAS + core · cible Killy","",""],
-  ["Échauffement : mobilité hanches/chevilles, 10 squats hindous","4 min","📹 Forge 30 Joint Mobility · 06 Hindu Squats"],
   ["KILLY, le test (objectif 168 s) : chaise isométrique dos au mur, cuisses à l'horizontale, tenues répétées, +10-15 s/semaine","5 min",""],
-  ["Squats + fentes bulgares + hip thrust + step-up sur box : 3-4 séries","10 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
-  ["Swings kettlebell 10/min + soulevé de terre (chaîne postérieure, dos droit) : 8-10 séries","8 min","📹 Forge 18 Two-Arm Swing · 17 Deadlift"],
-  ["Mollets (montées sur pointe) + core : planche dynamique, relevés de jambes","6 min",""]]};
-var AAE_SP_SEUIL={dur:"~55 min",steps:[["Seuil ou sortie longue + marche chargée","",""],
-  ["1 semaine sur 2 : (a) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax, tu ne peux plus vraiment parler) + 10 min retour au calme ; (b) SORTIE LONGUE en endurance fondamentale, 60 min","45-60 min",""],
+  ["Bas du corps : squats + fentes bulgares + hip thrust, 3-4 séries","8 min","📹 Forge 34 · Single-Leg Squats"],
+  ["Tirage : rowing inversé (barre basse, dos contracté) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
+  ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""]]};
+var AAE_SP_SS={dur:"~35 min",steps:[["Simple & Sinister · kettlebell (Pavel)","",""],
+  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras","6 min",""],
+  ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Monte la charge quand les 100 passent sans forcer","12 min","📹 Forge 19 · One-Arm Swing"],
+  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell","12 min",""],
+  ["Décompression : respiration lente, fast & loose, étirements doux","5 min","📹 Forge 27 · Fast & Loose"]]};
+var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée (week-end)","",""],
+  ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
   ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
-  ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio","",""]]};
+  ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio. Option : quelques tenues Killy en fin","",""]]};
 var AAE_SP_TAICHI={dur:"~30 min",taichi:true,steps:[["Tai chi + récupération active","",""],
   ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
   ["Foam rolling + étirements légers + mobilité. La récupération, c'est là que le corps s'adapte, pas à l'effort. Le repos est une discipline, pas une faiblesse","10 min","📹 Forge 25 · Foam Rolling"],
   ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
-// Semaine sérieuse et progressive : Lun Endurance fondamentale · Mar Renfo haut/pompes · Mer Fractionné · Jeu Natation · Ven Renfo bas/Killy · Sam Seuil + marche chargée · Dim Tai chi/récup (aussi le repli jour de repos)
-var AAE_SPORT=[AAE_SP_EF,AAE_SP_FHAUT,AAE_SP_FRACT,AAE_SP_NAT,AAE_SP_FBAS,AAE_SP_SEUIL,AAE_SP_TAICHI];
+// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar récup/tai chi · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven récup/tai chi · Sam Sortie longue/seuil + marche · Dim Tai chi/récup (aussi le repli jour de repos)
+var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_TAICHI,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_TAICHI,AAE_SP_LONG,AAE_SP_TAICHI];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine : repos sur le jour choisi (sinon dimanche par défaut), les 6 séances glissent sur les autres jours
   var restWd=aaeRestWd();
@@ -3142,7 +3130,7 @@ function aaeFiche(title){
   if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~20 min",steps:[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
   if(/sport du jour|sport \(pr/.test(t)){
     if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
-    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_EF;
+    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;
     if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
     return f;                                                    // séance intense (30 min, 100-Up et gainage déjà inclus)
   }
