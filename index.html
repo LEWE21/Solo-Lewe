@@ -2705,7 +2705,7 @@ function settAbsences(){
 }
 function settReserve(){
   var rd=(S.aae&&S.aae.reserveDays)||[],days=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
-  var s='<div class="mtitle">Jours de réserve</div><div class="subhead">Coche tes jours de réserve. Ces jours-là, ta séance de sport devient une <b>séance allégée</b> (les autres jours gardent leur durée complète). Tu peux les changer quand ils bougent, rien n\'est figé.</div>';
+  var s='<div class="mtitle">Jours de réserve</div><div class="subhead">Coche tes jours de réserve. Ils sont juste <b>marqués</b> dans ta journée et ton programme (badge « réserve »), pour que tu saches que la journée est plus chargée. Ta séance de sport ne change pas, tu la fais le matin comme d\'habitude. Tu peux les changer quand ils bougent.</div>';
   s+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">'+days.map(function(d,i){var on=rd.indexOf(i)>=0;return '<button class="daytog'+(on?' on':'')+'" data-resday="'+i+'">'+d+'</button>';}).join("")+'</div>';
   s+='<div class="subhead" style="margin-top:12px">'+(rd.length?('Réserve : '+rd.slice().sort().map(function(i){return days[i];}).join(", ")):'Aucun jour de réserve coché.')+'</div>';
   return s;
@@ -3069,21 +3069,15 @@ var AAE_SP_TAICHI={dur:"~30 min",taichi:true,steps:[["Tai chi + récupération a
   ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
   ["Foam rolling + étirements légers + mobilité. La récupération, c'est là que le corps s'adapte, pas à l'effort. Le repos est une discipline, pas une faiblesse","10 min","📹 Forge 25 · Foam Rolling"],
   ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
-var AAE_SP_RESERVE={dur:"~20 min",reserve:true,steps:[["Séance allégée · jour de réserve","",""],
-  ["Jour de réserve : si ta réserve inclut déjà du sport, ça compte, ne double pas. Sinon, garde l'habitude avec ce format court.","",""],
-  ["Échauffement articulaire + mobilité","4 min","📹 Forge 30 · Joint Mobility"],
-  ["Un bloc court selon ta cible du jour : pompes (progression) OU chaise Killy OU 15 min de footing facile OU 50 swings","12 min",""],
-  ["Gainage : planche + gainage latéral","4 min",""]]};
-// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar récup/tai chi · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven récup/tai chi · Sam Sortie longue/seuil + marche · Dim Tai chi/récup (aussi le repli jour de repos). Les jours de réserve (S.aae.reserveDays) passent en séance allégée.
+// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar récup/tai chi · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven récup/tai chi · Sam Sortie longue/seuil + marche · Dim Tai chi/récup (aussi le repli jour de repos). Les jours de réserve sont seulement marqués (badge), la séance ne change pas.
 var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_TAICHI,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_TAICHI,AAE_SP_LONG,AAE_SP_TAICHI];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
-function aaeDaySchedule(){ // planning [7] de la semaine ; les jours de réserve passent en séance allégée
+function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
   for(var d=0;d<7;d++){ if(restWd!=null&&d===restWd){out[d]=AAE_SPORT[6];} else if(restWd!=null){out[d]=AAE_SPORT[s<6?s:6];s++;} else {out[d]=AAE_SPORT[d];} }
-  var rd=(S.aae&&S.aae.reserveDays)||[];
-  for(var i=0;i<7;i++){ if(rd.indexOf(i)>=0)out[i]=AAE_SP_RESERVE; }
   return out;
 }
+function aaeIsReserveDay(){ return (((S.aae&&S.aae.reserveDays)||[]).indexOf(weekdayMon(today()))>=0); }
 function aaeWkMonday(){return isoPlus(today(),-weekdayMon(today()));}
 function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())return false;return (A.wkStepsSet||[]).indexOf(id)>=0;}
 function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
@@ -3109,9 +3103,10 @@ function aaeWeekProgram(){
   var s='<div class="cksec">🗓️ Ton programme de la semaine</div>';
   s+='<div class="spanel aae-card" style="margin-bottom:12px"><div style="font-weight:800;color:var(--txt);margin-bottom:4px">'+esc(pc[0])+'</div><div class="subhead" style="margin:0">'+esc(pc[1])+'</div></div>';
   s+='<div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour. Programme calé sur tes 3 épreuves, il monte progressivement, ne brûle pas les étapes.</div>';
+  var rd=(S.aae&&S.aae.reserveDays)||[];
   aaeDaySchedule().forEach(function(d,i){
     var isToday=(i===todayWd),sess=d.steps[0][0];
-    s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+(d.reserve?' <span class="aae-resv">🎖️ réserve</span>':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeWkStepsHtml(d.steps.slice(1),i,1)+'</div></details>';
+    s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+(rd.indexOf(i)>=0?' <span class="aae-resv">🎖️ réserve</span>':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeWkStepsHtml(d.steps.slice(1),i,1)+'</div></details>';
   });
   return s;
 }
@@ -3183,7 +3178,7 @@ function aaeTodayCard(ids){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var items=aaeDayItems(ids);
   var n=items.length,inner='';
-  if(((S.aae&&S.aae.reserveDays)||[]).indexOf(weekdayMon(today()))>=0)inner+='<div class="aae-resvbar">🎖️ Jour de réserve — ta séance de sport est allégée aujourd\'hui.</div>';
+  if(aaeIsReserveDay())inner+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
   MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
