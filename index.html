@@ -3109,13 +3109,13 @@ function aaeFiche(title){
   var t=(title||"").toLowerCase();
   if(/recharge matinale|morning recharge/.test(t)){
     var dmDouche=aaeIsForceDay()
-      ?["🚿 Douche froide : PAS ce matin (jour de force, le froid juste après la muscu freinerait tes gains). Tu la prends ce soir → routine du soir.","","📹 Forge 13 · Cold Exposure"]
-      :["🚿 Douche froide (résilience) : finis ta douche du matin par du froid, 15 s → +15 s/sem → 2 min. Commence par les pieds, remonte, respire lentement.","variable","📹 Forge 13 · Cold Exposure"];
+      ?["🚿 Douche froide : PAS ce matin (jour de force, le froid juste après la muscu freinerait tes gains). Tu la prends ce soir → routine du soir.","ce soir","📹 Forge 13 · Cold Exposure","hot"]
+      :["🚿 Douche froide (résilience) : finis ta douche du matin par du froid, 15 s → +15 s/sem → 2 min. Commence par les pieds, remonte, respire lentement.","ce matin","📹 Forge 13 · Cold Exposure","hot"];
     return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
   }
   if(/evening|habitudes du soir|routine du soir/.test(t)){
     var evSteps=[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
-    if(aaeIsForceDay())evSteps.splice(1,0,["🚿 Douche froide (résilience) : ce soir, car jour de force. 15 s → +15 s/sem → 2 min, commence par les pieds, respire lentement.","variable","📹 Forge 13 · Cold Exposure"]);
+    if(aaeIsForceDay())evSteps.splice(1,0,["🚿 Douche froide (résilience) : ce soir, car jour de force. 15 s → +15 s/sem → 2 min, commence par les pieds, respire lentement.","ce soir","📹 Forge 13 · Cold Exposure","hot"]);
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
@@ -3180,9 +3180,9 @@ function aaeTodayCard(ids){
       var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
       if(f){
         var steps=f.steps.map(function(st,idx){
-          var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid);
+          var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-          return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+          return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
         inner+='<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
@@ -3363,6 +3363,8 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-stx b{color:var(--txt);font-weight:600}'+
 '.aae-src{color:#4C7C93;font-size:11px}'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
+'.aae-step.aae-hot .aae-stx b{color:var(--red)}'+
+'.aae-step.aae-hot .aae-stt{color:var(--red);font-weight:800;font-size:12px}'+
 '</style>';
 s+='<div class="solo"><div class="aae-quote">« Comparé à la mort de mon père ce n\'est rien. »</div><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
 s+=aaeCountdown(); // le compte à rebours reste toujours visible en tête
