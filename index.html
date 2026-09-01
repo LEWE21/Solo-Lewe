@@ -558,6 +558,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
   .dcard b{font-size:36px}
   .rbig{font-size:48px}
   .q .ttl{font-size:15.5px}
+  .aae-hn{font-size:15.5px}
   .spl{font-size:16px}
 }
 @media(min-width:1850px){
@@ -2405,7 +2406,7 @@ function vCockpit(){
   }
   if(!moodDone())s+=moodCard();     // humeur du jour ; disparaît une fois validée
   if(sleepToday()==null)s+=sleepCard(); // sommeil de la nuit ; comme l'humeur, disparaît une fois noté
-  if(momentOf()==="soir")s+=defiCard("epictete"); // rituel du SOIR (à partir de 18h heure de Nouméa), pas le matin
+  if(momentOf()==="matin")s+=defiCard("epictete"); // rituel du MATIN (avant 11h heure de Nouméa) : le défi Épictète pour ancrer la journée
   var jIds=suiviAaeMissionIds();
   var jEae=function(q){return isAaeQuest(q,jIds);};
   var undoneHab=dueList.filter(function(q){return !doneForToday(q)&&!jEae(q);}).length;
@@ -3325,7 +3326,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-crow2>summary .aae-chev{margin-left:0}'+
 '.aae-curtag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;background:color-mix(in srgb,var(--gold) 18%,var(--panel));color:var(--gold);padding:1px 6px;border-radius:99px;white-space:nowrap;flex:none}'+
 '.aae-cbody{padding:2px 8px 12px 34px;display:flex;flex-direction:column;gap:8px}'+
-'.aae-cdem{font-size:11.5px;color:var(--dim)}'+
+'.aae-cdem{font-size:12px;color:var(--dim)}'+
 '.aae-qrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}'+
 '.aae-qin{flex:1;min-width:160px;max-width:none;width:auto}'+
 '.aae-qlink{font-size:12px;color:#6f52a6;font-weight:600;white-space:nowrap}'+
@@ -3349,7 +3350,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-hb summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}'+
 '.aae-hb summary::-webkit-details-marker{display:none}'+
 '.aae-hb.flat{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}'+
-'.aae-hn{font-weight:600;color:var(--txt)}'+
+'.aae-hn{font-weight:600;color:var(--txt);font-size:14.5px}'+
 '.aae-hb.done .aae-hn{opacity:.5;text-decoration:line-through}'+
 '.aae-chev{color:var(--dim2);font-size:11px;margin-left:auto;transition:transform .15s}'+
 'details.aae-hb[open] .aae-chev{transform:rotate(90deg)}'+
@@ -3364,7 +3365,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-hb.dropafter{box-shadow:0 2px 0 var(--gold)}'+
 '.aae-grip{color:var(--dim2);cursor:grab;font-size:12px;margin-right:1px;flex:none}'+
 '.aae-fiche{padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:5px}'+
-'.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--dim)}'+
+'.aae-step{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--dim)}'+
 '.aae-scheck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--brd-hi);flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}'+
 '.aae-scheck.on{background:var(--mint);border-color:var(--mint)}'+
 '.aae-scheck.on:after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-1px}'+
