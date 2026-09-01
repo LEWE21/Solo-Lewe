@@ -3198,6 +3198,7 @@ function aaeWeekProgressCard(ids){
   });
   s+='</div>';return s;
 }
+var eaeTab="aujourdhui"; // sous-onglet actif de la vue EAE (aujourdhui / sport / apprendre / progression)
 function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
@@ -3375,16 +3376,23 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '</style>';
 s+='<div class="solo"><div class="aae-quote">« Comparé à la mort de mon père ce n\'est rien. »</div><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
-s+=aaeCountdown();
-s+=aaeTimeline();
-s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
-s+=aaeWeekProgram();
-s+=aaeCursusBlock();
-s+=aaeMathBlock();
-s+=aaeMentalDayCard();
-s+=vAaeProgress();
-s+=aaeTaiChiCard();
-s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
+s+=aaeCountdown(); // le compte à rebours reste toujours visible en tête
+var ET=[["aujourdhui","📅 Aujourd\'hui"],["sport","🏃 Sport"],["apprendre","📚 Apprendre"],["progression","📊 Progression"]];
+s+='<div class="habtabs" style="margin:14px 0">'+ET.map(function(t){return '<button class="habtab'+(eaeTab===t[0]?" on":"")+'" data-eaetab="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>';
+if(eaeTab==="sport"){
+  s+=aaeWeekProgram();
+  s+=aaeTaiChiCard();
+}else if(eaeTab==="apprendre"){
+  s+=aaeCursusBlock();
+  s+=aaeMathBlock();
+}else if(eaeTab==="progression"){
+  s+=aaeTimeline();
+  s+=vAaeProgress();
+  s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
+}else{ // aujourd'hui
+  s+='<div class="aae-grid2 aae-tw"><div class="aae-col">'+aaeTodayCard(ids)+'</div><div class="aae-col">'+aaeWeekProgressCard(ids)+'</div></div>';
+  s+=aaeMentalDayCard();
+}
 s+='</div>';return s;}
 
 function bind(){
@@ -3414,6 +3422,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-objanalyse]"),function(el){el.onclick=function(){analyzeObjectivesWithRobi();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-chathist]"),function(el){el.onclick=function(){view="maitre";render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-piv]"),function(el){el.onclick=function(){view=el.getAttribute("data-piv");objSel=null;render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaetab]"),function(el){el.onclick=function(){eaeTab=el.getAttribute("data-eaetab");render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaego]"),function(el){el.onclick=function(){view="suivi";objSel=null;render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-datesreview]"),function(el){el.onclick=function(){reviewDatesWithRobi();};});
   // Saisie des progressions EAE : valeurs (physique/mental) et notes /20 (psycho/entretien) + cycle
