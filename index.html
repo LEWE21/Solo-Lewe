@@ -786,9 +786,7 @@ function load(){
      if(!("restDay" in _A))_A.restDay=null;
      if(!_A.cursusLinks)_A.cursusLinks={};
      if(!_A.mathDone)_A.mathDone=[];              // chapitres d'arithmétique appris (prépa test CSO)
-     if(!_A.mathLinks)_A.mathLinks={};            // set Quizlet par chapitre d'arithmétique
-     if(!_A.terrainDone)_A.terrainDone=[];        // thèmes Terrain appris (théorie FMI)
-     if(!_A.terrainLinks)_A.terrainLinks={};}     // set Quizlet par thème Terrain
+     if(!_A.mathLinks)_A.mathLinks={};}           // set Quizlet par chapitre d'arithmétique
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3017,27 +3015,6 @@ function aaeMathBlock(){
   s+='<div class="aae-hint" style="margin-top:8px">Ouvre un chapitre pour sa démarche et le lien de ton set Quizlet. Coche-le quand tu le connais.</div></div>';
   return s;
 }
-var AAE_TERRAIN=[
-  [1,"Cotation médicale SIGYCOP","Les 7 lettres S·I·G·Y·C·O·P et leur sens, notées de 1 (excellent) à 6 (incapacité). À connaître avant la visite médicale de sélection.",1],
-  [2,"Lexique de combat","Les acronymes du combattant : FFOMECBLOT (camouflage), PPGARDCOM (les 11 actes réflexes), PATRACDR, ZMSPCP, NVAD, + ISTC / TIOR / TTA. Sigle → développé + sens.",1],
-  [3,"Sécurité et maniement des armes","HK416-F (remplace le FAMAS) et Glock 17 : les règles de sécurité et la nomenclature de base. Set à construire ensemble.",0],
-  [4,"Les nœuds","Nom + usage de chaque nœud utile (chaise, cabestan, nœud de huit, tête d'alouette, demi-clés...). Set à construire ensemble.",0],
-  [5,"Ordre serré","Commandements et positions (garde-à-vous, repos, à droite / à gauche, mouvements de pied). Set à construire ensemble.",0]
-];
-function aaeTerrainBlock(){
-  var done=S.aae.terrainDone||[],links=S.aae.terrainLinks||{},n=done.length,tot=AAE_TERRAIN.length;
-  var s='<div class="cksec">🎖️ Terrain · préparer la pratique (théorie FMI)</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Thèmes appris</span><span class="aae-moy"><b>'+n+'</b> / '+tot+'</span></div>';
-  s+='<div class="subhead" style="margin:0 0 8px">Apprendre la théorie des compétences de terrain avant l\'incorporation, pour arriver préparée à la pratique. Ouvre un thème pour sa démarche et le lien de ton set Quizlet.</div>';
-  AAE_TERRAIN.forEach(function(th){
-    var id=th[0],on=done.indexOf(id)>=0,ready=th[3],lk=links[id]||'';
-    var body='<div class="aae-cdem">'+esc(th[2])+'</div>'
-      +'<div class="aae-cdem" style="margin-top:4px">Démarche : 1) apprendre le contenu (set Quizlet '+(ready?'fourni':'à créer ensemble')+') · 2) mode Apprendre en répétition espacée · 3) mode jury avec Claude · 4) cocher quand tu le connais.</div>'
-      +'<div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-aaeterrainq="'+id+'" placeholder="colle le lien de ton set Quizlet" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
-    s+='<details class="aae-crow2'+(on?' on':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-aaeterrain="'+id+'">'+(on?'✓':'')+'</span><span class="aae-ctitle">'+esc(th[1])+'</span>'+(ready?'<span class="aae-curtag">set prêt</span>':'')+'<span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
-  });
-  s+='</div>';
-  return s;
-}
 function aaeCurrentCourse(){var done=S.aae.cursusDone||[];for(var b=0;b<AAE_COURS.length;b++){var l=AAE_COURS[b].list;for(var i=0;i<l.length;i++){if(done.indexOf(l[i][0])<0)return {num:l[i][0],title:l[i][1],mode:l[i][2]};}}return null;}
 function aaeCursusBlock(){
   var done=S.aae.cursusDone||[],n=done.length,links=S.aae.cursusLinks||{},cur=aaeCurrentCourse();
@@ -3384,7 +3361,6 @@ if(eaeTab==="sport"){
 }else if(eaeTab==="apprendre"){
   s+=aaeCursusBlock();
   s+=aaeMathBlock();
-  s+=aaeTerrainBlock();
 }else if(eaeTab==="progression"){
   s+=aaeTimeline();
   s+=vAaeProgress();
@@ -3439,8 +3415,6 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaequizlet]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaequizlet");var v=(el.value||"").trim();S.aae.cursusLinks=S.aae.cursusLinks||{};if(v)S.aae.cursusLinks[num]=v;else delete S.aae.cursusLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemath]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaemath");var d=S.aae.mathDone||(S.aae.mathDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeterrain]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaeterrain");var d=S.aae.terrainDone||(S.aae.terrainDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeterrainq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaeterrainq");var v=(el.value||"").trim();S.aae.terrainLinks=S.aae.terrainLinks||{};if(v)S.aae.terrainLinks[num]=v;else delete S.aae.terrainLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
