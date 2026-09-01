@@ -786,7 +786,9 @@ function load(){
      if(!("restDay" in _A))_A.restDay=null;
      if(!_A.cursusLinks)_A.cursusLinks={};
      if(!_A.mathDone)_A.mathDone=[];              // chapitres d'arithmétique appris (prépa test CSO)
-     if(!_A.mathLinks)_A.mathLinks={};}           // set Quizlet par chapitre d'arithmétique
+     if(!_A.mathLinks)_A.mathLinks={};            // set Quizlet par chapitre d'arithmétique
+     if(!_A.terrainDone)_A.terrainDone=[];        // thèmes Terrain appris (théorie FMI)
+     if(!_A.terrainLinks)_A.terrainLinks={};}     // set Quizlet par thème Terrain
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3015,6 +3017,27 @@ function aaeMathBlock(){
   s+='<div class="aae-hint" style="margin-top:8px">Ouvre un chapitre pour sa démarche et le lien de ton set Quizlet. Coche-le quand tu le connais.</div></div>';
   return s;
 }
+var AAE_TERRAIN=[
+  [1,"Cotation médicale SIGYCOP","Les 7 lettres S·I·G·Y·C·O·P et leur sens, notées de 1 (excellent) à 6 (incapacité). À connaître avant la visite médicale de sélection.",1],
+  [2,"Lexique de combat","Les acronymes du combattant : FFOMECBLOT (camouflage), PPGARDCOM (les 11 actes réflexes), PATRACDR, ZMSPCP, NVAD, + ISTC / TIOR / TTA. Sigle → développé + sens.",1],
+  [3,"Sécurité et maniement des armes","HK416-F (remplace le FAMAS) et Glock 17 : les règles de sécurité et la nomenclature de base. Set à construire ensemble.",0],
+  [4,"Les nœuds","Nom + usage de chaque nœud utile (chaise, cabestan, nœud de huit, tête d'alouette, demi-clés...). Set à construire ensemble.",0],
+  [5,"Ordre serré","Commandements et positions (garde-à-vous, repos, à droite / à gauche, mouvements de pied). Set à construire ensemble.",0]
+];
+function aaeTerrainBlock(){
+  var done=S.aae.terrainDone||[],links=S.aae.terrainLinks||{},n=done.length,tot=AAE_TERRAIN.length;
+  var s='<div class="cksec">🎖️ Terrain · préparer la pratique (théorie FMI)</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Thèmes appris</span><span class="aae-moy"><b>'+n+'</b> / '+tot+'</span></div>';
+  s+='<div class="subhead" style="margin:0 0 8px">Apprendre la théorie des compétences de terrain avant l\'incorporation, pour arriver préparée à la pratique. Ouvre un thème pour sa démarche et le lien de ton set Quizlet.</div>';
+  AAE_TERRAIN.forEach(function(th){
+    var id=th[0],on=done.indexOf(id)>=0,ready=th[3],lk=links[id]||'';
+    var body='<div class="aae-cdem">'+esc(th[2])+'</div>'
+      +'<div class="aae-cdem" style="margin-top:4px">Démarche : 1) apprendre le contenu (set Quizlet '+(ready?'fourni':'à créer ensemble')+') · 2) mode Apprendre en répétition espacée · 3) mode jury avec Claude · 4) cocher quand tu le connais.</div>'
+      +'<div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-aaeterrainq="'+id+'" placeholder="colle le lien de ton set Quizlet" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
+    s+='<details class="aae-crow2'+(on?' on':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-aaeterrain="'+id+'">'+(on?'✓':'')+'</span><span class="aae-ctitle">'+esc(th[1])+'</span>'+(ready?'<span class="aae-curtag">set prêt</span>':'')+'<span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
+  });
+  s+='</div>';
+  return s;
+}
 function aaeCurrentCourse(){var done=S.aae.cursusDone||[];for(var b=0;b<AAE_COURS.length;b++){var l=AAE_COURS[b].list;for(var i=0;i<l.length;i++){if(done.indexOf(l[i][0])<0)return {num:l[i][0],title:l[i][1],mode:l[i][2]};}}return null;}
 function aaeCursusBlock(){
   var done=S.aae.cursusDone||[],n=done.length,links=S.aae.cursusLinks||{},cur=aaeCurrentCourse();
@@ -3034,35 +3057,46 @@ function aaeCursusBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-// Rotation sport : 4 couleurs de journée. Séances intenses cappées à ~30 min, exercices The Forge ciblant Luc Léger / pompes / Killy. Index = jour de la semaine (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
-var AAE_SP_FHAUT={dur:"~30 min",steps:[["Force haut · pompes (test Pompes)","",""],
-  ["Échauffement : resets, arm swings, mobilité épaules/poignets, ponts thoraciques ×10, 10 pompes hindoues lentes","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges · 05 Hindu Pushups"],
-  ["Pompes hindoues : 3 séries à qualité max, repos 1 min","6 min","📹 Forge 05 · Hindu Pushups"],
-  ["Progression pompes strictes (le test) : négatives lentes → strictes → 1 bras, 4 séries, +1 rep/semaine","6 min","📹 Forge 33 · One-Arm Pushups"],
-  ["Épaulé + développé militaire, kettlebell OU haltère : 3 séries de 5/bras, charge poussée ~8 fois max","6 min","📹 Forge 21-22 Kettlebell Clean & Press · 23-24 Haltère Clean & Press"],
-  ["Suspension à la barre (décompression, grip, épaules) : 2-3 tenues de 30 s, gaine-toi et descends sans sauter","2 min","📹 Forge 28 · Hanging"],
-  ["Gainage : planche + gainage latéral, +10-15 s/semaine, objectif 168 s","5 min",""]]};
-var AAE_SP_ENDUR={dur:"~30 min",steps:[["Endurance · Luc Léger (test course navette)","",""],
-  ["Échauffement dynamique : montées de genoux, talons-fesses, mobilité chevilles, 2 accélérations","6 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],
-  ["100-Up (technique de course), juste avant de courir","2 min","📹 Forge 36 · 100-Up Running"],
-  ["Intervalles 30/30 : 30 s rapide / 30 s footing lent. 8 répétitions au début, monte vers 12 (rythme type paliers Luc-Léger)","17 min",""],
-  ["Retour au calme : footing très lent + étirements mollets/psoas/cuisses","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]};
-var AAE_SP_FBAS={dur:"~30 min",steps:[["Force bas · Killy (test squat isométrique)","",""],
+// Programme SÉRIEUX façon "Intégrer l'armée", calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) et PROGRESSIF par phases (voir aaeSportPhase). Base = endurance fondamentale, complété par fractionné/seuil, renforcement fonctionnel au poids du corps, natation, marche chargée, tai chi en récup. Index = jour (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
+var AAE_SP_EF={dur:"~45 min",steps:[["Endurance fondamentale · base aérobie (Luc Léger)","",""],
+  ["Échauffement articulaire + montées de genoux, talons-fesses, mobilité chevilles","6 min","📹 Forge 08 Dynamic Stretching · 30 Joint Mobility"],
+  ["Endurance fondamentale, Zone 2 (60-75% FCmax, tu cours en parlant sans t'essouffler) : 30 min → monte vers 45-60 min selon la phase. C'est 70-80% de ton volume, la base de tout.","30-45 min",""],
+  ["Technique de foulée : cadence 165-180 pas/min, foulée courte (pose du pied sous le bassin), buste droit légèrement incliné, épaules et visage relâchés","",""],
+  ["Gammes : montées de genoux, talons-fesses, griffé, pas chassés, foulée bondissante","6 min","📹 Forge 36 · 100-Up Running"],
+  ["Retour au calme : footing très lent + étirements mollets/psoas/cuisses","5 min","📹 Forge 42 · Stretching"]]};
+var AAE_SP_FHAUT={dur:"~40 min",steps:[["Renforcement HAUT + core · cible Pompes","",""],
+  ["Échauffement : resets, arm swings, mobilité épaules/poignets, ponts thoraciques ×10","5 min","📹 Forge 26 Resets · 07 Thoracic Bridges"],
+  ["POMPES, le test (objectif 50) : négatives lentes → pompes strictes → +1 rep/semaine, 4 séries à qualité max, repos 1 min","10 min","📹 Forge 05 Hindu Pushups · 33 One-Arm Pushups"],
+  ["Épaulé + développé militaire (kettlebell ou haltère) : 3-4 séries de 5, charge poussée ~8 fois max","7 min","📹 Forge 21-24 · Clean & Press"],
+  ["Tirage : rowing inversé (barre basse, dos contracté, descente lente) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
+  ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""],
+  ["Option récup : quelques minutes de tai chi lent pour clore la séance","",""]]};
+var AAE_SP_FRACT={dur:"~35 min",steps:[["Fractionné · VMA (Luc Léger)","",""],
+  ["Échauffement complet ≥ 15 min (footing lent + gammes + 2-3 accélérations) — obligatoire avant tout fractionné","15 min",""],
+  ["Fractionné (monte selon la phase) : Phase 1 court 2×10×30 s rapide / 30 s lent ; Phases 2-3 long 10×400 m, récup 1 min. Objectif ≥ 6 min près de ta VMA par séance. Cours pendant la récup (mieux pour le cœur).","15 min",""],
+  ["Technique de demi-tour : ralentir avant le plot, appui sur la jambe intérieure pour rebondir, regard haut. Séries de 10-15 sur 20 m","",""],
+  ["Retour au calme : footing très lent + fast & loose","5 min","📹 Forge 27 · Fast & Loose"]]};
+var AAE_SP_NAT={dur:"~35 min",steps:[["Natation · cardio sans impact (maintien)","",""],
+  ["Tu as 8 ans de natation : à maintenir, pas à reconstruire. Crawl + brasse (les 2 plus utiles en militaire), technique et respiration","",""],
+  ["Intervalles : longueurs rapides / récup douce ; option force aquatique (palmes/gants)","25 min",""],
+  ["Sans impact : laisse récupérer articulations et tendons. Pas de piscine cette semaine ? Remplace par mobilité + tai chi","",""],
+  ["Étirements doux en fin","5 min",""]]};
+var AAE_SP_FBAS={dur:"~40 min",steps:[["Renforcement BAS + core · cible Killy","",""],
   ["Échauffement : mobilité hanches/chevilles, 10 squats hindous","4 min","📹 Forge 30 Joint Mobility · 06 Hindu Squats"],
-  ["Squats hindous + progression squat 1 jambe (pistol) assisté à une chaise, 4 séries","7 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
-  ["Swings 10/min + soulevé de terre, 8 à 10 séries. Progression : 2 mains → 1 bras → haltère. Force des hanches, dos droit","8 min","📹 Forge 18 Two-Arm Swing · 19 One-Arm Swing · 20 Haltère Swing · 17 Deadlift"],
-  ["Killy (squat isométrique dos au mur, cuisses à l'horizontale) : tenues, +10-15 s/semaine","4 min",""],
-  ["Crawling (gainage full-body, le 'X') : à ta progression, genoux → leopard → spider-man","5 min","📹 Forge 35 · Crawling"]]};
-var AAE_SP_COMBAT={dur:"~30 min",steps:[["Cardio & combatives · défouloir (bonus réserviste)","",""],
-  ["Échauffement : mobilité + footing léger ou corde à sauter","5 min","📹 Forge 30 · Joint Mobility"],
-  ["Bases debout : garde (mains hautes, menton bas), jeu de jambes, jab / direct / crochet / overhand, esquive. Technique avant vitesse et puissance","10 min","📹 Forge 45 Garde & Frappes · 46 Kicks, Takedown, Sprawl"],
-  ["Shadowboxing puis sac de frappe : enchaînements, rounds de 2-3 min","10 min","📹 Forge 47 Combinaisons · 48 Heavy Bag Drills"],
-  ["Retour au calme : fast & loose + étirements","5 min","📹 Forge 27 Fast & Loose · 42 Stretching"]]};
-var AAE_SP_TAICHI={dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],
+  ["KILLY, le test (objectif 168 s) : chaise isométrique dos au mur, cuisses à l'horizontale, tenues répétées, +10-15 s/semaine","5 min",""],
+  ["Squats + fentes bulgares + hip thrust + step-up sur box : 3-4 séries","10 min","📹 Forge 06 Hindu Squats · 34 Single-Leg Squats"],
+  ["Swings kettlebell 10/min + soulevé de terre (chaîne postérieure, dos droit) : 8-10 séries","8 min","📹 Forge 18 Two-Arm Swing · 17 Deadlift"],
+  ["Mollets (montées sur pointe) + core : planche dynamique, relevés de jambes","6 min",""]]};
+var AAE_SP_SEUIL={dur:"~55 min",steps:[["Seuil ou sortie longue + marche chargée","",""],
+  ["1 semaine sur 2 : (a) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax, tu ne peux plus vraiment parler) + 10 min retour au calme ; (b) SORTIE LONGUE en endurance fondamentale, 60 min","45-60 min",""],
+  ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
+  ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio","",""]]};
+var AAE_SP_TAICHI={dur:"~30 min",taichi:true,steps:[["Tai chi + récupération active","",""],
   ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
+  ["Foam rolling + étirements légers + mobilité. La récupération, c'est là que le corps s'adapte, pas à l'effort. Le repos est une discipline, pas une faiblesse","10 min","📹 Forge 25 · Foam Rolling"],
   ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
-// Semaine : Lun Force haut · Mar Endurance · Mer Force bas · Jeu Tai chi · Ven Cardio/combatives · Sam Endurance · Dim Tai chi (aussi le repli jour de repos)
-var AAE_SPORT=[AAE_SP_FHAUT,AAE_SP_ENDUR,AAE_SP_FBAS,AAE_SP_TAICHI,AAE_SP_COMBAT,AAE_SP_ENDUR,AAE_SP_TAICHI];
+// Semaine sérieuse et progressive : Lun Endurance fondamentale · Mar Renfo haut/pompes · Mer Fractionné · Jeu Natation · Ven Renfo bas/Killy · Sam Seuil + marche chargée · Dim Tai chi/récup (aussi le repli jour de repos)
+var AAE_SPORT=[AAE_SP_EF,AAE_SP_FHAUT,AAE_SP_FRACT,AAE_SP_NAT,AAE_SP_FBAS,AAE_SP_SEUIL,AAE_SP_TAICHI];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine : repos sur le jour choisi (sinon dimanche par défaut), les 6 séances glissent sur les autres jours
   var restWd=aaeRestWd();
@@ -3078,9 +3112,24 @@ function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
   var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaewkstep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
   return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
 }).join("");}
+function aaeSportPhase(){ // progression vers les tests (~printemps 2027) : 1 Fondations · 2 Développement · 3 Spécifique · 4 Affûtage
+  var t=today();
+  if(t>="2027-02-15")return 4;   // affûtage : volume réduit, on arrive fraîche
+  if(t>="2027-01-01")return 3;   // spécifique : on simule les épreuves, on vise les barèmes
+  if(t>="2026-11-01")return 2;   // développement : fractionné + seuil, les progressions montent
+  return 1;                       // fondations : base d'endurance + technique, on habitue le corps
+}
 function aaeWeekProgram(){
-  var todayWd=weekdayMon(today());
-  var s='<div class="cksec">🗓️ Programme The Forge de la semaine</div><div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour.</div>';
+  var todayWd=weekdayMon(today()),ph=aaeSportPhase();
+  var P=[null,
+    ["Phase 1 · Fondations","On construit la base : endurance fondamentale, technique de foulée, on apprend les mouvements. Peu d'intensité, on habitue le corps. Règle d'or : +10% de charge par semaine, pas plus."],
+    ["Phase 2 · Développement","On ajoute le fractionné et le travail au seuil, les progressions montent (pompes, chaise Killy). Le corps encaisse davantage."],
+    ["Phase 3 · Spécifique","On simule les épreuves dans l'ordre réel (Luc Léger puis Killy sur jambes fatiguées) et on vise tes barèmes : palier 9, 168 s, 50 pompes."],
+    ["Phase 4 · Affûtage","Semaine(s) avant le test : volume réduit à ~60%, on garde un peu d'intensité, sommeil ≥ 8 h, hydratation, pas de sortie longue ni de force lourde. On arrive fraîche."]];
+  var pc=P[ph];
+  var s='<div class="cksec">🗓️ Ton programme de la semaine</div>';
+  s+='<div class="spanel aae-card" style="margin-bottom:12px"><div style="font-weight:800;color:var(--txt);margin-bottom:4px">'+esc(pc[0])+'</div><div class="subhead" style="margin:0">'+esc(pc[1])+'</div></div>';
+  s+='<div class="subhead" style="margin:0 0 6px">Le matin (Recharge) et le soir sont dans Aujourd\'hui. Ici, la séance de chaque jour. Programme calé sur tes 3 épreuves, il monte progressivement, ne brûle pas les étapes.</div>';
   aaeDaySchedule().forEach(function(d,i){
     var isToday=(i===todayWd),sess=d.steps[0][0];
     s+='<details class="spanel aae-cblock'+(isToday?' aae-wp-today':'')+'"'+(isToday?' open':'')+'><summary><span class="aae-cbname">'+AAE_DAYS[i]+(isToday?' · aujourd\'hui':'')+'</span><span class="aae-cbcount">'+esc(sess)+' · '+d.dur+'</span><span class="aae-chev">▸</span></summary><div class="aae-clist">'+aaeWkStepsHtml(d.steps.slice(1),i,1)+'</div></details>';
@@ -3093,7 +3142,7 @@ function aaeFiche(title){
   if(/evening|habitudes du soir|routine du soir/.test(t))return {dur:"~20 min",steps:[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]]};
   if(/sport du jour|sport \(pr/.test(t)){
     if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
-    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_ENDUR;
+    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_EF;
     if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
     return f;                                                    // séance intense (30 min, 100-Up et gainage déjà inclus)
   }
@@ -3347,6 +3396,7 @@ if(eaeTab==="sport"){
 }else if(eaeTab==="apprendre"){
   s+=aaeCursusBlock();
   s+=aaeMathBlock();
+  s+=aaeTerrainBlock();
 }else if(eaeTab==="progression"){
   s+=aaeTimeline();
   s+=vAaeProgress();
@@ -3401,6 +3451,8 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaequizlet]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaequizlet");var v=(el.value||"").trim();S.aae.cursusLinks=S.aae.cursusLinks||{};if(v)S.aae.cursusLinks[num]=v;else delete S.aae.cursusLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemath]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaemath");var d=S.aae.mathDone||(S.aae.mathDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeterrain]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaeterrain");var d=S.aae.terrainDone||(S.aae.terrainDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaeterrainq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaeterrainq");var v=(el.value||"").trim();S.aae.terrainLinks=S.aae.terrainLinks||{};if(v)S.aae.terrainLinks[num]=v;else delete S.aae.terrainLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
