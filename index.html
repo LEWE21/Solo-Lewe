@@ -7,23 +7,23 @@
    ========================================================================= */
 
 :root{
-  /* Sombre premium : sarcelle (teal) profond, coloré, jamais noir */
-  --ground:#0b2926;
-  --panel:rgba(18,52,48,.55);      /* cartes en verre dépoli teal */
-  --panel-2:rgba(26,66,60,.72);    /* survol / carte en avant */
-  --modal-bg:rgba(9,34,31,.975);   /* fenêtres qui s'ouvrent : presque opaques */
-  --panel-3:rgba(150,225,210,.06); /* creux : pistes, champs */
-  --brd:rgba(150,225,210,.14);
-  --brd-hi:rgba(150,225,210,.30);
-  --track:rgba(150,225,210,.12);
-  --blur:blur(24px) saturate(1.3);
-  --inset:inset 0 1px 0 rgba(255,255,255,.08);
-  --shadow:0 24px 60px -28px rgba(0,0,0,.6);
-  --shadow-lg:0 40px 90px -34px rgba(0,0,0,.66);
+  /* Clair : fond blanc-menthe doux, teinte teal légère, accent ambre chaud */
+  --ground:#eaf4f0;
+  --panel:rgba(255,255,255,.66);   /* cartes en verre dépoli clair */
+  --panel-2:rgba(255,255,255,.92); /* survol / carte en avant */
+  --modal-bg:rgba(255,255,255,.97);/* fenêtres qui s'ouvrent : presque opaques */
+  --panel-3:rgba(18,80,72,.05);    /* creux : pistes, champs */
+  --brd:rgba(18,80,72,.13);
+  --brd-hi:rgba(18,80,72,.26);
+  --track:rgba(18,80,72,.12);
+  --blur:blur(22px) saturate(1.35);
+  --inset:inset 0 1px 0 rgba(255,255,255,.7);
+  --shadow:0 18px 44px -26px rgba(30,70,64,.24);
+  --shadow-lg:0 34px 74px -30px rgba(30,70,64,.3);
 
-  --txt:#e7f4ef;             /* blanc légèrement teal */
-  --dim:#a0c6bb;             /* texte secondaire */
-  --dim2:#6e968c;            /* micro-labels, hints */
+  --txt:#233330;             /* anthracite teal, sur clair */
+  --dim:#576b66;             /* texte secondaire */
+  --dim2:#8aa39c;            /* micro-labels, hints */
 
   /* Capacites : une couleur par capacite, la meme partout */
   --c-physique:#5cc8ff; --c-mental:#a98bff; --c-creativite:#ff86cf;
@@ -48,9 +48,9 @@ body{
   margin:0;height:100dvh;overflow:hidden;color:var(--txt);
   font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;
   background:
-    radial-gradient(1200px 720px at 15% -8%, rgba(95,230,208,.12), transparent 60%),
-    radial-gradient(1000px 640px at 90% 116%, rgba(255,180,87,.13), transparent 62%),
-    linear-gradient(180deg,#0b2926,#0a221f);
+    radial-gradient(1200px 720px at 12% -8%, rgba(120,210,190,.28), transparent 60%),
+    radial-gradient(1000px 640px at 92% 114%, rgba(255,205,140,.22), transparent 62%),
+    linear-gradient(160deg,#eef6f2,#e9f3ef 55%,#ecf4ee);
   background-attachment:fixed;
 }
 
@@ -58,9 +58,9 @@ body{
 #app{max-width:1560px;margin:0 auto;height:100dvh;display:flex;flex-direction:row}
 .sidebar{flex:none;width:var(--rail);height:100dvh;display:flex;flex-direction:column;
   padding:calc(18px + env(safe-area-inset-top,0px)) 14px 16px calc(14px + env(safe-area-inset-left,0px));
-  background:linear-gradient(180deg,rgba(14,46,42,.72),rgba(9,32,29,.62));
+  background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.4));
   border-right:1px solid var(--brd);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
-  box-shadow:24px 0 60px -40px rgba(0,0,0,.7)}
+  box-shadow:24px 0 50px -40px rgba(30,70,64,.22)}
 .main{flex:1;min-width:0;height:100dvh;display:flex;flex-direction:column;
   padding:calc(22px + env(safe-area-inset-top,0px)) calc(30px + env(safe-area-inset-right,0px)) 0 30px}
 #view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:34px;scrollbar-width:thin}
