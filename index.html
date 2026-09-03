@@ -2027,6 +2027,7 @@ function render(){
   else if(view==="objectifs")html=vObjectifs();
   else if(view==="priorites")html=vPriorites();
   else if(view==="suivi")html=vSuivi();
+  else if(view==="aujourdhui")html=vAujourdhui();
   else {view="cockpit";html=vCockpit();}
   v.innerHTML='<div class="view-anim">'+html+'</div>';
   v.classList.remove("cockpit");
@@ -2045,6 +2046,7 @@ function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
+  h+='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">📅</span><span class="nl">Aujourd\'hui</span></button>';
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],v="cap:"+k;
@@ -2395,6 +2397,41 @@ function courbeCard(){
   s+='<div class="courbrow">'+LEARNCURVE.map(function(p){return '<button class="courbtog'+(cur===p.k?" on":"")+'" data-learnphase="'+p.k+'" title="'+p.lab+'">'+p.ic+'</button>';}).join("")+'</div>';
   if(cur){var pp=LEARNCURVE.filter(function(p){return p.k===cur;})[0];if(pp)s+='<div class="courbmsg'+(cur==="deprime"?" dip":"")+'"><b>'+pp.ic+' '+esc(pp.lab)+'</b><br>'+esc(pp.msg)+'</div>';}
   s+='</div>';
+  return s;
+}
+// Onglet AUJOURD'HUI : tout ce qu'elle a à faire aujourd'hui, EAE compris (la prépa EAE en entier + le reste de ses tâches/habitudes non-EAE).
+function vAujourdhui(){
+  var ids=suiviAaeMissionIds();
+  var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Tout ce que tu as à faire aujourd\'hui, prépa comprise</small></div>';
+  // 1) La prépa EAE du jour (socle matin/soir, sport, habitudes EAE)
+  s+=aaeTodayCard(ids);
+  // 2) Le reste : habitudes + tâches non-EAE dues aujourd'hui, par moment
+  var isSocle=function(q){return /morning recharge|recharge matinale|evening habits|habitudes du soir|routine du soir/i.test(q.title||"");};
+  var jEae=function(q){return isAaeQuest(q,ids);};
+  var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q)&&!jEae(q)&&!isSocle(q);});
+  var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q)&&!jEae(q);});
+  var todayT=actionable.filter(function(q){
+    if(q.pub)return true;
+    if(q.due&&dayDiff(q.due,today())===0)return true;
+    if(isPlan(q))return !q.due||dayDiff(q.due,today())<=0;
+    return false;
+  });
+  var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  s+='<div class="spanel"><div class="spl">🗂️ Le reste de ma journée</div>';
+  var any=false;
+  parts.forEach(function(mo){
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});
+    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});
+    var ordered=moT.filter(function(q){return isPlan(q);}).concat(moT.filter(function(q){return !isPlan(q);}));
+    if(!moH.length&&!ordered.length)return;
+    any=true;
+    s+='<div class="daypart"><div class="dphead">'+mo[1]+' <span class="dpn">'+(moH.length+ordered.length)+'</span></div>';
+    s+=moH.map(function(q){return dailyRow(q,true);}).join("");
+    s+=ordered.map(function(q){return questRow(q,0,true);}).join("");
+    s+='</div>';
+  });
+  if(!any)s+='<div class="empty" style="margin-top:6px">Rien d\'autre que ta prépa aujourd\'hui. Concentre-toi dessus.</div>';
+  s+='</div></div>';
   return s;
 }
 function vCockpit(){
@@ -3150,7 +3187,7 @@ function aaeFiche(title){
     var dmDouche=aaeIsForceDay()
       ?["🚿 Douche froide : PAS ce matin (jour de force, le froid juste après la muscu freinerait tes gains). Tu la prends ce soir → routine du soir.","ce soir","📹 Forge 13 · Cold Exposure","hot"]
       :["🚿 Douche froide (résilience) : finis ta douche du matin par du froid, 15 s → +15 s/sem → 2 min. Commence par les pieds, remonte, respire lentement.","ce matin","📹 Forge 13 · Cold Exposure","hot"];
-    return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
+    return {dur:"~16 min",steps:[["Eau tiède + citron + sel","1 min",""],["🎬 Émulation : regarde 1-2 min une vidéo de quelqu'un qui étudie / travaille dur. Voir quelqu'un le faire donne envie de s'y mettre.","2 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
   }
   if(/evening|habitudes du soir|routine du soir/.test(t)){
     var evSteps=[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
@@ -3161,7 +3198,8 @@ function aaeFiche(title){
     if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
     var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;
     if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
-    return f;                                                    // séance intense (30 min, 100-Up et gainage déjà inclus)
+    // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête, sans altérer la séance modèle.
+    return {dur:f.dur,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min",""]].concat(f.steps.slice(1))};
   }
   if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
