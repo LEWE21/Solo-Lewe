@@ -1145,7 +1145,7 @@ function sysConfirm(title,lines,onYes){
 var jMood=3;
 
 /* render */
-var view="cockpit";
+var view="aujourdhui"; // l'app s'ouvre sur l'onglet Aujourd'hui
 var projOpen={}; // les projets deplies (fermes par defaut : on voit la grille de cartes)
 /* ---- Thème adaptatif jour (5h-18h) / nuit (18h-5h), heure locale ---- */
 function currentTheme(){return "night";} // le Système est sombre, toujours
@@ -2044,9 +2044,9 @@ function render(){
 var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Business",social:"Social",discipline:"Discip."};
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
-  var h='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
+  var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">📅</span><span class="nl">Aujourd\'hui</span></button>';
+  h+='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
-  h+='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">📅</span><span class="nl">Aujourd\'hui</span></button>';
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
   Object.keys(STATS).forEach(function(k){
     var m=STATS[k],v="cap:"+k;
@@ -2399,16 +2399,13 @@ function courbeCard(){
   s+='</div>';
   return s;
 }
-// Onglet AUJOURD'HUI : tout ce qu'elle a à faire aujourd'hui, EAE compris (la prépa EAE en entier + le reste de ses tâches/habitudes non-EAE).
+// Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Après-midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment.
 function vAujourdhui(){
   var ids=suiviAaeMissionIds();
-  var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Tout ce que tu as à faire aujourd\'hui, prépa comprise</small></div>';
-  // 1) La prépa EAE du jour (socle matin/soir, sport, habitudes EAE)
-  s+=aaeTodayCard(ids);
-  // 2) Le reste : habitudes + tâches non-EAE dues aujourd'hui, par moment
+  var eaeItems=aaeDayItems(ids); // socle matin/soir, sport, habitudes EAE (chacun avec .mo)
   var isSocle=function(q){return /morning recharge|recharge matinale|evening habits|habitudes du soir|routine du soir/i.test(q.title||"");};
   var jEae=function(q){return isAaeQuest(q,ids);};
-  var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q)&&!jEae(q)&&!isSocle(q);});
+  var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q)&&!jEae(q)&&!isSocle(q);});          // habitudes non-EAE
   var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q)&&!jEae(q);});
   var todayT=actionable.filter(function(q){
     if(q.pub)return true;
@@ -2416,22 +2413,27 @@ function vAujourdhui(){
     if(isPlan(q))return !q.due||dayDiff(q.due,today())<=0;
     return false;
   });
-  var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  s+='<div class="spanel"><div class="spl">🗂️ Le reste de ma journée</div>';
-  var any=false;
-  parts.forEach(function(mo){
-    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0&&!doneForToday(q);});
-    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mo[0])>=0;});
+  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
+  if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
+  var total=0;
+  MO.forEach(function(mm){
+    var eae=eaeItems.filter(function(it){return it.mo===mm[0];});
+    var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0&&!doneForToday(q);});
+    var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0;});
     var ordered=moT.filter(function(q){return isPlan(q);}).concat(moT.filter(function(q){return !isPlan(q);}));
-    if(!moH.length&&!ordered.length)return;
-    any=true;
-    s+='<div class="daypart"><div class="dphead">'+mo[1]+' <span class="dpn">'+(moH.length+ordered.length)+'</span></div>';
+    var count=eae.length+moH.length+ordered.length;
+    if(!count)return;
+    total+=count;
+    s+='<div class="spanel aujcard"><div class="spl">'+mm[1]+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+count+'</span></div>';
+    s+='<div class="aae-mzone" data-daypart="'+mm[0]+'">';
+    s+=eae.map(function(it){return aaeItemHtml(it);}).join("");
     s+=moH.map(function(q){return dailyRow(q,true);}).join("");
     s+=ordered.map(function(q){return questRow(q,0,true);}).join("");
-    s+='</div>';
+    s+='</div></div>';
   });
-  if(!any)s+='<div class="empty" style="margin-top:6px">Rien d\'autre que ta prépa aujourd\'hui. Concentre-toi dessus.</div>';
-  s+='</div></div>';
+  if(!total)s+='<div class="spanel"><div class="empty">Rien à faire aujourd\'hui.</div></div>';
+  s+='</div>';
   return s;
 }
 function vCockpit(){
@@ -3242,6 +3244,23 @@ function aaeItemFullyDone(it){ // un item est fait quand toutes ses étapes coch
   it.fiche.steps.forEach(function(st,idx){if(st[1]!==""||st[2]!==""){any=true;if(!aaeStepDone(it.key+'#'+idx))allDone=false;}});
   return any&&allDone;
 }
+// Rendu d'UN item EAE (socle, sport, habitude EAE) : réutilisé par aaeTodayCard et par l'onglet Aujourd'hui.
+function aaeItemHtml(it){
+  var f=it.fiche,fdone=aaeItemFullyDone(it),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=fdone?' done':'',opn=fdone?'':' open';
+  var socle=(it.key==="morning"||it.key==="evening");
+  var gear=socle?'':'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>';
+  var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
+  var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
+  if(f){
+    var steps=f.steps.map(function(st,idx){
+      var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
+      var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
+      return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+    }).join("");
+    return '<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+  }
+  return '<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
+}
 function aaeTodayCard(ids){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var items=aaeDayItems(ids);
@@ -3250,23 +3269,7 @@ function aaeTodayCard(ids){
   MO.forEach(function(mm){
     var list=items.filter(function(it){return it.mo===mm[0];});if(!list.length)return;
     inner+='<div class="aae-ghead">'+mm[1]+' <span class="aae-gc">· '+list.length+'</span></div><div class="aae-mzone" data-daypart="'+mm[0]+'">';
-    list.forEach(function(it){
-      var f=it.fiche,fdone=aaeItemFullyDone(it),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=fdone?' done':'',opn=fdone?'':' open';
-      var socle=(it.key==="morning"||it.key==="evening");
-      var gear=socle?'':'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>';
-      var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
-      var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
-      if(f){
-        var steps=f.steps.map(function(st,idx){
-          var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
-          var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-          return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
-        }).join("");
-        inner+='<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
-      } else {
-        inner+='<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
-      }
-    });
+    list.forEach(function(it){inner+=aaeItemHtml(it);});
     inner+='</div>';
   });
   return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' item'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
