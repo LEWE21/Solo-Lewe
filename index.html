@@ -3454,11 +3454,13 @@ if(eaeTab==="sport"){
   s+=aaeCursusBlock();
   s+=aaeMathBlock();
 }else if(eaeTab==="progression"){
+  s+=victoiresCard();
   s+=aaeTimeline();
   s+=vAaeProgress();
   s+='<div class="cksec">🗓️ Ma semaine</div><div class="spanel"><div class="subhead" style="margin:0 0 8px">Matin / Midi / Soir. 🔁 = habitude · pastille dorée = tâche datée · barré = déjà fait.</div>'+aaeWeekTable(ids)+'</div>';
 }else{ // aujourd'hui
   s+=aaeTodayCard(ids);
+  s+=courbeCard();
 }
 s+='</div>';return s;}
 
