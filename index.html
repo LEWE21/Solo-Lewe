@@ -2020,6 +2020,7 @@ function vMaitre(){
 function render(){
   applyTheme();
   pubTick();
+  if(!window._aaecss&&typeof AAE_CSS!=="undefined"){document.head.insertAdjacentHTML("beforeend",AAE_CSS);window._aaecss=1;} // styles aae- disponibles dans TOUTES les vues (Aujourd'hui, Cockpit, modales), pas seulement EAE
   var v=document.getElementById("view");
   var html;
   if(view.indexOf("cap:")===0)html=vCap(view.slice(4));
@@ -3119,9 +3120,9 @@ var AAE_SP_RENFO={dur:"~45 min",steps:[["Renforcement complet · Pompes + Killy"
   ["Tirage : rowing inversé (barre basse, dos contracté) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
   ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""]]};
 var AAE_SP_SS={dur:"~35 min",steps:[["Simple & Sinister · kettlebell (Pavel)","",""],
-  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras","6 min",""],
+  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras","6 min","","vid"],
   ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Monte la charge quand les 100 passent sans forcer","12 min","📹 Forge 19 · One-Arm Swing"],
-  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell","12 min",""],
+  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell","12 min","","vid"],
   ["Décompression : respiration lente, fast & loose, étirements doux","5 min","📹 Forge 27 · Fast & Loose"]]};
 var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée (week-end)","",""],
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
@@ -3145,14 +3146,14 @@ function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())retu
 function aaeVidKey(lbl){var s=String(lbl),h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return 'v'+(h>>>0).toString(36);}
 // Champ vidéo éditable par exercice : elle y met le nom + n° de SA vidéo. Pré-rempli avec la vidéo par défaut (Forge) là où il y en a une, vide sinon (ex : Simple & Sinister).
 function aaeVidInput(st){
-  if(!(st[1]!==""||st[2]!==""||st[3]))return "";                 // seulement les vraies étapes d'action
+  if(!(st[2]!==""||st[3]==="vid"))return "";                      // seulement les étapes avec vidéo (ou marquées "vid")
   var vk=aaeVidKey(st[0]),saved=(S.aae&&S.aae.vid&&S.aae.vid[vk]!=null),vv=saved?S.aae.vid[vk]:(st[2]||"");
-  return '<span class="aae-vidrow"><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="📹 nom + n° de ta vidéo" value="'+esc(vv)+'"></span>';
+  return '<details class="aae-vid'+(vv?'':' empty')+'"><summary>'+esc(vv?('📹 '+vv):'📹 ajouter ma vidéo')+'</summary><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="nom + n° de ta vidéo" value="'+esc(vv)+'"></details>';
 }
 function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
   var can=(st[1]!==""||st[2]!==""),sid='d'+di+'#'+(k+offset),on=aaeWkStepDone(sid);
   var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaewkstep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-  return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+  return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><span class="aae-stl"><b>'+esc(st[0])+'</b>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</span>'+aaeVidInput(st)+'</span></div>';
 }).join("");}
 function aaeSportPhase(){ // progression vers les tests (~printemps 2027) : 1 Fondations · 2 Développement · 3 Spécifique · 4 Affûtage
   var t=today();
@@ -3189,7 +3190,7 @@ function aaeFiche(title){
     var dmDouche=aaeIsForceDay()
       ?["🚿 Douche froide : PAS ce matin (jour de force, le froid juste après la muscu freinerait tes gains). Tu la prends ce soir → routine du soir.","ce soir","📹 Forge 13 · Cold Exposure","hot"]
       :["🚿 Douche froide (résilience) : finis ta douche du matin par du froid, 15 s → +15 s/sem → 2 min. Commence par les pieds, remonte, respire lentement.","ce matin","📹 Forge 13 · Cold Exposure","hot"];
-    return {dur:"~16 min",steps:[["Eau tiède + citron + sel","1 min",""],["🎬 Émulation : regarde 1-2 min une vidéo de quelqu'un qui étudie / travaille dur. Voir quelqu'un le faire donne envie de s'y mettre.","2 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
+    return {dur:"~16 min",steps:[["Eau tiède + citron + sel","1 min",""],["🎬 Émulation : regarde 1-2 min une vidéo de quelqu'un qui étudie / travaille dur. Voir quelqu'un le faire donne envie de s'y mettre.","2 min","","vid"],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
   }
   if(/evening|habitudes du soir|routine du soir/.test(t)){
     var evSteps=[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
@@ -3201,7 +3202,7 @@ function aaeFiche(title){
     var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;
     if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête, sans altérer la séance modèle.
-    return {dur:f.dur,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min",""]].concat(f.steps.slice(1))};
+    return {dur:f.dur,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
   if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
@@ -3255,7 +3256,7 @@ function aaeItemHtml(it){
     var steps=f.steps.map(function(st,idx){
       var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
       var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-      return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+      return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><span class="aae-stl"><b>'+esc(st[0])+'</b>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</span>'+aaeVidInput(st)+'</span></div>';
     }).join("");
     return '<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
   }
@@ -3274,7 +3275,7 @@ function aaeTodayCard(ids){
   });
   return '<details class="spanel aae-today" open><summary class="aae-tsum"><span>📅 Aujourd\'hui</span><span class="aae-tcount">'+n+' item'+(n>1?'s':'')+'</span><span class="aae-chev tchev">▸</span></summary><div class="aae-tbody">'+inner+'</div></details>';
 }
-function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
+var AAE_CSS='<style>'+
 '.sk-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--brd);box-shadow:var(--inset);background:var(--panel)}'+
 '.sk-grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed}'+
 '.sk-grid th,.sk-grid td{font-size:11px;padding:0}'+
@@ -3442,10 +3443,15 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-step.sdone .aae-stx{opacity:.5;text-decoration:line-through}'+
 '.aae-stx b{color:var(--txt);font-weight:600}'+
 '.aae-src{color:#4C7C93;font-size:11px}'+
-'.aae-stx{flex:1;min-width:0}'+
-'.aae-vidrow{display:block;margin-top:3px}'+
-'.aae-vidin{width:100%;max-width:360px;font:inherit;font-size:11px;padding:4px 8px;border:1px solid var(--brd);border-radius:7px;background:var(--panel);color:var(--dim)}'+
-'.aae-vidin:focus{color:var(--txt);border-color:var(--brd-hi);outline:none}'+
+'.aae-stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}'+
+'.aae-stl{display:flex;align-items:baseline;gap:8px}'+
+'.aae-stl b{flex:1;min-width:0}'+
+'.aae-vid{display:block;margin-top:2px}'+
+'.aae-vid>summary{list-style:none;cursor:pointer;font-size:10.5px;font-weight:600;color:#4C7C93;background:color-mix(in srgb,#4C7C93 9%,var(--panel));border:1px solid color-mix(in srgb,#4C7C93 22%,var(--brd));padding:2px 9px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;display:inline-block}'+
+'.aae-vid>summary::-webkit-details-marker{display:none}'+
+'.aae-vid.empty>summary{color:var(--dim2);background:transparent;border-style:dashed;font-weight:500}'+
+'.aae-vidin{margin-top:4px;width:100%;max-width:300px;font:inherit;font-size:11px;padding:5px 9px;border:1px solid var(--brd-hi);border-radius:7px;background:var(--panel);color:var(--txt)}'+
+'.aae-vidin:focus{border-color:var(--gold);outline:none}'+
 '.aae-vidin::placeholder{color:var(--dim2)}'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '.aae-step.aae-hot .aae-stx b{color:var(--red)}'+
@@ -3474,7 +3480,7 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.daytog{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--brd);background:var(--panel-2);color:var(--dim);padding:7px 13px;border-radius:99px;cursor:pointer}'+
 '.daytog.on{background:color-mix(in srgb,var(--gold) 18%,var(--panel-2));border-color:var(--gold);color:var(--txt)}'+
 '</style>';
-s+='<div class="solo"><div class="aae-quote">« Comparé à la mort de mon père ce n\'est rien. »</div><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
+function vSuivi(){var ids=suiviAaeMissionIds();var s='<div class="solo"><div class="aae-quote">« Comparé à la mort de mon père ce n\'est rien. »</div><div class="tbar"><span class="tt">EAE</span><small>Armée de l\'Air : ta route vers l\'école</small></div>';
 s+=aaeCountdown(); // le compte à rebours (date butoir) reste en tête
 // EAE en UN SEUL écran (plus de sous-onglets) : la journée, la courbe, le sport, l'apprentissage, la progression.
 // Doublons retirés : timeline (redondant avec le compte à rebours), tableau "Ma semaine", et carte Tes victoires (life-wide, déjà au Cockpit).
