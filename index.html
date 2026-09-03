@@ -2400,7 +2400,13 @@ function courbeCard(){
   s+='</div>';
   return s;
 }
-// Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Après-midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment.
+// Une tâche/habitude non-EAE rendue AU MÊME FORMAT que les items EAE (aae-hb flat), déplaçable entre les moments.
+function aujRow(q){
+  var done=q.daily?doneForToday(q):!!q.done;
+  var ic=q.daily?'🔁 ':'📌 ';
+  return '<div class="aae-hb flat'+(done?' done':'')+'" draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"><span class="aae-scheck'+(done?' on':'')+'" data-check="'+q.id+'"></span><span class="aae-grip" title="Glisser vers un autre moment">⠿</span><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(q.title)+'</span><span class="aae-gear" data-tset="'+q.id+'" title="Régler (moment, fréquence...)">⚙</span></div>';
+}
+// Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Après-midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment. Tout est déplaçable par glisser-déposer.
 function vAujourdhui(){
   var ids=suiviAaeMissionIds();
   var eaeItems=aaeDayItems(ids); // socle matin/soir, sport, habitudes EAE (chacun avec .mo)
@@ -2417,23 +2423,21 @@ function vAujourdhui(){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
-  var total=0;
   MO.forEach(function(mm){
     var eae=eaeItems.filter(function(it){return it.mo===mm[0];});
     var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0&&!doneForToday(q);});
     var moT=todayT.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0;});
     var ordered=moT.filter(function(q){return isPlan(q);}).concat(moT.filter(function(q){return !isPlan(q);}));
     var count=eae.length+moH.length+ordered.length;
-    if(!count)return;
-    total+=count;
-    s+='<div class="spanel aujcard"><div class="spl">'+mm[1]+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+count+'</span></div>';
+    if(mm[0]==="libre"&&!count)return;                              // "À tout moment" : seulement s'il a du contenu ; les 4 moments restent affichés (zones de dépôt)
+    s+='<div class="spanel aujcard"><div class="spl">'+mm[1]+'<span style="flex:1"></span>'+(count?'<span style="font-weight:400;color:var(--dim2)">'+count+'</span>':'')+'</div>';
     s+='<div class="aae-mzone" data-daypart="'+mm[0]+'">';
     s+=eae.map(function(it){return aaeItemHtml(it);}).join("");
-    s+=moH.map(function(q){return dailyRow(q,true);}).join("");
-    s+=ordered.map(function(q){return questRow(q,0,true);}).join("");
+    s+=moH.map(function(q){return aujRow(q);}).join("");
+    s+=ordered.map(function(q){return aujRow(q);}).join("");
+    if(!count)s+='<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div></div>';
   });
-  if(!total)s+='<div class="spanel"><div class="empty">Rien à faire aujourd\'hui.</div></div>';
   s+='</div>';
   return s;
 }
