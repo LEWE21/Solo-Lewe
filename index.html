@@ -3149,10 +3149,14 @@ function aaeWkMonday(){return isoPlus(today(),-weekdayMon(today()));}
 function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())return false;return (A.wkStepsSet||[]).indexOf(id)>=0;}
 function aaeVidKey(lbl){var s=String(lbl),h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return 'v'+(h>>>0).toString(36);}
 // Champ vidéo éditable par exercice : elle y met le nom + n° de SA vidéo. Pré-rempli avec la vidéo par défaut (Forge) là où il y en a une, vide sinon (ex : Simple & Sinister).
+function aaeVidUrl(v){v=(v||"").trim();if(!v)return null;if(/^https?:\/\//i.test(v))return v;if(/^\/\//.test(v))return "https:"+v;if(/^(www\.|m\.)?(youtube\.com|youtu\.be)[\/?]/i.test(v))return "https://"+v;return null;}
 function aaeVidInput(st){
   if(!(st[2]!==""||st[3]==="vid"))return "";                      // seulement les étapes avec vidéo (ou marquées "vid")
   var vk=aaeVidKey(st[0]),saved=(S.aae&&S.aae.vid&&S.aae.vid[vk]!=null),vv=saved?S.aae.vid[vk]:(st[2]||"");
-  return '<details class="aae-vid'+(vv?'':' empty')+'"><summary>'+esc(vv?('📹 '+vv):'📹 ajouter ma vidéo')+'</summary><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="nom + n° de ta vidéo" value="'+esc(vv)+'"></details>';
+  var url=aaeVidUrl(vv);
+  var open=url?'<a class="aae-vidopen" href="'+esc(url)+'" target="_blank" rel="noopener">▶ Ouvrir la vidéo</a>':'';
+  var lab=vv?(url?'✎':('📹 '+vv)):'📹 ajouter ma vidéo';
+  return '<span class="aae-vidwrap">'+open+'<details class="aae-vid'+(vv?'':' empty')+(url?' hasurl':'')+'"><summary>'+esc(lab)+'</summary><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="nom + n° OU lien YouTube" value="'+esc(vv)+'"></details></span>';
 }
 function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
   var can=(st[1]!==""||st[2]!==""),sid='d'+di+'#'+(k+offset),on=aaeWkStepDone(sid);
@@ -3450,8 +3454,11 @@ var AAE_CSS='<style>'+
 '.aae-stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}'+
 '.aae-stl{display:flex;align-items:baseline;gap:8px}'+
 '.aae-stl b{flex:1;min-width:0}'+
-'.aae-vid{display:block;margin-top:2px}'+
+'.aae-vidwrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px}'+
+'.aae-vidopen{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:#d64545;border-radius:99px;padding:3px 11px;white-space:nowrap;text-decoration:none}'+
+'.aae-vidopen:hover{background:#c0392b}'+
 '.aae-vid>summary{list-style:none;cursor:pointer;font-size:10.5px;font-weight:600;color:#4C7C93;background:color-mix(in srgb,#4C7C93 9%,var(--panel));border:1px solid color-mix(in srgb,#4C7C93 22%,var(--brd));padding:2px 9px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;display:inline-block}'+
+'.aae-vid.hasurl>summary{color:var(--dim2);background:transparent;max-width:none}'+
 '.aae-vid>summary::-webkit-details-marker{display:none}'+
 '.aae-vid.empty>summary{color:var(--dim2);background:transparent;border-style:dashed;font-weight:500}'+
 '.aae-vidin{margin-top:4px;width:100%;max-width:300px;font:inherit;font-size:11px;padding:5px 9px;border:1px solid var(--brd-hi);border-radius:7px;background:var(--panel);color:var(--txt)}'+
@@ -3543,7 +3550,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
