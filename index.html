@@ -787,7 +787,8 @@ function load(){
      if(!_A.cursusLinks)_A.cursusLinks={};
      if(!_A.mathDone)_A.mathDone=[];              // chapitres d'arithmétique appris (prépa test CSO)
      if(!_A.mathLinks)_A.mathLinks={};            // set Quizlet par chapitre d'arithmétique
-     if(!_A.reserveDays)_A.reserveDays=[0,3,4];}  // jours de réserve (0=Lun..6=Dim) : séance de sport allégée ce jour-là
+     if(!_A.reserveDays)_A.reserveDays=[0,3,4];    // jours de réserve (0=Lun..6=Dim)
+     if(!_A.vid)_A.vid={};}                        // ses propres vidéos (nom + n°) par exercice, clé = hash du libellé
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
     if(!("greetDate" in r))r.greetDate=null;if(!("greetLine" in r))r.greetLine=null;
@@ -3102,10 +3103,17 @@ function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jo
 function aaeIsReserveDay(){ return (((S.aae&&S.aae.reserveDays)||[]).indexOf(weekdayMon(today()))>=0); }
 function aaeWkMonday(){return isoPlus(today(),-weekdayMon(today()));}
 function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())return false;return (A.wkStepsSet||[]).indexOf(id)>=0;}
+function aaeVidKey(lbl){var s=String(lbl),h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return 'v'+(h>>>0).toString(36);}
+// Champ vidéo éditable par exercice : elle y met le nom + n° de SA vidéo. Pré-rempli avec la vidéo par défaut (Forge) là où il y en a une, vide sinon (ex : Simple & Sinister).
+function aaeVidInput(st){
+  if(!(st[1]!==""||st[2]!==""||st[3]))return "";                 // seulement les vraies étapes d'action
+  var vk=aaeVidKey(st[0]),saved=(S.aae&&S.aae.vid&&S.aae.vid[vk]!=null),vv=saved?S.aae.vid[vk]:(st[2]||"");
+  return '<span class="aae-vidrow"><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="📹 nom + n° de ta vidéo" value="'+esc(vv)+'"></span>';
+}
 function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
   var can=(st[1]!==""||st[2]!==""),sid='d'+di+'#'+(k+offset),on=aaeWkStepDone(sid);
   var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaewkstep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-  return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+  return '<div class="aae-step'+(on?' sdone':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
 }).join("");}
 function aaeSportPhase(){ // progression vers les tests (~printemps 2027) : 1 Fondations · 2 Développement · 3 Spécifique · 4 Affûtage
   var t=today();
@@ -3214,7 +3222,7 @@ function aaeTodayCard(ids){
         var steps=f.steps.map(function(st,idx){
           var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
           var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-          return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+(st[2]?' <span class="aae-src">'+esc(st[2])+'</span>':'')+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
+          return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><b>'+esc(st[0])+'</b>'+aaeVidInput(st)+'</span>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</div>';
         }).join("");
         inner+='<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
       } else {
@@ -3393,6 +3401,11 @@ function vSuivi(){var ids=suiviAaeMissionIds();var s='<style>'+
 '.aae-step.sdone .aae-stx{opacity:.5;text-decoration:line-through}'+
 '.aae-stx b{color:var(--txt);font-weight:600}'+
 '.aae-src{color:#4C7C93;font-size:11px}'+
+'.aae-stx{flex:1;min-width:0}'+
+'.aae-vidrow{display:block;margin-top:3px}'+
+'.aae-vidin{width:100%;max-width:360px;font:inherit;font-size:11px;padding:4px 8px;border:1px solid var(--brd);border-radius:7px;background:var(--panel);color:var(--dim)}'+
+'.aae-vidin:focus{color:var(--txt);border-color:var(--brd-hi);outline:none}'+
+'.aae-vidin::placeholder{color:var(--dim2)}'+
 '.aae-stt{margin-left:auto;color:var(--dim2);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '.aae-step.aae-hot .aae-stx b{color:var(--red)}'+
 '.aae-step.aae-hot .aae-stt{color:var(--red);font-weight:800;font-size:12px}'+
@@ -3479,6 +3492,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
