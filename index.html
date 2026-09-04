@@ -775,8 +775,6 @@ function load(){
      if(!("entretienBase" in _A))_A.entretienBase=null;
      if(!_A.cycle)_A.cycle=[];
      if(!("reserveDay" in _A))_A.reserveDay=null; // "je suis de réserve aujourd'hui" : jour allégé, ne décale rien
-     if(!_A.taichi)_A.taichi={idx:0,reps:0};     // pointeur formation tai chi (à son rythme) + répétitions de la leçon en cours
-     if(typeof _A.taichi.reps!=="number")_A.taichi.reps=0;
      if(!("cursus" in _A))_A.cursus=0;
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
      if(!("stepsDay" in _A))_A.stepsDay=null;
@@ -2877,23 +2875,6 @@ var AAE_MENTAL_WEEK=[
   {code:"S",ang:true,light:true},              // samedi : anglais léger
   {code:"R",repos:true}                         // dimanche : connaissance de soi / repos mental
 ];
-// Formation tai chi, Niveau 1 (27 leçons) : [libellé, durée]. Suivi à son rythme, pointeur S.aae.taichi.idx
-var TAICHI_L1=[
-  ["L1.1 · Loosening exercises & Chi Kung","19 min"],["L1.2 · Tai Chi Commencing & 'Repulse Monkey'","20 min"],
-  ["L2.1 · Loosening 1-4, Chi Kung 1-5","17 min"],["L2.2 · 5 Element stepping, 8 form 'Bow Steps'","28 min"],
-  ["L3.1 · Loosening & 8 Chi Kung 6-8","18 min"],["L3.2 · 5 Element steps, Brush Knee & Push","18 min"],
-  ["L4.1 · Loosening, Chi Kung (souffle)","16 min"],["L4.2 · Stepping forward, 3 premiers mouvements","32 min"],
-  ["L5.1 · 8 Chi Kung, 5 Element en arrière","27 min"],["L5.2 · 8 Posture : 'Part Wild Horse's Mane'","25 min"],
-  ["L6.1 · 5 Element gauche & droite","35 min"],["L6.2 · 8 Posture : 'Wave Hands Like Clouds'","23 min"],
-  ["L7.1 · 5 Element stepping complet","22 min"],["L7.2 · Wave Hands complet, transition","28 min"],
-  ["L8.1 · Arm Circles, Hap Ga Chi Kung","24 min"],["L8.2 · 8 Posture 1re moitié, 'Golden Rooster'","27 min"],
-  ["L9.1 · 5 Element complet (follow along)","20 min"],["L9.2 · Kicking with Heels, 6 postures","32 min"],
-  ["L10.1 · Hap Ga en musique, 5 Element au métronome","22 min"],["L10.2 · Ward Off, Rollback, Press & Push","41 min"],
-  ["L11.1 · 5 Swings, 8 Chi Kung, stepping","19 min"],["L11.2 · 'Grasp Bird's Tail' des deux côtés","28 min"],
-  ["L12.1 · Stepping & révision 3× chaque mouvement","29 min"],["L12.2 · Cross Hands, Closing, 8 Form complète","23 min"],
-  ["L13.1 · 8 Form complète","23 min"],["L13.2 · Pratiquer la 8 Form sur la musique","15 min"],
-  ["Conclusion Niveau 1 & passage au Niveau 2","4 min"]
-];
 function aaeIsReserve(){return S.aae&&S.aae.reserveDay===today();}
 function aaeMentalChrono(){return today()>="2027-01-01";} // (conservé pour compat)
 function aaeMentalPhase(){ // montée progressive vers l'échéance : 1 découverte (sans chrono) · 2 consolidation (sans + avec chrono) · 3 sprint (tout chrono)
@@ -2943,17 +2924,6 @@ function aaeNotesCard(defs,storeKey,baseKey,col,lowLab,highLab){
   return '<div class="spanel aae-card">'+head+rows+'</div>';
 }
 function aaeDayNum(){return Math.round(Date.parse(today()+"T00:00:00Z")/86400000);}
-function aaeTaiChiFiche(){
-  var idx=(S.aae.taichi&&S.aae.taichi.idx)||0,L=TAICHI_L1;
-  if(idx>=L.length)return {dur:"~20 min",taichi:true,steps:[["Tai chi · récupération active","",""],["Niveau 1 terminé 🎋 Passe au Niveau 2 (voir la carte Tai chi)","",""],["Pratique libre : forme des 8 postures + respiration","~20 min","🎋 Formation Tai Chi"]]};
-  var les=L[idx];
-  return {dur:les[1],taichi:true,steps:[
-    ["Tai chi · récupération active","",""],
-    ["Routine courte : 5 → 20 min de Chi Kung, ancre-toi, respire lent. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","5-20 min","🎋 Chi Kung"],
-    ["Leçon de la semaine · Niveau 1 · "+les[0]+" — répète-la 3× avant de passer à la suivante","",les[1]],
-    ["Filme-toi 1×/semaine pour te corriger. Surtout : garde le plaisir, pas de chrono obligatoire.","",""]
-  ]};
-}
 function aaeMentalDay(){ // menu mental du jour selon la grille A/B/C/D/E + phase + réserve/repos
   var wd=weekdayMon(today());
   return {menu:AAE_MENTAL_WEEK[wd],chrono:aaeMentalChrono(),reserve:aaeIsReserve()||aaeRestWd()===wd,wd:wd};
@@ -3110,7 +3080,7 @@ function aaeCursusBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-// Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = tai chi (aussi la séance de repli les jours de repos).
+// Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = shadow boxing (aussi la séance de repli les jours de repos).
 var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
   ["Échauffement dynamique ≥ 10 min : montées de genoux, talons-fesses, mobilité chevilles, 2-3 accélérations","10 min","📹 Forge 08 Dynamic Stretching · 36 100-Up Running"],
   ["Selon la phase : Phase 1 endurance fondamentale Zone 2 (60-75% FCmax, tu cours en parlant), 30-40 min ; Phase 2 fractionné court 2×10×30 s rapide/30 s lent ; Phase 3 fractionné long 10×400 m récup 1 min OU seuil 20 min. Objectif ≥ 6 min près de ta VMA. Cours pendant la récup.","20-40 min",""],
@@ -3132,12 +3102,12 @@ var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
   ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
   ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio. Option : quelques tenues Killy en fin","",""]]};
-var AAE_SP_TAICHI={dur:"~30 min",taichi:true,steps:[["Tai chi + récupération active","",""],
-  ["Reprends ta leçon de tai chi en cours, à ton rythme (voir la carte Tai chi plus bas)","~20 min","🎋 Formation Tai Chi"],
-  ["Foam rolling + étirements légers + mobilité. La récupération, c'est là que le corps s'adapte, pas à l'effort. Le repos est une discipline, pas une faiblesse","10 min","📹 Forge 25 · Foam Rolling"],
-  ["Respire lent, ancre-toi. Ce calme, c'est ton entraînement au sang-froid pour l'entretien.","",""]]};
-// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar récup/tai chi · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven récup/tai chi · Sam Sortie longue/seuil + marche · Dim Tai chi/récup (aussi le repli jour de repos). Les jours de réserve sont seulement marqués (badge), la séance ne change pas.
-var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_TAICHI,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_TAICHI,AAE_SP_LONG,AAE_SP_TAICHI];
+var AAE_SP_SHADOW={dur:"~20 min",shadow:true,steps:[["Shadow boxing · récup active + cardio léger","",""],
+  ["Suis la séance de shadow boxing de ton programme Simple & Sinister (tout y est détaillé : rounds, combinaisons, footwork). Colle ici le lien de ta vidéo, il restera enregistré.","~20 min","","vid"],
+  ["Garde haute, épaules relâchées, expire sur chaque frappe. Reste légère et fluide : c'est de la récup active, pas un sprint.","",""],
+  ["Finis par respiration lente + fast & loose pour redescendre.","3 min","📹 Forge 27 · Fast & Loose"]]};
+// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar shadow boxing · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven shadow boxing · Sam Sortie longue/seuil + marche · Dim shadow boxing/récup (aussi le repli jour de repos). Les jours de réserve sont seulement marqués (badge), la séance ne change pas.
+var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SHADOW,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SHADOW,AAE_SP_LONG,AAE_SP_SHADOW];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
@@ -3201,16 +3171,14 @@ function aaeFiche(title){
     return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
   }
   if(/evening|habitudes du soir|routine du soir/.test(t)){
-    var evSteps=[["En option : une forme lente de tai chi / Chi Kung pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
+    var evSteps=[["En option : respiration lente ou étirements doux pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
     if(aaeIsForceDay())evSteps.splice(1,0,["🚿 Douche froide (résilience) : ce soir, car jour de force. 15 s → +15 s/sem → 2 min, commence par les pieds, respire lentement.","ce soir","📹 Forge 13 · Cold Exposure","hot"]);
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
-    var f;
-    if(aaeIsReserve())f=aaeTaiChiFiche();                       // jour réserve : tai chi à la place de la séance intense
-    else{f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;if(f.taichi)f=aaeTaiChiFiche();} // jour tai chi / repos : leçon en cours
-    // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport (tai chi inclus).
-    return {dur:f.dur,taichi:f.taichi,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
+    var f=aaeIsReserve()?AAE_SP_SHADOW:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : shadow boxing (récup active)
+    // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
+    return {dur:f.dur,shadow:f.shadow,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
   if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
