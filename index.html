@@ -3206,11 +3206,11 @@ function aaeFiche(title){
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
-    if(aaeIsReserve())return aaeTaiChiFiche();                 // jour réserve : tai chi à la place de la séance intense
-    var f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;
-    if(f.taichi)return aaeTaiChiFiche();                        // jour tai chi / repos : leçon en cours
-    // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête, sans altérer la séance modèle.
-    return {dur:f.dur,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
+    var f;
+    if(aaeIsReserve())f=aaeTaiChiFiche();                       // jour réserve : tai chi à la place de la séance intense
+    else{f=aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE;if(f.taichi)f=aaeTaiChiFiche();} // jour tai chi / repos : leçon en cours
+    // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport (tai chi inclus).
+    return {dur:f.dur,taichi:f.taichi,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
   if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
