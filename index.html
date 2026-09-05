@@ -3102,10 +3102,16 @@ var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
   ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
   ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio. Option : quelques tenues Killy en fin","",""]]};
-var AAE_SP_SHADOW={dur:"~20 min",shadow:true,steps:[["Shadow boxing · récup active + cardio léger","",""],
-  ["Suis la séance de shadow boxing de ton programme Simple & Sinister (tout y est détaillé : rounds, combinaisons, footwork). Colle ici le lien de ta vidéo, il restera enregistré.","~20 min","","vid"],
-  ["Garde haute, épaules relâchées, expire sur chaque frappe. Reste légère et fluide : c'est de la récup active, pas un sprint.","",""],
-  ["Finis par respiration lente + fast & loose pour redescendre.","3 min","📹 Forge 27 · Fast & Loose"]]};
+var AAE_SP_SHADOW={dur:"~25 min",shadow:true,steps:[["Shadow boxing · technique + cardio léger","",""],
+  ["Échauffement : cercles d'épaules et de bras, rotations du cou et des hanches, montées de genoux, 30 s de sautillements sur place. Monte le cardio en douceur.","3 min",""],
+  ["Position de garde (à retrouver après CHAQUE coup) : pieds largeur d'épaules, pied avant légèrement devant, poids sur la plante, genoux souples. Poings au niveau des joues, coudes collés aux côtes, menton rentré.","2 min",""],
+  ["Les 6 coups, lentement, en revenant en garde à chaque fois. 1 = jab (direct bras avant) · 2 = direct arrière · 3 = crochet avant · 4 = crochet arrière · 5 = uppercut avant · 6 = uppercut arrière. Expire sur chaque frappe.","3 min",""],
+  ["Déplacements : pas chassés avant / arrière / latéraux, sans jamais croiser les pieds, léger sur la plante. Avance en poussant sur la jambe arrière, recule en poussant sur l'avant. Bouge en continu.","2 min",""],
+  ["Round 1 · jab-cross : enchaîne des 1-2 en te déplaçant, garde fluide, quelques accélérations de 10 s.","3 min",""],
+  ["Round 2 · crochets : 1-2-3 puis 1-2-3-4. Pivote la hanche ET le pied sur les crochets, c'est la hanche qui frappe, pas le bras seul.","3 min",""],
+  ["Round 3 · défense : après ton enchaînement, esquive (slip : petite flexion des jambes pour sortir la tête de l'axe), reviens en garde, contre. Ex : 1-2, slip, 2-3.","3 min",""],
+  ["Finish cardio léger : coups rapides et continus (volume, pas puissance) + sautillements. Reste dans le confort respiratoire, c'est de la récup active, pas un sprint.","2 min",""],
+  ["Retour au calme : respiration lente + fast & loose (relâche bras et épaules), étirements épaules / nuque / poignets.","2 min","📹 Forge 27 · Fast & Loose"]]};
 // Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar shadow boxing · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven shadow boxing · Sam Sortie longue/seuil + marche · Dim shadow boxing/récup (aussi le repli jour de repos). Les jours de réserve sont seulement marqués (badge), la séance ne change pas.
 var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SHADOW,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SHADOW,AAE_SP_LONG,AAE_SP_SHADOW];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
