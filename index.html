@@ -3160,8 +3160,8 @@ var AAE_SP_SELFDEF={dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · 
  ["Pratique le module en cours de ton cours TRICOM (voir ta progression dans l'onglet EAE). Regarde, reproduis lentement, puis répète jusqu'à automatiser.","~30 min",""]]};
 var AAE_SP_SELFREV={dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],
  ["Reviens sur un module déjà appris pour l'entretenir (voir Aujourd'hui). Entretien des acquis sans perdre le nouveau.","~30 min",""]]};
-// Semaine enrichie : Lun Course · Mar shadow boxing (Forge) · Mer Renfo (pompes+Killy) · Jeu Simple & Sinister · Ven self-défense TRICOM (nouveau module) · Sam Sortie longue/marche · Dim self-défense TRICOM (révision d'un module déjà vu, aussi le repli jour de repos). Alternance shadow boxing / TRICOM + révision, pour la variété et l'entretien des acquis. Jours de réserve : révision (marqués par un badge).
-var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SHADOW,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SELFDEF,AAE_SP_LONG,AAE_SP_SELFREV];
+// Semaine enrichie : Lun Course · Mar self-défense TRICOM (nouveau module) · Mer Renfo (pompes+Killy) · Jeu Simple & Sinister · Ven shadow boxing (Forge) · Sam Sortie longue/marche · Dim self-défense TRICOM (révision d'un module déjà vu, aussi le repli jour de repos). Alternance TRICOM / shadow boxing + révision, pour la variété et l'entretien des acquis. Jours de réserve : révision (marqués par un badge).
+var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SELFDEF,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SHADOW,AAE_SP_LONG,AAE_SP_SELFREV];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
