@@ -777,6 +777,8 @@ function load(){
      if(!("reserveDay" in _A))_A.reserveDay=null; // "je suis de réserve aujourd'hui" : jour allégé, ne décale rien
      if(!("cursus" in _A))_A.cursus=0;
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
+     if(!_A.selfdefDone)_A.selfdefDone=[];
+     if(!_A.selfdefLinks)_A.selfdefLinks={};
      if(!("stepsDay" in _A))_A.stepsDay=null;
      if(!_A.stepsSet)_A.stepsSet=[];
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
@@ -3079,6 +3081,41 @@ function aaeCursusBlock(){
   s+='<div class="aae-hint" style="margin-top:8px">Ouvre un cours pour sa démarche et le lien de ton set Quizlet. Coche-le quand tu le connais.</div></div>';
   return s;
 }
+// Self-défense TRICOM : progression par modules à son rythme (comme le cursus). Le module en cours = le 1er non coché.
+function aaeSelfDefCurrent(){var done=S.aae.selfdefDone||[];for(var i=0;i<TRICOM_TIERS.length;i++){if(done.indexOf(TRICOM_TIERS[i][0])<0)return {id:TRICOM_TIERS[i][0],name:TRICOM_TIERS[i][1],desc:TRICOM_TIERS[i][2]};}return null;}
+function aaeSelfDefFiche(){
+  var cur=aaeSelfDefCurrent();
+  if(!cur)return {dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · 11/11 terminé 🥋","",""],["Tu as validé tous les modules. Révise-les en rotation pour les garder affûtées.","~25 min",""]]};
+  return {dur:"~30 min",selfdef:true,steps:[
+    ["Self-défense TRICOM · "+cur.name,"",""],
+    ["Module en cours : "+cur.desc,"",""],
+    ["Regarde les techniques du module, reproduis-les lentement, puis répète jusqu'à ce que ce soit fluide et automatique.","~25 min",""],
+    ["Quand tu maîtrises ce module, coche-le dans ta progression (onglet EAE, carte Self-défense TRICOM) pour passer au suivant.","","",1]
+  ]};
+}
+function aaeSelfDefRevFiche(){ // révision : ramène vers un module DÉJÀ validé, en rotation d'une semaine à l'autre
+  var done=S.aae.selfdefDone||[];
+  var vus=TRICOM_TIERS.filter(function(t){return done.indexOf(t[0])>=0;});
+  if(!vus.length)return {dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],["Tu n'as pas encore validé de module à réviser. Fais ta séance sur le module en cours (voir Aujourd'hui / ta progression).","~25 min",""]]};
+  var wk=Math.floor(Date.parse(aaeWkMonday())/(7*86400000)); var m=vus[((wk%vus.length)+vus.length)%vus.length];
+  return {dur:"~30 min",selfrev:true,steps:[
+    ["Self-défense TRICOM · révision : "+m[1],"",""],
+    ["Reviens sur ce module déjà appris pour l'entretenir : "+m[2],"",""],
+    ["Refais les techniques de mémoire, puis vérifie avec la vidéo. Cherche la fluidité et la vitesse, pas la découverte.","~25 min",""],
+    ["Varie les scénarios (angles, distances, mains nues puis avec objet) pour garder la nouveauté sur un module connu.","",""]
+  ]};
+}
+function aaeSelfDefBlock(){
+  var done=S.aae.selfdefDone||[],links=S.aae.selfdefLinks||{},cur=aaeSelfDefCurrent();
+  var s='<div class="cksec">🥋 Self-défense TRICOM</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Modules validés</span><span class="aae-moy"><b>'+done.length+'</b> / '+TRICOM_TIERS.length+'</span></div><div class="aae-clist">';
+  TRICOM_TIERS.forEach(function(m){
+    var id=m[0],on=done.indexOf(id)>=0,isCur=cur&&cur.id===id,lk=links[id]||'';
+    var body='<div class="aae-cdem">'+esc(m[2])+'</div><div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-selfdeflink="'+id+'" placeholder="colle le lien de ce module (TRICOM)" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
+    s+='<details class="aae-crow2'+(on?' on':'')+(isCur?' cur':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-selfdef="'+id+'">'+(on?'✓':'')+'</span><span class="aae-ctitle">'+esc(m[1])+'</span>'+(isCur?'<span class="aae-curtag">en cours</span>':'')+'<span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
+  });
+  s+='</div><div class="aae-hint" style="margin-top:8px">Coche un module quand tu le maîtrises pour passer au suivant. Colle le lien de chaque module (TRICOM) pour le rouvrir vite.</div></div>';
+  return s;
+}
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 // Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = shadow boxing (aussi la séance de repli les jours de repos).
 var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
@@ -3105,8 +3142,26 @@ var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée
 var AAE_SP_SHADOW={dur:"~20 min",shadow:true,steps:[["Shadow boxing","",""],
   ["Shadow boxing · répétition de la session : enchaîne tes combos dans le vide (fast & loose), ~4 rounds de 3 min. Revois au besoin les leçons Combatives de ton cours : Forge 45 (garde, footwork, frappes), 46 (kicks, takedown, sprawl), 47 (combos).","~20 min","📹 Forge 47 · Combos (shadow boxing)"],
   ["Retour au calme · fast & loose : penchée en avant, bras et épaules totalement relâchés, secoue-les vite comme des cordes 10-15 s, puis les jambes. Relâche toute tension. Finis par 4-5 respirations lentes et des étirements épaules / nuque / poignets.","2 min","📹 Forge 27 · Fast & Loose"]]};
-// Semaine enrichie (~4 séances actives + récup) : Lun Course · Mar shadow boxing · Mer Renfo complet (pompes+Killy) · Jeu Simple & Sinister · Ven shadow boxing · Sam Sortie longue/seuil + marche · Dim shadow boxing/récup (aussi le repli jour de repos). Les jours de réserve sont seulement marqués (badge), la séance ne change pas.
-var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SHADOW,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SHADOW,AAE_SP_LONG,AAE_SP_SHADOW];
+// Self-défense TRICOM (cours en ligne) : 11 modules (Level 1-2, Tiers), progression suivie à son rythme comme le cursus. Remplace le shadow boxing sur les jours de récup (mar/ven/dim + réserve + repli).
+var TRICOM_TIERS=[
+ ["l1t1","Level 1 · Tier 1","Empty Handed Combatives & Self-Defense Tactics (combat à mains nues, self-défense)."],
+ ["l1t2a","Level 1 · Tier 2 (A)","Weapons Based Combatives & Self-Defense (armes / force multipliers), 1re partie."],
+ ["l1t2b","Level 1 · Tier 2 (B)","Weapons Based Combatives & Self-Defense, 2e partie."],
+ ["l1t3a","Level 1 · Tier 3 (A)","Empty-Handed Counter Assault / Defensive Tactics (contre-attaque à mains nues)."],
+ ["l1t3b","Level 1 · Tier 3 (B)","Counter Assault / Defensive Tactics, 2e partie."],
+ ["l1t4","Level 1 · Tier 4","Grappling & Ground Tactics (lutte et combat au sol)."],
+ ["l2t1","Level 2 · Tier 1","Empty Handed Combatives & Self-Defense Tactics (niveau 2)."],
+ ["l2t2","Level 2 · Tier 2","Weapons Based Combatives & Self-Defense (force multipliers, niveau 2)."],
+ ["l2t3a","Level 2 · Tier 3 (A)","Empty-Handed Counter Assault / Defensive Tactics (niveau 2)."],
+ ["l2t3b","Level 2 · Tier 3 (B)","Counter Assault / Defensive Tactics, 2e partie (niveau 2)."],
+ ["l2t4","Level 2 · Tier 4","Grappling & Ground Tactics (lutte et sol, niveau 2)."]
+];
+var AAE_SP_SELFDEF={dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · nouveau module","",""],
+ ["Pratique le module en cours de ton cours TRICOM (voir ta progression dans l'onglet EAE). Regarde, reproduis lentement, puis répète jusqu'à automatiser.","~30 min",""]]};
+var AAE_SP_SELFREV={dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],
+ ["Reviens sur un module déjà appris pour l'entretenir (voir Aujourd'hui). Entretien des acquis sans perdre le nouveau.","~30 min",""]]};
+// Semaine enrichie : Lun Course · Mar shadow boxing (Forge) · Mer Renfo (pompes+Killy) · Jeu Simple & Sinister · Ven self-défense TRICOM (nouveau module) · Sam Sortie longue/marche · Dim self-défense TRICOM (révision d'un module déjà vu, aussi le repli jour de repos). Alternance shadow boxing / TRICOM + révision, pour la variété et l'entretien des acquis. Jours de réserve : révision (marqués par un badge).
+var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SHADOW,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SELFDEF,AAE_SP_LONG,AAE_SP_SELFREV];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
@@ -3175,9 +3230,10 @@ function aaeFiche(title){
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
-    var f=aaeIsReserve()?AAE_SP_SHADOW:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : shadow boxing (récup active)
+    var f=aaeIsReserve()?AAE_SP_SELFREV:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : révision self-défense (récup active)
+    if(f.selfdef)f=aaeSelfDefFiche(); else if(f.selfrev)f=aaeSelfDefRevFiche(); // module TRICOM en cours, ou révision d'un module déjà vu
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
-    return {dur:f.dur,shadow:f.shadow,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
+    return {dur:f.dur,selfdef:f.selfdef,selfrev:f.selfrev,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
   if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
@@ -3466,6 +3522,7 @@ s+=aaeCountdown(); // le compte à rebours (date butoir) reste en tête
 s+=aaeTodayCard(ids);
 s+=courbeCard();
 s+=aaeWeekProgram();
+s+=aaeSelfDefBlock();
 s+=aaeCursusBlock();
 s+=aaeMathBlock();
 s+=vAaeProgress();
