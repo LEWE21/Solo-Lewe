@@ -779,6 +779,8 @@ function load(){
      if(!_A.cursusDone){_A.cursusDone=[];for(var _ci=1;_ci<=(_A.cursus||0);_ci++)_A.cursusDone.push(_ci);}
      if(!_A.selfdefDone)_A.selfdefDone=[];
      if(!_A.selfdefLinks)_A.selfdefLinks={};
+     if(!_A.englishDone)_A.englishDone=[];
+     if(!_A.englishLinks)_A.englishLinks={};
      if(!("stepsDay" in _A))_A.stepsDay=null;
      if(!_A.stepsSet)_A.stepsSet=[];
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
@@ -3116,6 +3118,42 @@ function aaeSelfDefBlock(){
   s+='</div><div class="aae-hint" style="margin-top:8px">Coche un module quand tu le maîtrises pour passer au suivant. Colle le lien de chaque module (TRICOM) pour le rouvrir vite.</div></div>';
   return s;
 }
+// Progression ANGLAIS : temps par temps, puis points de grammaire et vocabulaire (comme le cursus). [id, titre, note]
+var AAE_ENGLISH=[
+ ["en01","Présent simple","Habitudes, vérités générales. + s à la 3e personne (he/she/it). do/does au négatif/interro. Marqueurs : every day, usually, always."],
+ ["en02","Présent continu","Action en cours maintenant. be (am/is/are) + -ing. Marqueurs : now, at the moment, Look!. Pas avec les verbes d'état (want, know...)."],
+ ["en03","Passé simple (preterit)","Action finie et datée. Réguliers en -ed / irréguliers (2e forme). didn't + base. was/were pour be."],
+ ["en04","Present perfect","Lien avec le présent. have/has + participe passé (3e forme). Marqueurs : since, for, already, ever, never, just, yet."],
+ ["en05","Passé continu (past continuous)","Action en cours dans le passé. was/were + -ing. Marqueurs : while, when, at 5 pm."],
+ ["en06","Past perfect","Action arrivée avant une autre action passée. had + participe passé."],
+ ["en07","Futur (will / going to)","will = décision, prédiction ; be going to = intention, projet."],
+ ["en08","Present perfect vs passé simple","Le grand piège : since/for/already/ever → present perfect ; yesterday/ago/last → passé simple."],
+ ["en09","Les modaux","can/could, must/have to, should, may/might, would (mustn't ≠ don't have to)."],
+ ["en10","Prépositions at / in / on","Temps et lieu : at (heure, point), in (mois, année, espace fermé), on (jour, surface)."],
+ ["en11","Quantité","much/many, little/few, some/any, a lot of ; indénombrables (information, advice, news...)."],
+ ["en12","Comparatifs et superlatifs","-er/-est (courts), more/most (longs), irréguliers (good→better→best), as...as, than."],
+ ["en13","Pronoms relatifs","who (personnes), which (choses), that, whose (possession), where (lieu)."],
+ ["en14","Question tags","Affirmatif → tag négatif et inversement (aren't you ?, does she ?, can't he ?)."],
+ ["en15","Conditionnels (if)","Type 0 (vérité), 1 (réel : if + present, will), 2 (irréel : if + past, would), 3 (if + past perfect, would have)."],
+ ["en16","Le passif","be + participe passé (The letter was written by John)."],
+ ["en17","Gérondif vs infinitif","-ing après enjoy, avoid, like, une préposition ; to + base après want, decide, need, hope."],
+ ["en18","Discours indirect","On recule le temps d'un cran (present→past, will→would, can→could)."],
+ ["en19","Verbes irréguliers","Les 3 formes (base / prétérit / participe passé), classés par famille. Set Quizlet dédié."],
+ ["en20","Faux-amis","actually (en fait), library (bibliothèque), sensible (raisonnable), to pass an exam (le réussir)..."],
+ ["en21","Phrasal verbs","give up, look for, look after, get up, turn on/off, find out, put off, take off..."]
+];
+function aaeEnglishCurrent(){var done=S.aae.englishDone||[];for(var i=0;i<AAE_ENGLISH.length;i++){if(done.indexOf(AAE_ENGLISH[i][0])<0)return {id:AAE_ENGLISH[i][0],title:AAE_ENGLISH[i][1]};}return null;}
+function aaeEnglishBlock(){
+  var done=S.aae.englishDone||[],links=S.aae.englishLinks||{},cur=aaeEnglishCurrent(),n=done.length;
+  var s='<div class="cksec">🇬🇧 Anglais · progression</div><div class="spanel aae-card"><div class="aae-h"><span class="aae-ht">Points appris</span><span class="aae-moy"><b>'+n+'</b> / '+AAE_ENGLISH.length+'</span></div><div class="aae-clist">';
+  AAE_ENGLISH.forEach(function(m){
+    var id=m[0],on=done.indexOf(id)>=0,isCur=cur&&cur.id===id,lk=links[id]||'';
+    var body='<div class="aae-cdem">'+esc(m[2])+'</div><div class="aae-qrow"><input class="aae-inp aae-qin" type="url" data-englishlink="'+id+'" placeholder="colle le lien de ton set Quizlet / ta fiche" value="'+esc(lk)+'">'+(lk?'<a class="aae-qlink" href="'+esc(lk)+'" target="_blank" rel="noopener">▶ Ouvrir</a>':'')+'</div>';
+    s+='<details class="aae-crow2'+(on?' on':'')+(isCur?' cur':'')+'"><summary><span class="aae-cbox'+(on?' on':'')+'" data-english="'+id+'">'+(on?'✓':'')+'</span><span class="aae-ctitle">'+esc(m[1])+'</span>'+(isCur?'<span class="aae-curtag">en cours</span>':'')+'<span class="aae-chev">▸</span></summary><div class="aae-cbody">'+body+'</div></details>';
+  });
+  s+='</div><div class="aae-hint" style="margin-top:8px">Un point à la fois : coche-le quand tu le maîtrises (règle + exercices). Colle le lien de ton set Quizlet pour le réviser vite.</div></div>';
+  return s;
+}
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 // Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = shadow boxing (aussi la séance de repli les jours de repos).
 var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
@@ -3524,6 +3562,7 @@ s+=courbeCard();
 s+=aaeWeekProgram();
 s+=aaeSelfDefBlock();
 s+=aaeCursusBlock();
+s+=aaeEnglishBlock();
 s+=aaeMathBlock();
 s+=vAaeProgress();
 s+='</div>';return s;}
@@ -3573,6 +3612,10 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaequizlet]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaequizlet");var v=(el.value||"").trim();S.aae.cursusLinks=S.aae.cursusLinks||{};if(v)S.aae.cursusLinks[num]=v;else delete S.aae.cursusLinks[num];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemath]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var c=+el.getAttribute("data-aaemath");var d=S.aae.mathDone||(S.aae.mathDone=[]);var i=d.indexOf(c);if(i>=0)d.splice(i,1);else d.push(c);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaemathq]"),function(el){el.onchange=function(){var num=+el.getAttribute("data-aaemathq");var v=(el.value||"").trim();S.aae.mathLinks=S.aae.mathLinks||{};if(v)S.aae.mathLinks[num]=v;else delete S.aae.mathLinks[num];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-english]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var id=el.getAttribute("data-english");var d=S.aae.englishDone||(S.aae.englishDone=[]);var i=d.indexOf(id);if(i>=0)d.splice(i,1);else d.push(id);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-englishlink]"),function(el){el.onchange=function(){var id=el.getAttribute("data-englishlink");var v=(el.value||"").trim();S.aae.englishLinks=S.aae.englishLinks||{};if(v)S.aae.englishLinks[id]=v;else delete S.aae.englishLinks[id];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-selfdef]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var id=el.getAttribute("data-selfdef");var d=S.aae.selfdefDone||(S.aae.selfdefDone=[]);var i=d.indexOf(id);if(i>=0)d.splice(i,1);else d.push(id);save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-selfdeflink]"),function(el){el.onchange=function(){var id=el.getAttribute("data-selfdeflink");var v=(el.value||"").trim();S.aae.selfdefLinks=S.aae.selfdefLinks||{};if(v)S.aae.selfdefLinks[id]=v;else delete S.aae.selfdefLinks[id];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();render();};});
