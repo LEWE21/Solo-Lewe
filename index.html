@@ -2859,7 +2859,7 @@ function habWeekActive(){var mon=isoPlus(today(),-weekdayMon(today()));var map=h
 function habFrise(){var map=habHistMap();var out="";for(var i=29;i>=0;i--){var d=isoPlus(today(),-i);var known=(map[d]!=null)||(d===today());var a=habDayActive(d,map);var col=a?"#5fe0aa":(known?"rgba(150,190,240,.16)":"rgba(150,190,240,.06)");out+='<span title="'+d+'" style="width:13px;height:13px;border-radius:3px;background:'+col+';display:inline-block"></span>';}return out;}
 function habRate(q){var due=0,done=0;(S.history||[]).forEach(function(e){if(e.dueIds&&e.dueIds.indexOf(q.id)>=0){due++;if(e.doneIds&&e.doneIds.indexOf(q.id)>=0)done++;}});if(dueToday(q)){due++;if(q.done)done++;}return due?Math.round(done/due*100):null;}
 function suiviAaeMissionIds(){var out=[];(S.missions||[]).forEach(function(m){var t=(m.title||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();if(t.indexOf("armee de l air")>=0||t.indexOf("armee de l'air")>=0||(/arm/.test(t)&&/air/.test(t)))out.push(m.id);});return out;}
-function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior|the forge|recharge matinale|morning recharge|evening habits|habitudes du soir|kettlebell|gainage|douche froide|apn[eé]e|m[eé]ditation|marche 1h/i.test(q.title||"");}
+function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;return /pr[eé]pa aae|cursus|exam arena|concours arm[eé]e|orthographe|arm[eé]e|\bosc\b|anglais|english|sport|r[eé]veil|wake|killy|pompes|luc l[eé]ger|psychotechni|entretien|militaire|topographi|nrbc|tior|the forge|recharge matinale|morning recharge|evening habits|habitudes du soir|kettlebell|gainage|douche froide|apn[eé]e|m[eé]ditation|marche 1h/i.test(q.title||"");}
 function habMoments(q){try{if(typeof taskMoments==="function"){var a=taskMoments(q);if(a&&a.length)return a;}}catch(e){}var t=(q.title||"").toLowerCase();if(/matin|r[eé]veil|wake/.test(t))return["matin"];if(/midi/.test(t))return["midi"];if(/soir/.test(t))return["soir"];return["libre"];}
 function momentRank(m){return m==="matin"?0:m==="midi"?1:m==="aprem"?2:m==="soir"?3:4;}
 function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,c=2*Math.PI*r,off=c*(1-v/100);return '<div class="sk-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--panel-3)" stroke-width="7"></circle><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"></circle><text x="32" y="37" text-anchor="middle" font-size="16" font-weight="800" fill="var(--txt)">'+Math.round(v)+'%</text></svg><span class="sk-lab">'+lab+'</span></div>';}
@@ -2867,7 +2867,7 @@ function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4
 /* ---- Progression EAE : 4 blocs (physique, mental, psychotechnique, entretien) + cycle ---- */
 var AAE_PSY=[["Raisonnement","Raisonnement"],["Spatial","Spatial"],["Arithmétique","Arithmétique"],["Français","Français"],["Attention","Attention"],["Codage","Vitesse de codage"]]; // 6 familles TAMI-C
 var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (servir, pas réussir pour soi)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Présence sous observation (ton point faible)"]];
-var AAE_ANG=["Temps verbaux","Modaux","Prépositions","Conditionnels","Accords sujet-verbe","Articles & quantificateurs","Pronoms & adjectifs","Vocabulaire pro & connecteurs"]; // briques Chambéry (Exam Arena)
+var AAE_ANG=["Temps verbaux","Modaux","Prépositions","Conditionnels","Accords sujet-verbe","Articles & quantificateurs","Pronoms & adjectifs","Vocabulaire pro & connecteurs"]; // briques Chambéry (Concours Armée)
 var AAE_ANG_PRIO=["Prépositions (at/on/in + après verbes)","Passé continu (was/were + -ing)","Modaux (must/can + base)"]; // priorités issues du test blanc : à revoir en premier
 // Grille mentale hebdo A/B/C/D/E : 1h30/jour, familles réparties pour ne pas tout empiler. Index = jour de la semaine (Lundi=0)
 var AAE_MENTAL_WEEK=[
@@ -2949,7 +2949,7 @@ function aaeMentalDayFiche(){
   if(m.exam){
     var which=(aaeDayNum()%2===0)?"psychotechnique (une famille au hasard)":"anglais (un test de Chambéry)";
     return {dur:"~1h30",steps:[head,
-      ["Examen blanc au CHRONO, en conditions réelles (sans pause) : "+which+". Chaque semaine, même en phase découverte, pour t'habituer à la pression du temps.","45 min","🎯 Exam Arena · Examens",1],
+      ["Examen blanc au CHRONO, en conditions réelles (sans pause) : "+which+". Chaque semaine, même en phase découverte, pour t'habituer à la pression du temps.","45 min","🎯 Concours Armée · Examens",1],
       ["Débrief : corrige, repère tes 2 erreurs les plus fréquentes","20 min","",1],
       ["Note ta performance /20 dans la progression ci-dessous","","",1]]};
   }
@@ -2957,15 +2957,15 @@ function aaeMentalDayFiche(){
   if(m.psy==="faible"){var w=aaeWeakFamily();
     var mstep=(w&&w.k==="Arithmétique")?aaeMathStep(faibleStage,"45 min"):null;
     if(mstep)steps.push(mstep);
-    else steps.push(["Psycho · ta famille la moins avancée : "+(w?w.lab+(w.untested?" (à découvrir)":""):"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Exam Arena",1]);
+    else steps.push(["Psycho · ta famille la moins avancée : "+(w?w.lab+(w.untested?" (à découvrir)":""):"(pose d'abord quelques notes)")+" — "+faibleStage,"45 min","🎯 Concours Armée",1]);
   } else if(m.psy){m.psy.forEach(function(k){var lab=(AAE_PSY.filter(function(x){return x[0]===k;})[0]||[k,k])[1];
     var ms=(k==="Arithmétique")?aaeMathStep(psyStage,"~22 min"):null;
-    steps.push(ms||["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Exam Arena",1]);});}
+    steps.push(ms||["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Concours Armée",1]);});}
   if(m.ang){var day=aaeDayNum(),br=(day%2===0)?AAE_ANG_PRIO[Math.floor(day/2)%AAE_ANG_PRIO.length]:AAE_ANG[day%AAE_ANG.length]; // 1 jour/2 → brique prioritaire (test blanc), sinon rotation normale
-    steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Exam Arena",1]);}
+    steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Concours Armée",1]);}
   if(m.ent){var cursusN=(S.aae.cursusDone||[]).length; // l'entretien n'apparaît que vers la fin de l'apprentissage du cursus (20/24)
     if(cursusN>=20)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
-    else steps.push(["Anglais Chambéry · "+AAE_ANG_PRIO[aaeDayNum()%AAE_ANG_PRIO.length]+" — "+angStage+" · (l'entretien arrivera vers la fin de ton cursus, "+cursusN+"/24)","45 min","🇬🇧 Exam Arena",1]);}
+    else steps.push(["Anglais Chambéry · "+AAE_ANG_PRIO[aaeDayNum()%AAE_ANG_PRIO.length]+" — "+angStage+" · (l'entretien arrivera vers la fin de ton cursus, "+cursusN+"/24)","45 min","🇬🇧 Concours Armée",1]);}
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
   return {dur:m.light?"~45 min":"~1h30",steps:steps};
 }
@@ -3012,7 +3012,7 @@ var AAE_COURS=[
   {b:4,bl:"Pour Salon (après sélection) · métier d'officier",list:[[20,"Instruction juridique OPEX","l"],[21,"Gestion des ressources humaines","l"],[23,"Préparation et conduite de mission","l"],[24,"Orthographe et expression","a"]]}
 ];
 /* ---- Arithmétique : 13 chapitres en 4 blocs, un par semaine sur le créneau du mardi (jour B) ----
-   L'ordre suit le poids de chaque thème dans le test du CSO, pas l'ordre du cursus Exam Arena. */
+   L'ordre suit le poids de chaque thème dans le test du CSO, pas l'ordre du cursus Concours Armée. */
 var AAE_MATH=[
   {b:1,bl:"Automatismes",bilan:"bilan 27 sept.",list:[
     [1,"Calcul mental : regroupement, décomposition, raccourcis"],
@@ -3273,7 +3273,7 @@ function aaeFiche(title){
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
     return {dur:f.dur,selfdef:f.selfdef,selfrev:f.selfrev,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
-  if(/psychotechni|mental du jour|exam arena/.test(t))return aaeMentalDayFiche();
+  if(/psychotechni|mental du jour|exam arena|concours arm/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
     var cc=aaeCurrentCourse();
     if(!cc)return {dur:"—",steps:[["Cursus terminé : 24/24 🎉","",""],["Révision générale de tes sets Quizlet","",""]]};
