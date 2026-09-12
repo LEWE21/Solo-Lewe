@@ -2939,22 +2939,24 @@ function aaeMentalDayFiche(){
   var psyStage=ph===3?"1-2 exercices AVEC chrono":ph===2?"1 exercice SANS chrono (revoir) + 1 AVEC chrono (vitesse)":"le cours puis 1 exercice SANS chrono (bien compris, corrige chaque erreur)";
   var faibleStage=ph===3?"3 exercices AVEC chrono":ph===2?"1 exercice SANS chrono + 2 AVEC chrono":"2 exercices SANS chrono, à fond sur les corrections";
   var angStage=ph===3?"2-3 exercices AVEC chrono":ph===2?"1 exercice SANS chrono + 1 AVEC chrono":"le cours + 1-2 exercices SANS chrono";
+  // Émulation (Super Heco) : voir quelqu'un bosser dur allume avant la séance. Même texte que la fiche d'étude → même vidéo mémorisée, partagée. Injectée en 1re étape de TOUTE journée psycho.
+  var emul=["🎬 Émulation : avant de te lancer, regarde 1-2 min une vidéo de quelqu'un qui étudie / travaille dur, ça t'allume","1-2 min","","vid"];
   if(d.reserve)return {dur:"~20 min",steps:[
-    ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],
+    ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],emul,
     ["1 brique courte, rien de nouveau : refais 1-2 exercices psycho déjà vus (ou relis tes corrections de la semaine) + révise ton vocabulaire anglais. Pas de chrono, pas d'examen.","20 min","🎋 jour allégé",1]]};
   var head=["Mental du jour · Jour "+m.code+" — "+phaseTag,"",""];
-  if(m.mix)return {dur:"~1h",steps:[head,
+  if(m.mix)return {dur:"~1h",steps:[head,emul,
     ["Révision libre · un peu de tout : reprends 1 exercice dans 2-3 familles psycho de ton choix (priorité à celles où tu es la moins à l'aise) et relis tes corrections de la semaine. "+(ph===1?"Sans chrono.":"Au chrono si tu te sens prête."),"40 min","🎯 Concours Armée",1],
     ["Anglais : révise ton vocabulaire et une structure vue cette semaine.","20 min","🇬🇧 Concours Armée",1],
     ["Bilan : note /20 les familles retravaillées dans la progression ci-dessous","","",1]]};
   if(m.exam){
     var which=(aaeDayNum()%2===0)?"psychotechnique (une famille au hasard)":"anglais (un test de Chambéry)";
-    return {dur:"~1h30",steps:[head,
+    return {dur:"~1h30",steps:[head,emul,
       ["Examen blanc au CHRONO, en conditions réelles (sans pause) : "+which+". Chaque semaine, même en phase découverte, pour t'habituer à la pression du temps.","45 min","🎯 Concours Armée · Examens",1],
       ["Débrief : corrige, repère tes 2 erreurs les plus fréquentes","20 min","",1],
       ["Note ta performance /20 dans la progression ci-dessous","","",1]]};
   }
-  var steps=[head];
+  var steps=[head,emul];
   if(m.psy==="faible"){var w=aaeWeakFamily();
     var mstep=(w&&w.k==="Arithmétique")?aaeMathStep(faibleStage,"45 min"):null;
     if(mstep)steps.push(mstep);
