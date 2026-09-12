@@ -2874,10 +2874,10 @@ var AAE_MENTAL_WEEK=[
   {code:"A",psy:["Raisonnement","Spatial"],ang:true},
   {code:"B",psy:["Arithmétique","Français"],ang:true},
   {code:"C",psy:["Attention","Codage"],ang:true},
-  {code:"D",psy:"faible",ent:true},          // "faible" = la famille dont la moyenne est la plus basse
-  {code:"E",exam:true},                        // examen blanc + débrief
+  {code:"D",psy:"faible",ang:true},          // jeudi : la famille la moins avancée (renfort) + anglais
+  {code:"E",exam:true},                        // vendredi : examen blanc + débrief
   {code:"S",ang:true,light:true},              // samedi : anglais léger
-  {code:"R",repos:true}                         // dimanche : connaissance de soi / repos mental
+  {code:"M",mix:true}                          // dimanche : révision libre, un peu de tout
 ];
 function aaeIsReserve(){return S.aae&&S.aae.reserveDay===today();}
 function aaeMentalChrono(){return today()>="2027-01-01";} // (conservé pour compat)
@@ -2943,9 +2943,10 @@ function aaeMentalDayFiche(){
     ["Mental du jour · réserve → allégé ("+phaseTag+")","",""],
     ["1 brique courte, rien de nouveau : refais 1-2 exercices psycho déjà vus (ou relis tes corrections de la semaine) + révise ton vocabulaire anglais. Pas de chrono, pas d'examen.","20 min","🎋 jour allégé",1]]};
   var head=["Mental du jour · Jour "+m.code+" — "+phaseTag,"",""];
-  if(m.repos)return {dur:"repos mental",steps:[head,
-    ["Connaissance de soi : relis ton profil de personnalité, note dans ton journal une situation où tu as bien géré le regard des autres.","","🎤 entretien",1],
-    ["Ou repos mental complet si la semaine a été chargée.","",""]]};
+  if(m.mix)return {dur:"~1h",steps:[head,
+    ["Révision libre · un peu de tout : reprends 1 exercice dans 2-3 familles psycho de ton choix (priorité à celles où tu es la moins à l'aise) et relis tes corrections de la semaine. "+(ph===1?"Sans chrono.":"Au chrono si tu te sens prête."),"40 min","🎯 Concours Armée",1],
+    ["Anglais : révise ton vocabulaire et une structure vue cette semaine.","20 min","🇬🇧 Concours Armée",1],
+    ["Bilan : note /20 les familles retravaillées dans la progression ci-dessous","","",1]]};
   if(m.exam){
     var which=(aaeDayNum()%2===0)?"psychotechnique (une famille au hasard)":"anglais (un test de Chambéry)";
     return {dur:"~1h30",steps:[head,
@@ -2963,9 +2964,6 @@ function aaeMentalDayFiche(){
     steps.push(ms||["Psycho · "+lab+" — "+psyStage,"~22 min","🎯 Concours Armée",1]);});}
   if(m.ang){var day=aaeDayNum(),br=(day%2===0)?AAE_ANG_PRIO[Math.floor(day/2)%AAE_ANG_PRIO.length]:AAE_ANG[day%AAE_ANG.length]; // 1 jour/2 → brique prioritaire (test blanc), sinon rotation normale
     steps.push(["Anglais Chambéry · "+br+" — "+angStage,m.light?"~30 min":"45 min","🇬🇧 Concours Armée",1]);}
-  if(m.ent){var cursusN=(S.aae.cursusDone||[]).length; // l'entretien n'apparaît que vers la fin de l'apprentissage du cursus (20/24)
-    if(cursusN>=20)steps.push(["Entretien · présence sous observation : répète une réponse À VOIX HAUTE, debout, comme devant le jury. Ton point faible, c'est performer sous le regard.","45 min","🎤 mode jury avec Claude",1]);
-    else steps.push(["Anglais Chambéry · "+AAE_ANG_PRIO[aaeDayNum()%AAE_ANG_PRIO.length]+" — "+angStage+" · (l'entretien arrivera vers la fin de ton cursus, "+cursusN+"/24)","45 min","🇬🇧 Concours Armée",1]);}
   steps.push(["Bilan : note /20 les familles travaillées dans la progression ci-dessous","","",1]);
   return {dur:m.light?"~45 min":"~1h30",steps:steps};
 }
