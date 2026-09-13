@@ -3155,7 +3155,7 @@ function aaeEnglishBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-// Programme ENRICHI (~4 séances actives, tenable avec cursus/anglais/réserve), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = shadow boxing (aussi la séance de repli les jours de repos).
+// Programme FORCE + FRACTIONNÉ + ENDURANCE (plus de combat), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = récupération active (aussi la séance de repli les jours de repos / réserve).
 var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
   ["Échauffement dynamique ≥ 10 min : montées de genoux, talons-fesses, mobilité chevilles, 2-3 accélérations","10 min","📹 Forge 08 Dynamic Stretching · 36 100-Up Running"],
   ["Selon la phase : Phase 1 endurance fondamentale Zone 2 (60-75% FCmax, tu cours en parlant), 30-40 min ; Phase 2 fractionné court 2×10×30 s rapide/30 s lent ; Phase 3 fractionné long 10×400 m récup 1 min OU seuil 20 min. Objectif ≥ 6 min près de ta VMA. Cours pendant la récup.","20-40 min",""],
@@ -3177,6 +3177,15 @@ var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
   ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
   ["Pieds = outil de travail : endurcir la peau (crème Nok, ~10€ en pharmacie), chaussettes techniques sans coutures. Les ampoules sont la 1re cause d'abandon, pas le cardio. Option : quelques tenues Killy en fin","",""]]};
+var AAE_SP_ENDUR={dur:"~35 min",steps:[["Course · endurance fondamentale (facile)","",""],
+  ["Échauffement : 5 min marche rapide puis montées de genoux, talons-fesses, mobilité chevilles","5 min","📹 Forge 08 Dynamic Stretching"],
+  ["Footing CONTINU en Zone 2, 25-35 min : allure facile, tu dois pouvoir parler en courant (60-75% FCmax). C'est cette allure lente qui construit ton moteur de fond pour le Luc Léger. Ne force pas, l'objectif c'est la durée, pas la vitesse.","25-35 min",""],
+  ["Technique de foulée : cadence 165-180 pas/min, foulée courte (pied sous le bassin), buste droit, épaules relâchées","",""],
+  ["Retour au calme : marche lente + étirements mollets / psoas / cuisses","5 min","📹 Forge 42 · Stretching"]]};
+var AAE_SP_RECUP={dur:"~25 min",recup:true,steps:[["Récupération active (repos / réserve)","",""],
+  ["Pas de séance dure aujourd'hui. Mobilité articulaire complète (chevilles, hanches, épaules, nuque) + étirements longs des chaînes travaillées cette semaine.","12 min","📹 Forge 42 · Stretching · 26 Resets"],
+  ["Marche facile 15-20 min (ou vélo léger). Respire par le nez, allure tranquille. On relance la récupération sans fatiguer.","15-20 min",""],
+  ["Option si tu te sens en forme : quelques tenues Killy douces + gainage léger. Sinon, repos complet, c'est aussi de l'entraînement.","",""]]};
 var AAE_SP_SHADOW={dur:"~20 min",shadow:true,steps:[["Shadow boxing","",""],
   ["Shadow boxing · répétition de la session : enchaîne tes combos dans le vide (fast & loose), ~4 rounds de 3 min. Revois au besoin les leçons Combatives de ton cours : Forge 45 (garde, footwork, frappes), 46 (kicks, takedown, sprawl), 47 (combos).","~20 min","📹 Forge 47 · Combos (shadow boxing)"],
   ["Retour au calme · fast & loose : penchée en avant, bras et épaules totalement relâchés, secoue-les vite comme des cordes 10-15 s, puis les jambes. Relâche toute tension. Finis par 4-5 respirations lentes et des étirements épaules / nuque / poignets.","2 min","📹 Forge 27 · Fast & Loose"]]};
@@ -3198,8 +3207,8 @@ var AAE_SP_SELFDEF={dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · 
  ["Pratique le module en cours de ton cours TRICOM (voir ta progression dans l'onglet EAE). Regarde, reproduis lentement, puis répète jusqu'à automatiser.","~30 min",""]]};
 var AAE_SP_SELFREV={dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],
  ["Reviens sur un module déjà appris pour l'entretenir (voir Aujourd'hui). Entretien des acquis sans perdre le nouveau.","~30 min",""]]};
-// Semaine enrichie : Lun Course · Mar self-défense TRICOM (nouveau module) · Mer Renfo (pompes+Killy) · Jeu Simple & Sinister · Ven shadow boxing (Forge) · Sam Sortie longue/marche · Dim self-défense TRICOM (révision d'un module déjà vu, aussi le repli jour de repos). Alternance TRICOM / shadow boxing + révision, pour la variété et l'entretien des acquis. Jours de réserve : révision (marqués par un badge).
-var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_SELFDEF,AAE_SP_RENFO,AAE_SP_SS,AAE_SP_SHADOW,AAE_SP_LONG,AAE_SP_SELFREV];
+// Semaine FORCE + FRACTIONNÉ + ENDURANCE (plus de combat, demandé le 13/09/2026) : Lun Course fractionné (Luc Léger) · Mar Force (pompes + Killy) · Mer Course endurance fondamentale · Jeu Simple & Sinister (kettlebell) · Ven Course fractionné · Sam Sortie longue / seuil + marche chargée · Dim Récupération active (aussi le repli des jours de repos / réserve).
+var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_RENFO,AAE_SP_ENDUR,AAE_SP_SS,AAE_SP_COURSE,AAE_SP_LONG,AAE_SP_RECUP];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
@@ -3268,7 +3277,7 @@ function aaeFiche(title){
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
-    var f=aaeIsReserve()?AAE_SP_SELFREV:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : révision self-défense (récup active)
+    var f=aaeIsReserve()?AAE_SP_RECUP:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : récupération active
     if(f.selfdef)f=aaeSelfDefFiche(); else if(f.selfrev)f=aaeSelfDefRevFiche(); // module TRICOM en cours, ou révision d'un module déjà vu
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
     return {dur:f.dur,selfdef:f.selfdef,selfrev:f.selfrev,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
