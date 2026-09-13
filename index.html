@@ -781,6 +781,7 @@ function load(){
      if(!_A.selfdefLinks)_A.selfdefLinks={};
      if(!_A.englishDone)_A.englishDone=[];
      if(!_A.englishLinks)_A.englishLinks={};
+     if(!_A.ficheEdits)_A.ficheEdits={}; // édition manuelle des fiches : { <cléFiche>: {del:[signatures], ord:[signatures]} }
      if(!("stepsDay" in _A))_A.stepsDay=null;
      if(!_A.stepsSet)_A.stepsSet=[];
      if(!("wkStepsWeek" in _A))_A.wkStepsWeek=null;
@@ -3312,6 +3313,22 @@ function aaeFiche(title){
   return null;
 }
 function aaeStepDone(id){var A=S.aae;if(!A||A.stepsDay!==today())return false;return (A.stepsSet||[]).indexOf(id)>=0;}
+// ---- Édition manuelle des fiches : déplacer / supprimer une étape, gardé même quand la fiche se régénère ----
+function aaeStepSig(st){return ((st&&st[0])||"").split(" — ")[0].split(" · ")[0].trim().slice(0,90);} // signature stable d'une étape (on ignore le suffixe de phase)
+function aaeFicheHeadIdx(steps){return (steps.length&&steps[0][1]===""&&steps[0][2]===""&&!steps[0][3])?0:-1;} // 1re étape = titre non cochable → épinglée
+function aaeApplyEdits(fkey,steps){
+  var ed=(S.aae.ficheEdits||{})[fkey]; if(!ed||(!(ed.del&&ed.del.length)&&!(ed.ord&&ed.ord.length)))return steps;
+  var hi=aaeFicheHeadIdx(steps),head=hi===0?steps[0]:null,body=hi===0?steps.slice(1):steps.slice();
+  if(ed.del&&ed.del.length)body=body.filter(function(st){return ed.del.indexOf(aaeStepSig(st))<0;});
+  if(ed.ord&&ed.ord.length){
+    var bySig={};body.forEach(function(st){var g=aaeStepSig(st);if(!(g in bySig))bySig[g]=st;});
+    var out=[],used={};
+    ed.ord.forEach(function(g){if(bySig[g]&&!used[g]){out.push(bySig[g]);used[g]=1;}});
+    body.forEach(function(st){var g=aaeStepSig(st);if(!used[g]){out.push(st);used[g]=1;}});
+    body=out;
+  }
+  return head?[head].concat(body):body;
+}
 function aaeDayItems(ids){ // liste commune Cockpit + Aujourd'hui : socle matin/soir injectés + habitudes/tâches EAE
   var t=today();
   var isSocle=function(q){return /morning recharge|recharge matinale|evening habits|habitudes du soir|routine du soir/i.test(q.title||"");};
@@ -3323,6 +3340,7 @@ function aaeDayItems(ids){ // liste commune Cockpit + Aujourd'hui : socle matin/
   items.push({mo:"matin",key:"etirement",title:"Étirement",fiche:aaeEtireFiche(),ic:"🧘 ",qdone:false}); // étirement de fin de journée, natif, dans la partie sport (matin)
   tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"📌 ",qdone:false});});
   items.push({mo:"soir",key:"evening",title:"Routine du soir",fiche:aaeFiche("evening habits"),ic:"🌙 ",qdone:false});
+  items.forEach(function(it){if(it.fiche&&it.fiche.steps)it.fiche.steps=aaeApplyEdits(it.key,it.fiche.steps);}); // applique les modifs manuelles
   return items;
 }
 function aaeItemFullyDone(it){ // un item est fait quand toutes ses étapes cochables sont validées (ou l'habitude ROBI cochée)
@@ -3340,12 +3358,23 @@ function aaeItemHtml(it){
   var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
   var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
   if(f){
+    var editing=(S.aae.editFiche===it.key),hi=aaeFicheHeadIdx(f.steps),bodySigs=[];
+    var BTN='style="border:1px solid var(--line,#cdd6df);background:var(--panel-2,#fff);border-radius:6px;cursor:pointer;font-size:12px;line-height:1.1;padding:2px 6px;margin-right:3px;color:var(--txt,#22303c)"';
+    var BTNDEL='style="border:1px solid #e3b7b7;background:#fdeeee;border-radius:6px;cursor:pointer;font-size:12px;line-height:1.1;padding:2px 6px;margin-right:3px;color:#b3261e"';
     var steps=f.steps.map(function(st,idx){
-      var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot");
+      var can=(st[1]!==""||st[2]!==""||st[3]),sid=it.key+'#'+idx,on=aaeStepDone(sid),hot=(st[3]==="hot"),isHead=(idx===hi),ctl='';
       var box=can?'<span class="aae-scheck'+(on?' on':'')+'" data-aaestep="'+sid+'"></span>':'<span class="aae-scheck ph"></span>';
-      return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+box+'<span class="aae-stx"><span class="aae-stl"><b>'+esc(st[0])+'</b>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</span>'+aaeVidInput(st)+'</span></div>';
+      if(!isHead){var sig=aaeStepSig(st);bodySigs.push(sig);
+        if(editing)ctl='<span style="display:inline-flex;flex:0 0 auto;margin-right:6px">'
+          +'<button '+BTN+' data-fedit="up" data-fkey="'+it.key+'" data-fsig="'+esc(sig)+'" title="Monter">↑</button>'
+          +'<button '+BTN+' data-fedit="down" data-fkey="'+it.key+'" data-fsig="'+esc(sig)+'" title="Descendre">↓</button>'
+          +'<button '+BTNDEL+' data-fedit="del" data-fkey="'+it.key+'" data-fsig="'+esc(sig)+'" title="Supprimer cette étape">✕</button></span>';
+      }
+      return '<div class="aae-step'+(on?' sdone':'')+(hot?' aae-hot':'')+'">'+ctl+box+'<span class="aae-stx"><span class="aae-stl"><b>'+esc(st[0])+'</b>'+(st[1]?'<span class="aae-stt">'+st[1]+'</span>':'')+'</span>'+aaeVidInput(st)+'</span></div>';
     }).join("");
-    return '<details class="aae-hb'+doneCls+'"'+opn+drg+'><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+gear+'</summary><div class="aae-fiche">'+steps+'</div></details>';
+    var editBtn='<span class="aae-gear" data-feditmode="'+it.key+'" title="'+(editing?'Terminer':'Modifier les étapes')+'" style="'+(editing?'color:var(--accent,#c98a1a);font-weight:700':'opacity:.65')+'">✎</span>';
+    var editBar=editing?'<div style="font-size:11px;color:var(--muted,#5b6b7b);background:var(--panel-3,#eef3f8);border-radius:8px;padding:6px 9px;margin-bottom:7px">Édition : réordonne (↑ ↓) ou supprime (✕) tes étapes. <button '+BTN+' data-fereset="'+it.key+'" title="Tout remettre par défaut">↺ réinitialiser</button></div>':'';
+    return '<details class="aae-hb'+doneCls+'"'+(editing?' open':opn)+drg+' data-fsigs="'+esc(bodySigs.join("|~|"))+'"><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+editBtn+gear+'</summary><div class="aae-fiche">'+editBar+steps+'</div></details>';
   }
   return '<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
 }
@@ -3634,6 +3663,18 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-selfdef]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var id=el.getAttribute("data-selfdef");var d=S.aae.selfdefDone||(S.aae.selfdefDone=[]);var i=d.indexOf(id);if(i>=0)d.splice(i,1);else d.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-selfdeflink]"),function(el){el.onchange=function(){var id=el.getAttribute("data-selfdeflink");var v=(el.value||"").trim();S.aae.selfdefLinks=S.aae.selfdefLinks||{};if(v)S.aae.selfdefLinks[id]=v;else delete S.aae.selfdefLinks[id];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaestep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,t=today();if(A.stepsDay!==t){A.stepsDay=t;A.stepsSet=[];}var id=el.getAttribute("data-aaestep");var i=A.stepsSet.indexOf(id);if(i>=0)A.stepsSet.splice(i,1);else A.stepsSet.push(id);save();render();};});
+  // Édition manuelle des fiches : activer le mode, déplacer / supprimer une étape, réinitialiser
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-feditmode]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var k=el.getAttribute("data-feditmode");S.aae.editFiche=(S.aae.editFiche===k)?null:k;save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-fereset]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var k=el.getAttribute("data-fereset");if(S.aae.ficheEdits)delete S.aae.ficheEdits[k];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-fedit]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();
+    var op=el.getAttribute("data-fedit"),fk=el.getAttribute("data-fkey"),sig=el.getAttribute("data-fsig");
+    var A=S.aae;A.ficheEdits=A.ficheEdits||{};var ed=A.ficheEdits[fk]||(A.ficheEdits[fk]={del:[],ord:[]});ed.del=ed.del||[];ed.ord=ed.ord||[];
+    if(op==="del"){if(ed.del.indexOf(sig)<0)ed.del.push(sig);}
+    else{var cont=el;while(cont&&!(cont.classList&&cont.classList.contains("aae-hb")))cont=cont.parentNode;
+      var sigs=((cont&&cont.getAttribute("data-fsigs"))||"").split("|~|").filter(Boolean);
+      var i=sigs.indexOf(sig);if(i<0){save();render();return;}var j=op==="up"?i-1:i+1;if(j<0||j>=sigs.length)return;
+      var tmp=sigs[i];sigs[i]=sigs[j];sigs[j]=tmp;ed.ord=sigs;}
+    save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
