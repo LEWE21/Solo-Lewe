@@ -1012,20 +1012,20 @@ var habTab=null;
 var dayTab={};  // onglet actif (habitudes / tâches) par moment dans Aujourd'hui, ex. {matin:"hab"} ; défaut "tache"
 function taskMoment(q){
   if(q&&q.moment==="libre")return "libre"; // sans moment précis, choisi explicitement
-  if(q&&/^(matin|midi|aprem|soir)$/.test(q.moment||""))return q.moment;
+  if(q&&q.moment==="aprem")return "midi";                 // "après-midi" retiré : replié sur midi
+  if(q&&/^(matin|midi|soir)$/.test(q.moment||""))return q.moment;
   var t=((q&&q.title)||"").toLowerCase();
   if(/matin|matinal|r[ée]veil|petit[- ]d[ée]j/.test(t))return "matin";
-  if(/apr[èe]s[- ]?midi|apr[èe]m/.test(t))return "aprem";
-  if(/midi|d[ée]jeuner|pause d[ée]j/.test(t))return "midi";
+  if(/midi|d[ée]jeuner|pause d[ée]j|apr[èe]s[- ]?midi|apr[èe]m/.test(t))return "midi";
   if(/soir|coucher|nuit|dodo|avant de dormir/.test(t))return "soir";
   return "matin"; // par défaut, le matin
 }
 // Une tâche peut désormais viser PLUSIEURS moments (q.moments = ["matin","soir"]...) ; sinon on retombe sur le moment unique.
-function taskMoments(q){ if(q&&q.moments&&q.moments.length)return q.moments.slice(); return [taskMoment(q)]; }
+function taskMoments(q){ var a=(q&&q.moments&&q.moments.length)?q.moments.slice():[taskMoment(q)]; a=a.map(function(m){return m==="aprem"?"midi":m;}); return a.filter(function(m,i){return a.indexOf(m)===i;}); }
 function momentSelected(q,mo){ if(q&&q.moments&&q.moments.length)return q.moments.indexOf(mo)>=0; return taskMoment(q)===mo; }
 function momentButtons(q){ // sélecteur : matin/midi/soir cumulables, + "Peu importe" (exclusif)
   var s='';
-  [["matin","Matin"],["midi","Midi"],["aprem","Après-midi"],["soir","Soir"]].forEach(function(mo){s+='<button class="btn'+(momentSelected(q,mo[0])?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
+  [["matin","Matin"],["midi","Midi"],["soir","Soir"]].forEach(function(mo){s+='<button class="btn'+(momentSelected(q,mo[0])?"":" ghost")+'" data-tsmoment="'+mo[0]+'">'+mo[1]+'</button>';});
   var libre=!(q.moments&&q.moments.length)&&taskMoment(q)==="libre";
   s+='<button class="btn'+(libre?"":" ghost")+'" data-tsmoment="libre">Peu importe</button>';
   return s;
@@ -2408,7 +2408,7 @@ function aujRow(q){
   var ic=q.daily?'🔁 ':'📌 ';
   return '<div class="aae-hb flat'+(done?' done':'')+'" draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"><span class="aae-scheck'+(done?' on':'')+'" data-check="'+q.id+'"></span><span class="aae-grip" title="Glisser vers un autre moment">⠿</span><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(q.title)+'</span><span class="aae-gear" data-tset="'+q.id+'" title="Régler (moment, fréquence...)">⚙</span></div>';
 }
-// Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Après-midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment. Tout est déplaçable par glisser-déposer.
+// Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment. Tout est déplaçable par glisser-déposer.
 function vAujourdhui(){
   var ids=suiviAaeMissionIds();
   var eaeItems=aaeDayItems(ids); // socle matin/soir, sport, habitudes EAE (chacun avec .mo)
@@ -2422,7 +2422,7 @@ function vAujourdhui(){
     if(isPlan(q))return !q.due||dayDiff(q.due,today())<=0;
     return false;
   });
-  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
   MO.forEach(function(mm){
@@ -2499,7 +2499,7 @@ function vCockpit(){
   var jEae=function(q){return isAaeQuest(q,jIds);};
   var undoneHab=dueList.filter(function(q){return !doneForToday(q)&&!jEae(q);}).length;
   var jTasks=todayT.filter(function(q){return !jEae(q);});
-  var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  var parts=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   // Prépa EAE : un repère agrégé par moment. Le compte = items EAE pas encore entièrement validés (étapes cochées), aligné sur l'onglet EAE.
   var eaeMomN={};aaeDayItems(jIds).forEach(function(it){if(!aaeItemFullyDone(it))eaeMomN[it.mo]=(eaeMomN[it.mo]||0)+1;});
   var eaeRep=parts.filter(function(mo){return eaeMomN[mo[0]]>0;}).length;
@@ -2863,7 +2863,7 @@ function isAaeQuest(q,ids){if(q.mission&&ids.indexOf(q.mission)>=0)return true;r
 function habMoments(q){try{if(typeof taskMoments==="function"){var a=taskMoments(q);if(a&&a.length)return a;}}catch(e){}var t=(q.title||"").toLowerCase();if(/matin|r[eé]veil|wake/.test(t))return["matin"];if(/midi/.test(t))return["midi"];if(/soir/.test(t))return["soir"];return["libre"];}
 function momentRank(m){return m==="matin"?0:m==="midi"?1:m==="aprem"?2:m==="soir"?3:4;}
 function suiviRing(val,lab,col){var v=Math.max(0,Math.min(100,val||0));var r=22,c=2*Math.PI*r,off=c*(1-v/100);return '<div class="sk-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="var(--panel-3)" stroke-width="7"></circle><circle cx="32" cy="32" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" transform="rotate(-90 32 32)"></circle><text x="32" y="37" text-anchor="middle" font-size="16" font-weight="800" fill="var(--txt)">'+Math.round(v)+'%</text></svg><span class="sk-lab">'+lab+'</span></div>';}
-function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4),mo=+t.slice(5,7);var dim=daysInMonth(y,mo);var ym=t.slice(0,7);var mon=isoPlus(t,-weekdayMon(t));var DOW="LMMJVSD";var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});if(!dailies.length)return {html:'<div class="empty">Aucune habitude rattachée à l\'Armée de l\'Air. Dans l\'app, touche ⚙ sur une journalière et relie-la à l\'objectif ARMEE DE L\'AIR.</div>',globalPc:0,weekPc:0};var groups={};dailies.forEach(function(q){var m=habMoments(q)[0]||"libre";(groups[m]=groups[m]||[]).push(q);});var totalCols=dim+2;var s='<div class="sk-wrap"><table class="sk-grid"><thead><tr><th class="sk-h">Habitude</th>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);s+='<th class="sk-d'+(wd>=5?' we':'')+(ds===t?' is-today':'')+'"><span class="sk-dow">'+DOW.charAt(wd)+'</span>'+d+'</th>';}s+='<th class="sk-p">Ce mois</th></tr></thead><tbody>';var gT=0,gP=0,wT=0,wP=0;MO.forEach(function(mm){var list=groups[mm[0]];if(!list||!list.length)return;s+='<tr class="sk-sec"><td colspan="'+totalCols+'">'+mm[1]+'</td></tr>';list.forEach(function(q){var done=0,poss=0;var row='<tr><td class="sk-h">'+esc(q.title)+'</td>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);var we=wd>=5;var inWeek=(ds>=mon&&ds<=t);var cls;if(ds>t){cls="fu";}else if(!dueOn(q,ds)){cls="off";}else if(ds===t){if(q.done){cls="ok";poss++;done++;if(inWeek){wP++;wT++;}}else{cls="td";}}else{var h=map[ds];var tracked=h&&h.dueIds&&h.dueIds.indexOf(q.id)>=0;if(!tracked){cls="nd";}else{poss++;var ok=h.doneIds&&h.doneIds.indexOf(q.id)>=0;if(ok)done++;cls=ok?"ok":"no";if(inWeek){wP++;if(ok)wT++;}}}row+='<td class="sk-c '+cls+(we?' we':'')+(ds===t?' is-today':'')+'"><i></i></td>';}var pc=poss?Math.round(done/poss*100):0;gT+=done;gP+=poss;row+='<td class="sk-p"><b>'+pc+'%</b><span class="sk-bar"><i style="width:'+pc+'%"></i></span></td></tr>';s+=row;});});s+='</tbody></table></div>';return {html:s,globalPc:gP?Math.round(gT/gP*100):0,weekPc:wP?Math.round(wT/wP*100):0};}
+function habMonthGrid(ids){var map=habHistMap();var t=today();var y=+t.slice(0,4),mo=+t.slice(5,7);var dim=daysInMonth(y,mo);var ym=t.slice(0,7);var mon=isoPlus(t,-weekdayMon(t));var DOW="LMMJVSD";var MO=[["matin","☀️ Matin"],["midi","🍽️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];var dailies=S.quests.filter(function(q){return q.daily&&isAaeQuest(q,ids);});if(!dailies.length)return {html:'<div class="empty">Aucune habitude rattachée à l\'Armée de l\'Air. Dans l\'app, touche ⚙ sur une journalière et relie-la à l\'objectif ARMEE DE L\'AIR.</div>',globalPc:0,weekPc:0};var groups={};dailies.forEach(function(q){var m=habMoments(q)[0]||"libre";(groups[m]=groups[m]||[]).push(q);});var totalCols=dim+2;var s='<div class="sk-wrap"><table class="sk-grid"><thead><tr><th class="sk-h">Habitude</th>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);s+='<th class="sk-d'+(wd>=5?' we':'')+(ds===t?' is-today':'')+'"><span class="sk-dow">'+DOW.charAt(wd)+'</span>'+d+'</th>';}s+='<th class="sk-p">Ce mois</th></tr></thead><tbody>';var gT=0,gP=0,wT=0,wP=0;MO.forEach(function(mm){var list=groups[mm[0]];if(!list||!list.length)return;s+='<tr class="sk-sec"><td colspan="'+totalCols+'">'+mm[1]+'</td></tr>';list.forEach(function(q){var done=0,poss=0;var row='<tr><td class="sk-h">'+esc(q.title)+'</td>';for(var d=1;d<=dim;d++){var ds=ym+'-'+(d<10?'0'+d:''+d);var wd=weekdayMon(ds);var we=wd>=5;var inWeek=(ds>=mon&&ds<=t);var cls;if(ds>t){cls="fu";}else if(!dueOn(q,ds)){cls="off";}else if(ds===t){if(q.done){cls="ok";poss++;done++;if(inWeek){wP++;wT++;}}else{cls="td";}}else{var h=map[ds];var tracked=h&&h.dueIds&&h.dueIds.indexOf(q.id)>=0;if(!tracked){cls="nd";}else{poss++;var ok=h.doneIds&&h.doneIds.indexOf(q.id)>=0;if(ok)done++;cls=ok?"ok":"no";if(inWeek){wP++;if(ok)wT++;}}}row+='<td class="sk-c '+cls+(we?' we':'')+(ds===t?' is-today':'')+'"><i></i></td>';}var pc=poss?Math.round(done/poss*100):0;gT+=done;gP+=poss;row+='<td class="sk-p"><b>'+pc+'%</b><span class="sk-bar"><i style="width:'+pc+'%"></i></span></td></tr>';s+=row;});});s+='</tbody></table></div>';return {html:s,globalPc:gP?Math.round(gT/gP*100):0,weekPc:wP?Math.round(wT/wP*100):0};}
 /* ---- Progression EAE : 4 blocs (physique, mental, psychotechnique, entretien) + cycle ---- */
 var AAE_PSY=[["Raisonnement","Raisonnement"],["Spatial","Spatial"],["Arithmétique","Arithmétique"],["Français","Français"],["Attention","Attention"],["Codage","Vitesse de codage"]]; // 6 familles TAMI-C
 var AAE_ENT=[["parcours","Mon parcours (récit)"],["motivation","Motivation (servir, pas réussir pour soi)"],["sic","Métier SIC / fiche de poste"],["defense","Culture défense / actualité"],["oral","Présence sous observation (ton point faible)"]];
@@ -3263,6 +3263,12 @@ function aaeIsForceDay(){ // jour de force = renfo complet (mer) ou Simple & Sin
   var f=aaeDaySchedule()[weekdayMon(today())];
   return f===AAE_SP_RENFO||f===AAE_SP_SS;
 }
+function aaeEtireFiche(){return {dur:"~12 min",steps:[
+  ["Étirement de fin de journée","",""],
+  ["Mobilité douce d'abord, muscles encore chauds : cou, épaules, hanches, chevilles, 5-8 mouvements lents par articulation.","2 min","📹 Forge 30 · Joint Mobility"],
+  ["Étirements tenus (3 fois par zone, tenue douce sans forcer + respiration lente) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules et nuque.","8 min","📹 Forge 42 · Evening Stretching"],
+  ["Retour au calme : 4-5 respirations lentes, relâche tout le corps. Pas de foam rolling, juste des étirements.","2 min","📹 Forge 27 · Fast & Loose"]
+]};}
 function aaeFiche(title){
   var t=(title||"").toLowerCase();
   if(/recharge matinale|morning recharge/.test(t)){
@@ -3272,7 +3278,7 @@ function aaeFiche(title){
     return {dur:"~14 min",steps:[["Eau tiède + citron + sel","1 min",""],["BOLT (apnée réveil)","30 s",""],["Réveil articulaire : arm swings (qigong) + mobilité (cou → chevilles, 10 par articulation, sans forcer). Agréable, aucune performance.","3 min","📹 Forge 02 Arm Swings · 30 Joint Mobility"],["Respiration chinoise : papillon dansant et/ou soulever le ciel, 10-20 reps, étirement doux. Inspire le frais par le nez, expire les soucis par la bouche. Aucun record.","3 min","📹 Forge 03 · Chinese Breathing"],["Silence & flux d'énergie : reste debout relâchée, laisse ton corps bouger tout seul, puis méditation debout, juste consciente de ton souffle.","3 min","📹 Forge 04 · Silence & Energy Flow"],["Massage facial : paumes chaudes sur le visage, points du visage, tambour céleste (tapoter l'occiput), peigner les cheveux. Réveille la vitalité.","2 min","📹 Forge 05 · Facial Massage"],["Visualisation négative","1 min","📹 Forge 31 · Negative Visualisation"],dmDouche]};
   }
   if(/evening|habitudes du soir|routine du soir/.test(t)){
-    var evSteps=[["En option : respiration lente ou étirements doux pour poser la soirée (si tu en as envie)","",""],["Foam rolling : check-in de récupération, contrôle la pression (pas un concours de douleur), repère les zones tendues (utile vu tes heures assises)","5 min","📹 Forge 25 · Foam Rolling"],["Étirements (3 séries/drill, tenue douce + respiration lente, muscles chauds) : ischio-jambiers, mollets, fléchisseurs de hanche (psoas), quadriceps, fessiers / piriforme, épaules","6 min","📹 Forge 42 · Evening Stretching"],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
+    var evSteps=[["En option : respiration lente ou quelques étirements doux pour poser la soirée (les vrais étirements de fin de journée sont maintenant dans ta séance « Étirement », côté sport)","",""],["Éponge visage","1 min",""],["Brossage de dents","2 min",""],["Crème pour la peau","1 min",""],["Journal + examen stoïcien (3 questions)","3 min","📹 Forge 41 · Journaling"],["Respiration 4-7-8 (4 cycles)","2 min","📹 Forge 44 · 4-7-8 Breathing"]];
     if(aaeIsForceDay())evSteps.splice(1,0,["🚿 Douche froide (résilience) : ce soir, car jour de force. 15 s → +15 s/sem → 2 min, commence par les pieds, respire lentement.","ce soir","📹 Forge 13 · Cold Exposure","hot"]);
     return {dur:"~20 min",steps:evSteps};
   }
@@ -3282,6 +3288,7 @@ function aaeFiche(title){
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
     return {dur:f.dur,selfdef:f.selfdef,selfrev:f.selfrev,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
   }
+  if(/[eé]tirement|assouplissement|souplesse|stretch/.test(t))return aaeEtireFiche();
   if(/psychotechni|mental du jour|exam arena|concours arm/.test(t))return aaeMentalDayFiche();
   if(/cursus|étudier|reviser|réviser/.test(t)){
     var cc=aaeCurrentCourse();
@@ -3342,7 +3349,7 @@ function aaeItemHtml(it){
   return '<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
 }
 function aaeTodayCard(ids){
-  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["aprem","🌆 Après-midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
+  var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var items=aaeDayItems(ids);
   var n=items.length,inner='';
   if(aaeIsReserveDay())inner+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
