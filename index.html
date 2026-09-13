@@ -3320,6 +3320,7 @@ function aaeDayItems(ids){ // liste commune Cockpit + Aujourd'hui : socle matin/
   var items=[];
   items.push({mo:"matin",key:"morning",title:"Recharge matinale",fiche:aaeFiche("morning recharge"),ic:"🌅 ",qdone:false});
   dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"🔁 ",qdone:doneForToday(q)});});
+  items.push({mo:"matin",key:"etirement",title:"Étirement",fiche:aaeEtireFiche(),ic:"🧘 ",qdone:false}); // étirement de fin de journée, natif, dans la partie sport (matin)
   tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"📌 ",qdone:false});});
   items.push({mo:"soir",key:"evening",title:"Routine du soir",fiche:aaeFiche("evening habits"),ic:"🌙 ",qdone:false});
   return items;
@@ -3334,7 +3335,7 @@ function aaeItemFullyDone(it){ // un item est fait quand toutes ses étapes coch
 // Rendu d'UN item EAE (socle, sport, habitude EAE) : réutilisé par aaeTodayCard et par l'onglet Aujourd'hui.
 function aaeItemHtml(it){
   var f=it.fiche,fdone=aaeItemFullyDone(it),dur=f?'<span class="aae-dur">'+f.dur+'</span>':'',doneCls=fdone?' done':'',opn=fdone?'':' open';
-  var socle=(it.key==="morning"||it.key==="evening");
+  var socle=(it.key==="morning"||it.key==="evening"||it.key==="etirement");
   var gear=socle?'':'<span class="aae-gear" data-eaegear="'+it.key+'" title="Régler / supprimer">⚙</span>';
   var drg=socle?'':' draggable="true" data-drag="'+it.key+'" data-droptask="'+it.key+'"';
   var grip=socle?'':'<span class="aae-grip" title="Glisser pour déplacer">⠿</span>';
