@@ -3222,13 +3222,24 @@ function aaeWkStepDone(id){var A=S.aae;if(!A||A.wkStepsWeek!==aaeWkMonday())retu
 function aaeVidKey(lbl){var s=String(lbl),h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return 'v'+(h>>>0).toString(36);}
 // Champ vidéo éditable par exercice : elle y met le nom + n° de SA vidéo. Pré-rempli avec la vidéo par défaut (Forge) là où il y en a une, vide sinon (ex : Simple & Sinister).
 function aaeVidUrl(v){v=(v||"").trim();if(!v)return null;if(/^https?:\/\//i.test(v))return v;if(/^\/\//.test(v))return "https:"+v;if(/^(www\.|m\.)?(youtube\.com|youtu\.be)[\/?]/i.test(v))return "https://"+v;return null;}
-function aaeVidInput(st){
-  if(!(st[2]!==""||st[3]==="vid"))return "";                      // seulement les étapes avec vidéo (ou marquées "vid")
-  var vk=aaeVidKey(st[0]),saved=(S.aae&&S.aae.vid&&S.aae.vid[vk]!=null),vv=saved?S.aae.vid[vk]:(st[2]||"");
-  var url=aaeVidUrl(vv),vnom=(st[4]||"").trim();
+// Une "puce" vidéo = un bouton Ouvrir (si lien) + un champ éditable. idx=-1 = vidéo principale (S.aae.vid[vk]) ; idx>=0 = vidéo en plus (S.aae.vids[vk][idx]).
+function aaeVidChip(vk,idx,vv,vnom){
+  var url=aaeVidUrl(vv);
   var open=url?'<a class="aae-vidopen" href="'+esc(url)+'" target="_blank" rel="noopener">▶ '+(vnom?esc(vnom):'Ouvrir la vidéo')+'</a>':'';
   var lab=vv?(url?'✎':('📹 '+vv)):'📹 ajouter ma vidéo';
-  return '<span class="aae-vidwrap">'+open+'<details class="aae-vid'+(vv?'':' empty')+(url?' hasurl':'')+'"><summary>'+esc(lab)+'</summary><input class="aae-vidin" type="text" data-vid="'+vk+'" placeholder="nom + n° OU lien YouTube" value="'+esc(vv)+'"></details></span>';
+  var key=vk+(idx>=0?('#'+idx):'');
+  return '<span class="aae-vidchip">'+open+'<details class="aae-vid'+(vv?'':' empty')+(url?' hasurl':'')+'"><summary>'+esc(lab)+'</summary><input class="aae-vidin" type="text" data-vid="'+esc(key)+'" placeholder="nom + n° OU lien YouTube" value="'+esc(vv)+'"></details></span>';
+}
+function aaeVidInput(st){
+  if(!(st[2]!==""||st[3]==="vid"))return "";                      // seulement les étapes avec vidéo (ou marquées "vid")
+  var vk=aaeVidKey(st[0]);
+  var prim=(S.aae&&S.aae.vid&&S.aae.vid[vk]!=null)?S.aae.vid[vk]:(st[2]||"");
+  var vnom=(st[4]||"").trim();
+  var extras=(S.aae&&S.aae.vids&&S.aae.vids[vk])||[];
+  var h='<span class="aae-vidwrap">'+aaeVidChip(vk,-1,prim,vnom);
+  for(var i=0;i<extras.length;i++) h+=aaeVidChip(vk,i,extras[i],'');
+  h+='<button class="aae-vidadd" data-vidadd="'+vk+'" title="Ajouter une autre vidéo à cette étape (côte à côte)">＋ vidéo</button></span>';
+  return h;
 }
 function aaeWkStepsHtml(steps,di,offset){return steps.map(function(st,k){
   var can=(st[1]!==""||st[2]!==""),sid='d'+di+'#'+(k+offset),on=aaeWkStepDone(sid);
@@ -3565,6 +3576,9 @@ var AAE_CSS='<style>'+
 '.aae-vidwrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px}'+
 '.aae-vidopen{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:#d64545;border-radius:99px;padding:3px 11px;white-space:nowrap;text-decoration:none}'+
 '.aae-vidopen:hover{background:#c0392b}'+
+'.aae-vidchip{display:inline-flex;align-items:center;gap:5px}'+
+'.aae-vidadd{font-size:10px;border:1px dashed #b9c6d4;background:#f4f8fc;color:#2f6690;border-radius:99px;padding:2px 9px;cursor:pointer;white-space:nowrap}'+
+'.aae-vidadd:hover{background:#e8f0f8}'+
 '.aae-vid>summary{list-style:none;cursor:pointer;font-size:10.5px;font-weight:600;color:#4C7C93;background:color-mix(in srgb,#4C7C93 9%,var(--panel));border:1px solid color-mix(in srgb,#4C7C93 22%,var(--brd));padding:2px 9px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;display:inline-block}'+
 '.aae-vid.hasurl>summary{color:var(--dim2);background:transparent;max-width:none}'+
 '.aae-vid>summary::-webkit-details-marker{display:none}'+
@@ -3676,7 +3690,11 @@ function bind(){
       var tmp=sigs[i];sigs[i]=sigs[j];sigs[j]=tmp;ed.ord=sigs;}
     save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-aaewkstep]"),function(el){el.onclick=function(e){e.stopPropagation();var A=S.aae,mon=aaeWkMonday();if(A.wkStepsWeek!==mon){A.wkStepsWeek=mon;A.wkStepsSet=[];}var id=el.getAttribute("data-aaewkstep");var i=A.wkStepsSet.indexOf(id);if(i>=0)A.wkStepsSet.splice(i,1);else A.wkStepsSet.push(id);save();render();};});
-  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vid]"),function(el){el.onchange=function(){var k=el.getAttribute("data-vid");var v=(el.value||"").trim();S.aae.vid=S.aae.vid||{};S.aae.vids=S.aae.vids||{};
+    if(k.indexOf('#')>=0){var p=k.split('#'),vk=p[0],ix=+p[1];var arr=S.aae.vids[vk]||(S.aae.vids[vk]=[]);if(v)arr[ix]=v;else arr.splice(ix,1);if(!arr.length)delete S.aae.vids[vk];}
+    else{if(v)S.aae.vid[k]=v;else delete S.aae.vid[k];}
+    save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-vidadd]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();var vk=el.getAttribute("data-vidadd");S.aae.vids=S.aae.vids||{};(S.aae.vids[vk]||(S.aae.vids[vk]=[])).push("");save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eaegear]"),function(el){el.onclick=function(e){e.stopPropagation();e.preventDefault();TSETCAP=null;openTaskSet(el.getAttribute("data-eaegear"));};});
   // Glisser-déposer des tâches d'Aujourd'hui entre Matin / Midi / Soir
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-drag]"),function(el){
