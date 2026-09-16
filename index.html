@@ -3156,7 +3156,7 @@ function aaeEnglishBlock(){
   return s;
 }
 var AAE_DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-// Programme FORCE + FRACTIONNÉ + ENDURANCE (plus de combat), calé sur les 3 épreuves réelles (Luc Léger, chaise Killy, pompes) + Simple & Sinister (Pavel), PROGRESSIF par phases (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = récupération active (aussi la séance de repli les jours de repos / réserve).
+// Programme BLOC S&S : Simple & Sinister (Pavel) est le cœur, répété plusieurs jours ; + course (fractionné VMA / endurance) pour le Luc Léger ; dimanche = étirements / récup active. Jamais à l'épuisement (S&S = finir énergisée). PROGRESSIF par phases pour la course (voir aaeSportPhase). Index = jour (Lundi=0). Index 6 = récup active (aussi la séance de repli les jours de repos / réserve). ⚠️ Pompes + chaise Killy (2 des 3 épreuves) NE sont PAS dans ce bloc S&S : à réintégrer dans un prochain bloc ou en finisher si elle valide.
 var AAE_SP_COURSE={dur:"~40 min",steps:[["Course · qualité (Luc Léger)","",""],
   ["Échauffement dynamique ≥ 10 min : montées de genoux, talons-fesses, mobilité chevilles, 2-3 accélérations","10 min","📹 Forge 08 Dynamic Stretching · 36 100-Up Running"],
   ["Selon la phase : Phase 1 endurance fondamentale Zone 2 (60-75% FCmax, tu cours en parlant), 30-40 min ; Phase 2 fractionné court 2×10×30 s rapide/30 s lent ; Phase 3 fractionné long 10×400 m récup 1 min OU seuil 20 min. Objectif ≥ 6 min près de ta VMA. Cours pendant la récup.","20-40 min",""],
@@ -3169,11 +3169,12 @@ var AAE_SP_RENFO={dur:"~45 min",steps:[["Renforcement complet · Pompes + Killy"
   ["Bas du corps : squats + fentes bulgares + hip thrust, 3-4 séries","8 min","📹 Forge 34 · Single-Leg Squats"],
   ["Tirage : rowing inversé (barre basse, dos contracté) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
   ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""]]};
-var AAE_SP_SS={dur:"~35 min",steps:[["Simple & Sinister · kettlebell (Pavel)","",""],
-  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras","6 min","","vid"],
-  ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Monte la charge quand les 100 passent sans forcer","12 min","📹 Forge 19 · One-Arm Swing"],
-  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell","12 min","","vid"],
-  ["Décompression : respiration lente, fast & loose, étirements doux","5 min","📹 Forge 27 · Fast & Loose"]]};
+var AAE_SP_SS={dur:"~30 min",steps:[["Simple & Sinister · kettlebell (Pavel) — ta séance socle, la même à chaque fois","",""],
+  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras.","5 min","","vid"],
+  ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Tu t'arrêtes avec 1-2 reps EN RÉSERVE, jamais à l'épuisement.","12 min","","vid"],
+  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell.","10 min","","vid"],
+  ["Retour au calme : fast & loose (secoue bras puis jambes, tout relâché), respiration lente, quelques étirements doux.","3 min","","vid"],
+  ["À retenir : on n'ajoute JAMAIS d'exercices, on monte la charge quand la séance passe dans les temps. Objectif « Simple » (femme) : 100 swings à 24 kg en 5 min + 10 get-ups à 16 kg en 10 min. Tu dois finir la séance ÉNERGISÉE, pas cramée.","",""]]};
 var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée (week-end)","",""],
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
   ["Marche chargée progressive (la discipline la plus oubliée) : 10 kg → +2-3 kg/mois, terrain varié. Allonge la durée avant d'augmenter le poids, jamais les deux en même temps","variable",""],
@@ -3208,8 +3209,8 @@ var AAE_SP_SELFDEF={dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · 
  ["Pratique le module en cours de ton cours TRICOM (voir ta progression dans l'onglet EAE). Regarde, reproduis lentement, puis répète jusqu'à automatiser.","~30 min",""]]};
 var AAE_SP_SELFREV={dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],
  ["Reviens sur un module déjà appris pour l'entretenir (voir Aujourd'hui). Entretien des acquis sans perdre le nouveau.","~30 min",""]]};
-// Semaine FORCE + FRACTIONNÉ + ENDURANCE (plus de combat, demandé le 13/09/2026) : Lun Course fractionné (Luc Léger) · Mar Force (pompes + Killy) · Mer Course endurance fondamentale · Jeu Simple & Sinister (kettlebell) · Ven Course fractionné · Sam Sortie longue / seuil + marche chargée · Dim Récupération active (aussi le repli des jours de repos / réserve).
-var AAE_SPORT=[AAE_SP_COURSE,AAE_SP_RENFO,AAE_SP_ENDUR,AAE_SP_SS,AAE_SP_COURSE,AAE_SP_LONG,AAE_SP_RECUP];
+// Semaine BLOC S&S (demandé le 16/09/2026) : S&S est le cœur (même séance répétée, jamais à l'épuisement), + course pour le Luc Léger. Lun S&S · Mar Course fractionné (VMA) · Mer S&S · Jeu Course endurance fondamentale · Ven S&S · Sam S&S · Dim Étirements / récup active. Bloc à faire un moment, puis on change et on revient (rotation manuelle : recomposer AAE_SPORT à sa demande).
+var AAE_SPORT=[AAE_SP_SS,AAE_SP_COURSE,AAE_SP_SS,AAE_SP_ENDUR,AAE_SP_SS,AAE_SP_SS,AAE_SP_RECUP];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
