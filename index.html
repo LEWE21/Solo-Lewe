@@ -3170,10 +3170,10 @@ var AAE_SP_RENFO={dur:"~45 min",steps:[["Renforcement complet · Pompes + Killy"
   ["Tirage : rowing inversé (barre basse, dos contracté) + suspension à la barre 2-3× 30 s (grip, dos, épaules)","7 min","📹 Forge 28 · Hanging"],
   ["Core : gainage planche + latéral + dead bug + bird dog, +10-15 s/semaine","6 min",""]]};
 var AAE_SP_SS={dur:"~30 min",steps:[["Simple & Sinister · kettlebell (Pavel) — ta séance socle, la même à chaque fois","",""],
-  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras.","5 min","","vid"],
-  ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Tu t'arrêtes avec 1-2 reps EN RÉSERVE, jamais à l'épuisement.","12 min","","vid"],
-  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell.","10 min","","vid"],
-  ["Retour au calme : fast & loose (secoue bras puis jambes, tout relâché), respiration lente, quelques étirements doux.","3 min","","vid"],
+  ["Échauffement S&S : halos, goblet squat en ouverture (prying), ponts fessiers, un get-up nu (sans charge) par bras.","5 min","📹 ton cours S&S · échauffement"],
+  ["One-arm swings : 10 séries de 10 (100 swings au total), 1 série toutes les ~30-40 s. Hanche explosive, dos neutre, gainage serré. Tu t'arrêtes avec 1-2 reps EN RÉSERVE, jamais à l'épuisement.","12 min","📹 Forge 19 · One-Arm Swing"],
+  ["Turkish Get-Up : 10 relevés turcs, 1 par bras en alternance, lents et contrôlés. Épaule verrouillée, gainage total, regard sur la kettlebell.","10 min","📹 ton cours S&S · Turkish get-up"],
+  ["Retour au calme : fast & loose (secoue bras puis jambes, tout relâché), respiration lente, quelques étirements doux.","3 min","📹 Forge 27 · Fast & Loose"],
   ["À retenir : on n'ajoute JAMAIS d'exercices, on monte la charge quand la séance passe dans les temps. Objectif « Simple » (femme) : 100 swings à 24 kg en 5 min + 10 get-ups à 16 kg en 10 min. Tu dois finir la séance ÉNERGISÉE, pas cramée.","",""]]};
 var AAE_SP_LONG={dur:"~55 min",steps:[["Sortie longue ou seuil + marche chargée (week-end)","",""],
   ["1 semaine sur 2 : (a) SORTIE LONGUE en endurance fondamentale, 45-60 min (aisance respiratoire) ; (b) SEUIL — échauffement 15 min + 20 min au seuil (allure semi-marathon, 80-90% FCmax) + 10 min retour au calme","45-60 min",""],
@@ -3296,7 +3296,7 @@ function aaeFiche(title){
     return {dur:"~20 min",steps:evSteps};
   }
   if(/sport du jour|sport \(pr/.test(t)){
-    var f=aaeIsReserve()?AAE_SP_RECUP:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour réserve : récupération active
+    var f=aaeIsReserve()?AAE_SP_SS:(aaeDaySchedule()[weekdayMon(today())]||AAE_SP_COURSE); // jour de réserve : kettlebell S&S (court, portable, ne crame pas)
     if(f.selfdef)f=aaeSelfDefFiche(); else if(f.selfrev)f=aaeSelfDefRevFiche(); // module TRICOM en cours, ou révision d'un module déjà vu
     // Émulation (Super Heco) : voir quelqu'un s'entraîner allume avant la séance. Injectée en tête de TOUTE séance sport.
     return {dur:f.dur,selfdef:f.selfdef,selfrev:f.selfrev,steps:[f.steps[0],["🎬 Émulation : avant de commencer, regarde 1-2 min une vidéo de quelqu'un qui s'entraîne, ça t'allume","1-2 min","","vid"]].concat(f.steps.slice(1))};
