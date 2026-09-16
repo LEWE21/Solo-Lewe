@@ -790,7 +790,7 @@ function load(){
      if(!_A.cursusLinks)_A.cursusLinks={};
      if(!_A.mathDone)_A.mathDone=[];              // chapitres d'arithmétique appris (prépa test CSO)
      if(!_A.mathLinks)_A.mathLinks={};            // set Quizlet par chapitre d'arithmétique
-     if(!_A.reserveDays)_A.reserveDays=[0,3,4];    // jours de réserve (0=Lun..6=Dim)
+     if(!_A.reserveDays)_A.reserveDays=[0,3,4,5];  // jours de réserve (0=Lun..6=Dim) : Lun, Jeu, Ven, Sam
      if(!_A.vid)_A.vid={};}                        // ses propres vidéos (nom + n°) par exercice, clé = hash du libellé
     if(!r.absences)r.absences=[];if(r.absenceUntil){r.absences.push({from:r.lastDate||today(),to:r.absenceUntil});r.absenceUntil=null;}
     if(!("lastLearning" in r))r.lastLearning=null;
@@ -3209,8 +3209,8 @@ var AAE_SP_SELFDEF={dur:"~30 min",selfdef:true,steps:[["Self-défense TRICOM · 
  ["Pratique le module en cours de ton cours TRICOM (voir ta progression dans l'onglet EAE). Regarde, reproduis lentement, puis répète jusqu'à automatiser.","~30 min",""]]};
 var AAE_SP_SELFREV={dur:"~30 min",selfrev:true,steps:[["Self-défense TRICOM · révision","",""],
  ["Reviens sur un module déjà appris pour l'entretenir (voir Aujourd'hui). Entretien des acquis sans perdre le nouveau.","~30 min",""]]};
-// Semaine BLOC S&S (demandé le 16/09/2026) : S&S est le cœur (même séance répétée, jamais à l'épuisement), + course pour le Luc Léger. Lun S&S · Mar Course fractionné (VMA) · Mer S&S · Jeu Course endurance fondamentale · Ven S&S · Sam S&S · Dim Étirements / récup active. Bloc à faire un moment, puis on change et on revient (rotation manuelle : recomposer AAE_SPORT à sa demande).
-var AAE_SPORT=[AAE_SP_SS,AAE_SP_COURSE,AAE_SP_SS,AAE_SP_ENDUR,AAE_SP_SS,AAE_SP_SS,AAE_SP_RECUP];
+// Semaine BLOC S&S (MAJ 16/09/2026) : S&S (kettlebell) calé sur ses JOURS DE RÉSERVE = Lun, Jeu, Ven, Sam (court, portable). Course les jours libres : Mar fractionné (VMA), Mer endurance fondamentale. Dim = étirements / récup active. Jamais à l'épuisement. Bloc à faire un moment, puis on change et on revient (rotation manuelle : recomposer AAE_SPORT à sa demande).
+var AAE_SPORT=[AAE_SP_SS,AAE_SP_COURSE,AAE_SP_ENDUR,AAE_SP_SS,AAE_SP_SS,AAE_SP_SS,AAE_SP_RECUP];
 function aaeRestWd(){var A=S.aae;if(A&&A.restDay&&A.restDay.week===aaeWkMonday())return weekdayMon(A.restDay.day);return null;}
 function aaeDaySchedule(){ // planning [7] de la semaine (mêmes séances les jours de réserve : elle fait son sport le matin quoi qu'il arrive)
   var restWd=aaeRestWd(),out=[],s=0;
