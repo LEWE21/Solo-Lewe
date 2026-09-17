@@ -3349,7 +3349,7 @@ function aaeDayItems(ids){ // liste commune Cockpit + Aujourd'hui : socle matin/
   var items=[];
   items.push({mo:"matin",key:"morning",title:"Recharge matinale",fiche:aaeFiche("morning recharge"),ic:"🌅 ",qdone:false});
   dailies.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"🔁 ",qdone:doneForToday(q)});});
-  items.push({mo:"matin",key:"etirement",title:"Étirement",fiche:aaeEtireFiche(),ic:"🧘 ",qdone:false}); // étirement de fin de journée, natif, dans la partie sport (matin)
+  items.push({mo:"soir",key:"etirement",title:"Étirement",fiche:aaeEtireFiche(),ic:"🧘 ",qdone:false}); // étirement de fin de journée, natif, placé le SOIR (fin de journée)
   tasks.forEach(function(q){items.push({mo:habMoments(q)[0]||"libre",key:q.id,title:q.title,fiche:aaeFiche(q.title),ic:"📌 ",qdone:false});});
   items.push({mo:"soir",key:"evening",title:"Routine du soir",fiche:aaeFiche("evening habits"),ic:"🌙 ",qdone:false});
   items.forEach(function(it){if(it.fiche&&it.fiche.steps)it.fiche.steps=aaeApplyEdits(it.key,it.fiche.steps);}); // applique les modifs manuelles
