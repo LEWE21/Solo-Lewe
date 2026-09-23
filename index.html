@@ -1461,6 +1461,10 @@ function defiCard(kind){
       s+='<div class="coachmsg '+(ch.ok?"ok":"no")+'">'+esc(ch.msg).replace(/\n/g,"<br>")+'</div>';
       s+=ch.ok?('<div class="mdone" style="margin-top:6px">✔ +'+chMeta(kind).xp+' XP · '+STATS[chMeta(kind).stat].name+'</div>'):('<div class="subhead" style="margin-top:8px">Pas validé aujourd\'hui. Un nouveau défi t\'attend demain.</div>');
     }
+    else if(kind==="epictete"){
+      // Épictète : on tire une carte par jour, pas de réponse à saisir ni de validation.
+      s+='<div class="subhead" style="margin-top:8px">Lis-la et garde-la en tête aujourd\'hui. Demain, une nouvelle carte.</div>';
+    }
     else{
       s+='<textarea class="bdtext" id="ch-ans-'+kind+'" style="min-height:68px;margin-top:10px" placeholder="Ta réponse...">'+esc(ch.answer||"")+'</textarea>';
       s+='<button class="btn" data-ch-judge="'+kind+'" style="width:100%;margin-top:8px">Valider ma réponse</button>';
