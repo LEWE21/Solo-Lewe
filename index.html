@@ -2058,6 +2058,8 @@ function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">📅</span><span class="nl">Aujourd\'hui</span></button>';
   h+='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
+  h+='<button data-v="agenda" class="'+(view==="agenda"?"on":"")+'"><span class="ni">🗓</span><span class="nl">Agenda</span></button>';
+  h+='<button data-v="historique" class="'+(view==="historique"?"on":"")+'"><span class="ni">✓</span><span class="nl">Historique</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
   Object.keys(STATS).forEach(function(k){
@@ -2312,7 +2314,7 @@ var AGENDA_CSS='<style>'
 function vAgenda(){
   var mon0=isoPlus(today(),-weekdayMon(today()));            // lundi de la semaine en cours
   var jours=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
-  var s='<div class="solo"><div class="tbar"><span class="tt">🗓 Agenda</span><small>Tes tâches datées, sur trois semaines</small></div>'+pilotTabs("agenda")+AGENDA_CSS;
+  var s='<div class="solo"><div class="tbar"><span class="tt">🗓 Agenda</span><small>Tes tâches datées, sur trois semaines</small></div>'+AGENDA_CSS;
   var labels=["Cette semaine","Semaine prochaine","Semaine suivante"],total=0;
   for(var w=0;w<3;w++){
     var wa=isoPlus(mon0,w*7),wb=isoPlus(mon0,w*7+6);
@@ -2332,21 +2334,42 @@ function vAgenda(){
   s+='</div>';return s;
 }
 /* ---- Onglet "Historique" : toutes les tâches terminées, par date ---- */
+function histRow(title,cap,reopenId){
+  var m=STATS[cap]||STATS.mental;
+  return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(title)+'</div></div>'+(reopenId?'<span class="gear" data-reopen="'+reopenId+'" title="Réactiver (validée par erreur)">↩</span>':'')+'</div>';
+}
 function vHistorique(){
-  var s='<div class="solo"><div class="tbar"><span class="tt">✓ Historique</span><small>Toutes tes tâches terminées</small></div>'+pilotTabs("historique");
+  var s='<div class="solo"><div class="tbar"><span class="tt">✓ Historique</span><small>Tes tâches terminées, semaine par semaine</small></div>';
+  var mon0=isoPlus(today(),-weekdayMon(today()));   // lundi de la semaine en cours
   var todayDone=doneTodayList();
-  var byDate={};(S.doneLog||[]).forEach(function(e){if(e.d===today())return;(byDate[e.d]=byDate[e.d]||[]).push(e);}); // aujourd'hui est affiché en direct (réactivable)
-  var dates=Object.keys(byDate).sort().reverse();
-  if(!todayDone.length&&!dates.length){s+='<div class="empty" style="margin-top:12px">Rien de terminé pour l\'instant. Ton historique se remplit au fil de tes validations.</div></div>';return s;}
-  s+='<div class="spanel"><div class="spl">'+fmtDJ(today())+' · aujourd\'hui<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+todayDone.length+'</span></div>';
-  s+=todayDone.length?todayDone.map(function(q){var m=STATS[questCap(q)]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(q.title)+'</div></div><span class="gear" data-reopen="'+q.id+'" title="Réactiver (validée par erreur)">↩</span></div>';}).join(''):'<div class="empty">Rien encore aujourd\'hui.</div>';
-  s+='</div>';
-  dates.forEach(function(d){
-    var items=byDate[d];
-    s+='<div class="spanel"><div class="spl">'+fmtDJ(d)+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+items.length+'</span></div>';
-    s+=items.map(function(e){var m=STATS[e.c]||STATS.mental;return '<div class="q cpt done" style="--tc:'+m.col+'"><div class="check done">✓</div><div class="body"><div class="ttl">'+esc(e.t)+'</div></div></div>';}).join('');
-    s+='</div>';
+  var week={},older={};
+  (S.doneLog||[]).forEach(function(e){
+    if(e.d===today())return;                         // aujourd'hui = liste vivante (réactivable), traitée à part
+    if(e.d>=mon0)(week[e.d]=week[e.d]||[]).push(e);  // un autre jour de la semaine en cours
+    else (older[e.d]=older[e.d]||[]).push(e);        // avant cette semaine
   });
+  var weekDays=Object.keys(week).sort().reverse(),olderDays=Object.keys(older).sort().reverse();
+  var weekCount=todayDone.length+weekDays.reduce(function(n,d){return n+week[d].length;},0);
+  if(!weekCount&&!olderDays.length){s+='<div class="empty" style="margin-top:12px">Rien de terminé pour l\'instant. Ton historique se remplit au fil de tes validations.</div></div>';return s;}
+  // ---- Cette semaine (aujourd'hui + les autres jours depuis lundi) ----
+  s+='<div class="spanel"><div class="spl">Cette semaine <span style="font-weight:400;color:var(--dim2)">depuis '+fmtD(mon0)+'</span><span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+weekCount+'</span></div>';
+  s+='<div class="dphead" style="margin-top:2px">'+fmtDJ(today())+' · aujourd\'hui</div>';
+  s+=todayDone.length?todayDone.map(function(q){return histRow(q.title,questCap(q),q.id);}).join(''):'<div class="empty">Rien encore aujourd\'hui.</div>';
+  weekDays.forEach(function(d){
+    s+='<div class="dphead" style="margin-top:10px">'+fmtDJ(d)+'</div>';
+    s+=week[d].map(function(e){return histRow(e.t,e.c,null);}).join('');
+  });
+  s+='</div>';
+  // ---- Avant cette semaine ----
+  if(olderDays.length){
+    var oc=olderDays.reduce(function(n,d){return n+older[d].length;},0);
+    s+='<div class="spanel"><div class="spl">Avant cette semaine<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+oc+'</span></div>';
+    olderDays.forEach(function(d){
+      s+='<div class="dphead" style="margin-top:6px">'+fmtDJ(d)+'</div>';
+      s+=older[d].map(function(e){return histRow(e.t,e.c,null);}).join('');
+    });
+    s+='</div>';
+  }
   s+='</div>';return s;
 }
 /* ---- Carte "Mes objectifs" : ajuster le rang et retravailler ses objectifs (ils changent avec le temps) ---- */
@@ -2438,7 +2461,7 @@ function vPriorites(){
   return s;
 }
 function pilotTabs(active){ // onglets Cockpit / Objectifs / Priorités, en tête des trois vues de pilotage
-  var tabs=[["cockpit","◎ Cockpit"],["agenda","🗓 Agenda"],["historique","✓ Historique"],["objectifs","◈ Objectifs"],["priorites","⚑ Priorités"]];
+  var tabs=[["cockpit","◎ Cockpit"],["objectifs","◈ Objectifs"],["priorites","⚑ Priorités"]];
   return '<div class="habtabs" style="margin:0 0 14px">'+tabs.map(function(t){return '<button class="habtab'+(active===t[0]?" on":"")+'" data-piv="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>';
 }
 // Moteur du livre : la confiance se construit par l'accumulation de VICTOIRES réelles (pas des XP), et surtout pas par la comparaison.
