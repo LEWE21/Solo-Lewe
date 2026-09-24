@@ -2461,7 +2461,7 @@ function vPriorites(){
   return s;
 }
 function pilotTabs(active){ // onglets Cockpit / Objectifs / Priorités, en tête des trois vues de pilotage
-  var tabs=[["cockpit","◎ Cockpit"],["objectifs","◈ Objectifs"],["priorites","⚑ Priorités"]];
+  var tabs=[["objectifs","◈ Objectifs"],["priorites","⚑ Priorités"]]; // Cockpit est dans la barre verticale ; ici on ne garde que Objectifs et Priorités
   return '<div class="habtabs" style="margin:0 0 14px">'+tabs.map(function(t){return '<button class="habtab'+(active===t[0]?" on":"")+'" data-piv="'+t[0]+'">'+t[1]+'</button>';}).join("")+'</div>';
 }
 // Moteur du livre : la confiance se construit par l'accumulation de VICTOIRES réelles (pas des XP), et surtout pas par la comparaison.
