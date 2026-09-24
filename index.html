@@ -2056,9 +2056,9 @@ function render(){
 var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Business",social:"Social",discipline:"Discip."};
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
-  var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">📅</span><span class="nl">Aujourd\'hui</span></button>';
+  var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">☀️</span><span class="nl">Aujourd\'hui</span></button>';
   h+='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
-  h+='<button data-v="agenda" class="'+(view==="agenda"?"on":"")+'"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
+  h+='<button data-v="agenda" class="capnav'+(view==="agenda"?" on":"")+'" style="--cc:#3b6bff"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
   Object.keys(STATS).forEach(function(k){
@@ -2066,7 +2066,7 @@ function renderNav(){
     h+='<button data-v="'+v+'" class="capnav'+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+'">'+
        '<span class="ni">'+m.ic+'</span><span class="nl">'+esc(NAVSHORT[k]||m.name)+'</span></button>';
   });
-  h+='<button data-v="historique" class="'+(view==="historique"?"on":"")+'"><span class="ni">✅</span><span class="nl">Historique</span></button>'; // tout en bas, après les capacités
+  h+='<button data-v="historique" class="capnav'+(view==="historique"?" on":"")+'" style="--cc:#2fd39b"><span class="ni">✅</span><span class="nl">Historique</span></button>'; // tout en bas, après les capacités
   n.innerHTML=h;
   Array.prototype.forEach.call(n.querySelectorAll("button"),function(b){b.onclick=function(){view=b.dataset.v;objSel=null;render();};});
 }
