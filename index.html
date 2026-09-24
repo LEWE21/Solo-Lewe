@@ -2535,6 +2535,9 @@ function vAujourdhui(){
     if(!count)s+='<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div></div>';
   });
+  if(momentOf()==="matin")s+=defiCard("epictete"); // rituel du matin : le défi d'Épictète
+  if(sleepToday()==null)s+=sleepCard();             // heure de sommeil, tant qu'elle n'est pas notée
+  s+=courbeCard();                                  // « Où j'en suis » (courbe d'apprentissage)
   s+='</div>';
   return s;
 }
