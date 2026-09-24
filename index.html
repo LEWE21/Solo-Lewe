@@ -2057,7 +2057,7 @@ var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Busi
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">☀️</span><span class="nl">Aujourd\'hui</span></button>';
-  h+='<button data-v="cockpit" class="'+(view==="cockpit"?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
+  h+='<button data-v="cockpit" class="'+(/^(cockpit|objectifs|priorites)$/.test(view)?"on":"")+'"><span class="ni">◎</span><span class="nl">Cockpit</span></button>';
   h+='<button data-v="agenda" class="capnav'+(view==="agenda"?" on":"")+'" style="--cc:#3b6bff"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
@@ -2546,7 +2546,8 @@ function vAujourdhui(){
   s+='</div>';
   return s;
 }
-function vCockpit(){
+function vCockpit(){ return vObjectifs(); } // la page Cockpit se limite desormais aux onglets Objectifs / Priorites
+function vCockpitOLD(){
   var dueList=S.quests.filter(function(q){return q.daily&&dueToday(q);});
   var actionable=S.quests.filter(function(q){return !q.daily&&!doneForToday(q)&&!isBlocked(q)&&!pubSuppressed(q);});
   var srt=function(a,b){var ad=a.due||"9999-99-99",bd=b.due||"9999-99-99";return ad!==bd?(ad<bd?-1:1):(b.base-a.base);};
