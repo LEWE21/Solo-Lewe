@@ -2488,8 +2488,13 @@ var LEARNCURVE=[
   {k:"deprime",lab:"Déprime",ic:"😣",msg:"La vallée de la mort : « je n'y arriverai jamais ». C'est PILE l'étape où on abandonne, et elle est temporaire. Ne lâche pas, change juste d'approche. Le soulagement est juste derrière."},
   {k:"soulagement",lab:"Soulagement",ic:"😌",msg:"Ça repart, tu as trouvé. Célèbre cette victoire. Puis le cycle recommencera, un cran plus haut."}
 ];
-function courbeCard(){
+function courbeCard(compact){
   var cur=(S.learnPhase&&S.learnPhase.k)||null;
+  if(compact){ // version discrète (pastille) pour le haut de l'onglet Aujourd'hui
+    var mm='<div class="courbmini" style="display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--brd);border-radius:999px;padding:5px 12px;margin:0 0 12px"><span style="font-size:11.5px;color:var(--dim2)">📈 Où j\'en suis</span><span style="display:inline-flex;gap:4px">'+LEARNCURVE.map(function(p){return '<button class="courbtog'+(cur===p.k?" on":"")+'" data-learnphase="'+p.k+'" title="'+esc(p.lab)+'" style="width:26px;height:26px;font-size:14px;padding:0">'+p.ic+'</button>';}).join("")+'</span>';
+    if(cur){var pc=LEARNCURVE.filter(function(p){return p.k===cur;})[0];if(pc)mm+='<span style="font-size:11.5px;color:var(--txt)">'+pc.ic+' '+esc(pc.lab)+'</span>';}
+    return mm+'</div>';
+  }
   var s='<div class="spanel courbcard"><div class="spl">📈 Où j\'en suis</div>';
   s+='<div class="subhead" style="margin:0 0 8px">Toute personne qui apprend passe par ces phases, en boucle. Dis où tu en es aujourd\'hui.</div>';
   s+='<div class="courbrow">'+LEARNCURVE.map(function(p){return '<button class="courbtog'+(cur===p.k?" on":"")+'" data-learnphase="'+p.k+'" title="'+p.lab+'">'+p.ic+'</button>';}).join("")+'</div>';
@@ -2520,6 +2525,9 @@ function vAujourdhui(){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var s='<div class="solo"><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
+  s+=courbeCard(true);                               // « Où j'en suis » discret, en haut à gauche (permanent)
+  if(momentOf()==="matin")s+=defiCard("epictete");   // rituel du matin : le défi d'Épictète
+  if(sleepToday()==null)s+=sleepCard();              // heure de sommeil, tant qu'elle n'est pas notée
   MO.forEach(function(mm){
     var eae=eaeItems.filter(function(it){return it.mo===mm[0];});
     var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0&&!doneForToday(q);});
@@ -2535,9 +2543,6 @@ function vAujourdhui(){
     if(!count)s+='<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div></div>';
   });
-  if(momentOf()==="matin")s+=defiCard("epictete"); // rituel du matin : le défi d'Épictète
-  if(sleepToday()==null)s+=sleepCard();             // heure de sommeil, tant qu'elle n'est pas notée
-  s+=courbeCard();                                  // « Où j'en suis » (courbe d'apprentissage)
   s+='</div>';
   return s;
 }
