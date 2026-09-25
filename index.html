@@ -2057,7 +2057,7 @@ var NAVSHORT={physique:"Force",mental:"Mental",creativite:"Créa",business:"Busi
 function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">☀️</span><span class="nl">Aujourd\'hui</span></button>';
-  h+='<button data-v="cockpit" class="'+(/^(cockpit|objectifs|priorites)$/.test(view)?"on":"")+'"><span class="ni">🧭</span><span class="nl">Cap</span></button>';
+  h+='<button data-v="cockpit" class="capnav'+(/^(cockpit|objectifs|priorites)$/.test(view)?" on":"")+'" style="--cc:#ffb057"><span class="ni">🧭</span><span class="nl">Cap</span></button>';
   h+='<button data-v="agenda" class="capnav'+(view==="agenda"?" on":"")+'" style="--cc:#3b6bff"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
