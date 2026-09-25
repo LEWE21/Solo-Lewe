@@ -71,6 +71,12 @@ body{
 
 /* ---------- Marque (haut de la barre) ---------- */
 .brand{display:flex;align-items:center;gap:11px;min-width:0;padding:4px 6px 14px;margin-bottom:4px;border-bottom:1px solid var(--brd)}
+.railbtn{margin-left:auto;flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--brd);background:var(--panel);color:var(--dim);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
+.railbtn:hover{color:var(--txt);border-color:var(--gold)}
+.railshow{display:none;position:fixed;top:12px;left:12px;z-index:60;width:36px;height:36px;border-radius:10px;border:1px solid var(--brd);background:var(--panel);color:var(--txt);cursor:pointer;font-size:16px}
+#app.railfold .sidebar{display:none}
+#app.railfold .railshow{display:flex;align-items:center;justify-content:center}
+#app.railfold .main{padding-left:58px}
 .mark{position:relative;width:42px;height:42px;border-radius:13px;flex:none;display:grid;place-items:center;
   background:linear-gradient(150deg,rgba(255,180,87,.22),rgba(122,60,255,.18));border:1px solid var(--brd-hi);overflow:hidden}
 .mark svg{width:30px;height:30px}
@@ -575,6 +581,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
     <div class="brand">
       <div class="mark"><span class="ubadge" id="ubadge" hidden></span><svg viewBox="0 0 64 64"><g fill="#c68a5e"><ellipse cx="25" cy="19" rx="6.4" ry="16.5" transform="rotate(-14 25 19)"/><ellipse cx="39" cy="18" rx="6.4" ry="16.5" transform="rotate(13 39 18)"/><ellipse cx="32" cy="42" rx="17.5" ry="15.5"/></g><g fill="#ff9bd4" opacity=".85"><ellipse cx="25" cy="20" rx="2.7" ry="9.5" transform="rotate(-14 25 20)"/><ellipse cx="39" cy="19" rx="2.7" ry="9.5" transform="rotate(13 39 19)"/></g><path d="M15 42 Q15 23 32 23 Q49 23 49 42" fill="none" stroke="#7b5cff" stroke-width="3.4" stroke-linecap="round"/><rect x="9.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><rect x="45.5" y="38" width="9" height="14" rx="4.5" fill="#7b5cff"/><circle cx="26" cy="42" r="2.3" fill="#3a3550"/><circle cx="38" cy="42" r="2.3" fill="#3a3550"/><circle cx="26.8" cy="41.2" r=".7" fill="#fff"/><circle cx="38.8" cy="41.2" r=".7" fill="#fff"/><ellipse cx="32" cy="46.5" rx="2" ry="1.5" fill="#3a3550"/><path d="M27.5 50.5 Q32 55.5 36.5 50.5" fill="none" stroke="#3a3550" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="47" r="3" fill="#ff9bd4" opacity=".6"/><circle cx="43" cy="47" r="3" fill="#ff9bd4" opacity=".6"/></svg></div>
       <div><h1>ROBI</h1><small>Ton tableau de bord</small></div>
+      <button class="railbtn" id="rail-hide" title="Réduire le menu">‹</button>
     </div>
     <nav id="nav"></nav>
     <div class="side-foot">
@@ -587,6 +594,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);background:va
   <main class="main">
     <div id="view"></div>
   </main>
+  <button id="rail-show" class="railshow" title="Afficher le menu">☰</button>
 </div>
 
 <div id="nstack"></div>
@@ -1156,7 +1164,13 @@ var projOpen={}; // les projets deplies (fermes par defaut : on voit la grille d
 function currentTheme(){return "night";} // le Système est sombre, toujours
 function applyTheme(){document.documentElement.setAttribute("data-theme",currentTheme());}
 function toggleTheme(){var cur=document.documentElement.getAttribute("data-theme")||currentTheme();var next=cur==="day"?"night":"day";try{localStorage.setItem("robi_theme",next);}catch(e){}document.documentElement.setAttribute("data-theme",next);}
-function initTheme(){applyTheme();var g=document.getElementById("btn-settings");if(g)g.onclick=function(){openSettings();};}
+function railFolded(){try{return localStorage.getItem("robi_railfold")==="1";}catch(e){return false;}}
+function applyRail(){var a=document.getElementById("app");if(a)a.classList.toggle("railfold",railFolded());}
+function toggleRail(){try{localStorage.setItem("robi_railfold",railFolded()?"0":"1");}catch(e){}applyRail();}
+function initTheme(){applyTheme();var g=document.getElementById("btn-settings");if(g)g.onclick=function(){openSettings();};
+  var rh=document.getElementById("rail-hide");if(rh)rh.onclick=toggleRail;
+  var rs=document.getElementById("rail-show");if(rs)rs.onclick=toggleRail;
+  applyRail();}
 
 /* ---- Moment de la journée (matin / journée / soir) ---- */
 function momentOf(){var h=gameNow().getUTCHours();if(h>=18||h<5)return "soir";if(h<11)return "matin";return "journee";}
@@ -2523,11 +2537,12 @@ function vAujourdhui(){
     return false;
   });
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  var s='<div class="solo aujc"><style>.solo.aujc{gap:10px;padding-top:0}.solo.aujc .tbar{margin-bottom:0}.solo.aujc .tbar .tt{font-size:22px}.solo.aujc .tbar small{font-size:12.5px}.solo.aujc .aae-resvbar{margin-bottom:0}</style><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
+  var s='<div class="solo aujc"><style>.solo.aujc{gap:10px;padding-top:0}.solo.aujc .tbar{margin-bottom:0}.solo.aujc .tbar .tt{font-size:22px}.solo.aujc .tbar small{font-size:12.5px}.solo.aujc .aae-resvbar{margin-bottom:0}.aujcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start}.aujcols .spanel{margin:0}</style><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
   s+=courbeCard(true);                               // « Où j'en suis » discret, en haut à gauche (permanent)
   if(momentOf()==="matin")s+=defiCard("epictete");   // rituel du matin : le défi d'Épictète
   if(sleepToday()==null)s+=sleepCard();              // heure de sommeil, tant qu'elle n'est pas notée
+  s+='<div class="aujcols">';                          // Matin / Midi / Soir cote a cote (colonnes)
   MO.forEach(function(mm){
     var eae=eaeItems.filter(function(it){return it.mo===mm[0];});
     var moH=dueList.filter(function(q){return taskMoments(q).indexOf(mm[0])>=0&&!doneForToday(q);});
@@ -2543,6 +2558,7 @@ function vAujourdhui(){
     if(!count)s+='<div class="dpempty">Dépose une tâche ici</div>';
     s+='</div></div>';
   });
+  s+='</div>';                                          // fin .aujcols
   s+='</div>';
   return s;
 }
