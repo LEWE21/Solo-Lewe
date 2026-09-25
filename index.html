@@ -2759,20 +2759,55 @@ function dailyRow(q,compact){
 }
 var taskCollapse={};
 
+function EIS(){return [
+  {k:'do',   t:'🔴 Faire',              s:'important + urgent',      col:'#e5484d'},
+  {k:'plan', t:'🟢 Planifier',          s:'important, pas urgent',   col:'#2fd39b'},
+  {k:'deleg',t:'🟡 Déléguer / limiter', s:'urgent, pas important',   col:'#ffb057'},
+  {k:'drop', t:'⚪ Éliminer',           s:'ni urgent ni important',  col:'#8a97a3'}
+];}
+function eisChip(m){
+  var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
+  return '<div class="eischip" draggable="true" data-drag="'+m.id+'" style="--rc:'+rk.c+'"><span class="eischip-n" data-obj-sel="'+m.id+'" title="'+esc(m.title)+'">'+esc(m.title)+'</span><button class="eischip-m" data-eispick="'+m.id+'" title="Classer dans la matrice">⤴</button></div>';
+}
+function setEisQuad(mid,k){var m=find(S.missions,mid);if(!m)return;if(k)m.eis=k;else delete m.eis;save();render();}
+function openEisPicker(mid){
+  var m=find(S.missions,mid);if(!m)return;var quads=EIS();
+  var h='<div class="mtag">▸ Classer « '+esc(m.title)+' »</div><div class="subhead" style="margin:8px 0 12px">Où le placer dans la matrice d\'Eisenhower ?</div>';
+  h+=quads.map(function(q){return '<button class="planopt'+(m.eis===q.k?" on":"")+'" data-eisset="'+q.k+'"><span class="pkbox" style="background:'+q.col+';border-color:'+q.col+'"></span><div class="body" style="flex:1;min-width:0"><div class="ttl">'+q.t+'</div><div class="meta"><span class="tag" style="color:var(--dim);border-color:var(--line-soft)">'+q.s+'</span></div></div></button>';}).join('');
+  h+='<button class="planopt" data-eisset=""><span class="pkbox"></span><div class="body" style="flex:1"><div class="ttl">↩ Remettre à trier</div></div></button>';
+  openModal(h);
+  Array.prototype.forEach.call(document.querySelectorAll('#modal [data-eisset]'),function(el){el.onclick=function(){setEisQuad(mid,el.getAttribute('data-eisset'));closeModal();};});
+}
+var EIS_CSS='<style>'
++'.eisgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}'
++'@media(max-width:640px){.eisgrid{grid-template-columns:1fr}}'
++'.eisq{border:1px solid var(--brd);border-top:3px solid var(--qc);border-radius:12px;padding:10px;min-height:104px;background:color-mix(in srgb,var(--qc) 6%,var(--panel))}'
++'.eisq-h{margin-bottom:8px}'
++'.eisq-h b{display:block;font-size:13px;color:var(--txt);font-weight:700}'
++'.eisq-h span{font-size:11px;color:var(--dim2)}'
++'.eistri{border:1px dashed var(--brd);border-radius:12px;padding:10px;margin:2px 0 4px;background:color-mix(in srgb,var(--panel) 92%,transparent)}'
++'.eistri-h{font-size:11.5px;color:var(--dim);margin-bottom:6px;font-weight:600}'
++'.eischips{display:flex;flex-wrap:wrap;gap:6px}'
++'.eischip{display:inline-flex;align-items:center;gap:4px;background:var(--panel-2);border:1px solid var(--brd);border-left:3px solid var(--rc);border-radius:9px;padding:4px 4px 4px 9px;cursor:grab}'
++'.eischip-n{font-size:12.5px;color:var(--txt);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}'
++'.eischip-m{border:none;background:transparent;cursor:pointer;color:var(--dim2);font-size:14px;line-height:1;padding:3px 5px;border-radius:6px}'
++'.eischip-m:hover{background:var(--panel);color:var(--txt)}'
++'.eisempty{font-size:11px;color:var(--dim2)}'
++'.eisover{outline:2px dashed var(--qc,var(--gold));outline-offset:-4px}'
++'</style>';
 function vObjectifs(){
   if(objSel){var mm=find(S.missions,objSel);if(mm)return vObjDetail(mm);objSel=null;}
-  var s=pilotTabs("objectifs")+'<div class="win"><div class="win-h"><span class="t">Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead">Vue d\'ensemble et classification. Change le rang d\'un clic (il pilote les propositions du pacte). Touche le nom pour faire le point objectif par objectif.</div>';
-  s+='<div class="ranklegend" style="margin:6px 0 10px">'+RANKS.slice().reverse().map(function(r){return '<span title="'+esc(RANKMEAN[r.r])+'"><b style="color:'+r.c+'">'+r.r+'</b> '+RANKWORD[r.r]+'</span>';}).join("")+'</div>';
-  S.missions.slice().sort(byRankDesc).forEach(function(m){
-    var qs=S.quests.filter(function(q){return q.mission===m.id;});
-    var done=qs.filter(function(q){return q.done;}).length;
-    var frac=done/Math.max(1,qs.length);
-    var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
-    var np=(m.proposals&&m.proposals.length)?(' <span style="color:var(--mint);font-size:11px">· '+m.proposals.length+' à valider</span>'):'';
-    s+='<div class="objrow" data-obj-sel="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+np+'</span><span class="obar"><i style="transform:scaleX('+frac+');background:linear-gradient(90deg,'+rk.c+'55,'+rk.c+')"></i></span><span class="op">'+(qs.length?Math.round(frac*100)+'%':'—')+'</span></div>';
-    s+='<div class="rankrow mini" style="margin:-2px 0 12px">'+RANKS.slice().reverse().map(function(r){return '<button class="rankb'+(r.r===m.rank?" on":"")+'" data-objrank="'+m.id+'|'+r.r+'" style="--rc:'+r.c+'" title="'+esc(RANKMEAN[r.r])+'">'+r.r+'</button>';}).join("")+'</div>'; // rang modifiable d'un clic
+  var quads=EIS();
+  var s=pilotTabs("objectifs")+EIS_CSS+'<div class="win"><div class="win-h"><span class="t">◈ Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
+  s+='<div class="subhead" style="margin:0 0 10px">Range chaque objectif dans la matrice d\'Eisenhower selon son urgence et son importance : glisse-le, ou touche ⤴ pour le classer. Touche son nom pour l\'ouvrir.</div>';
+  var untri=S.missions.filter(function(m){return ['do','plan','deleg','drop'].indexOf(m.eis)<0;});
+  s+='<div class="eistri" data-eisdrop=""><div class="eistri-h">À trier · '+untri.length+'</div><div class="eischips">'+(untri.length?untri.map(eisChip).join(''):'<span class="eisempty">Tout est classé 🎉</span>')+'</div></div>';
+  s+='<div class="eisgrid">';
+  quads.forEach(function(q){
+    var list=S.missions.filter(function(m){return m.eis===q.k;});
+    s+='<div class="eisq" data-eisdrop="'+q.k+'" style="--qc:'+q.col+'"><div class="eisq-h"><b>'+q.t+'</b><span>'+q.s+'</span></div><div class="eischips">'+(list.length?list.map(eisChip).join(''):'<span class="eisempty">Dépose ici</span>')+'</div></div>';
   });
+  s+='</div>';
   s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div>';
   s+='</div>';
   s+=objAdviceCard();   // carte "L'avis de Claude" (analyse Ray Dalio + jeu de questions)
@@ -3808,6 +3843,13 @@ function bind(){
     row.addEventListener("dragleave",function(){row.classList.remove("dropafter");});
     row.addEventListener("drop",function(e){e.preventDefault();e.stopPropagation();row.classList.remove("dropafter");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}var tgt=row.getAttribute("data-droptask");if(id&&id!==tgt)reorderTask(id,tgt);});
   });
+  // Matrice d'Eisenhower : déposer un objectif dans un quadrant + sélecteur tactile ⤴
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-eisdrop]"),function(zone){
+    zone.addEventListener("dragover",function(e){e.preventDefault();zone.classList.add("eisover");});
+    zone.addEventListener("dragleave",function(){zone.classList.remove("eisover");});
+    zone.addEventListener("drop",function(e){e.preventDefault();zone.classList.remove("eisover");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}if(id)setEisQuad(id,zone.getAttribute("data-eisdrop"));});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-eispick]"),function(el){el.onclick=function(e){e.stopPropagation();openEisPicker(el.getAttribute("data-eispick"));};});
   // Onglets Habitudes / Tâches de chaque moment
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-daytab]"),function(el){el.onclick=function(){var p=el.getAttribute("data-daytab").split("|");dayTab[p[0]]=p[1];render();};});
   var qa=document.getElementById("q-add");
