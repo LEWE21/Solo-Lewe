@@ -2559,6 +2559,7 @@ function vAujourdhui(){
     s+='</div></div>';
   });
   s+='</div>';                                          // fin .aujcols
+  s+=citationForgeCard();                               // citation du jour, en bas de l'onglet Aujourd'hui
   s+='</div>';
   return s;
 }
@@ -2674,7 +2675,7 @@ function vCap(k){
   if(orphan.length)s+='<div class="spanel"><div class="spl">Sans projet</div>'+questTree(orphan,{hideCap:true})+'</div>';
   // 3. Les outils propres à la capacité
   if(k==="mental"){s+=defiCard("epictete")+vJournal();}
-  if(k==="physique"){s+=citationForgeCard()+sleepCard();}
+  if(k==="physique"){s+=sleepCard();}
   if(k==="discipline"){s+=roueCard();}
   s+='</div>';   // fin capmason
   return s+'</div>';
@@ -3533,8 +3534,8 @@ function aaeItemHtml(it){
     }).join("");
     var editBtn='<span class="aae-gear" data-feditmode="'+it.key+'" title="'+(editing?'Terminer':'Modifier les étapes')+'" style="'+(editing?'color:var(--accent,#c98a1a);font-weight:700':'opacity:.65')+'">✎</span>';
     var editBar=editing?'<div style="font-size:11px;color:var(--muted,#5b6b7b);background:var(--panel-3,#eef3f8);border-radius:8px;padding:6px 9px;margin-bottom:7px">Édition : réordonne (↑ ↓) ou supprime (✕) tes étapes. <button '+BTN+' data-fereset="'+it.key+'" title="Tout remettre par défaut">↺ réinitialiser</button></div>':'';
-    var validBtn='<span class="aae-gvalid" data-eaedone="'+it.key+'" title="Tout valider et masquer pour aujourd\'hui">✓ fait</span>';
-    return '<details class="aae-hb'+doneCls+'"'+(editing?' open':opn)+drg+' data-eaekey="'+it.key+'" data-fsigs="'+esc(bodySigs.join("|~|"))+'"><summary>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+validBtn+'<span class="aae-chev">▸</span>'+dur+editBtn+gear+'</summary><div class="aae-fiche">'+editBar+steps+'</div></details>';
+    var gcheck='<span class="aae-scheck aae-gcheck" data-eaedone="'+it.key+'" title="Valider tout le groupe (le masque pour aujourd\'hui)"></span>';
+    return '<details class="aae-hb'+doneCls+'"'+(editing?' open':opn)+drg+' data-eaekey="'+it.key+'" data-fsigs="'+esc(bodySigs.join("|~|"))+'"><summary>'+gcheck+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span><span class="aae-chev">▸</span>'+dur+editBtn+gear+'</summary><div class="aae-fiche">'+editBar+steps+'</div></details>';
   }
   return '<div class="aae-hb flat'+doneCls+'"'+drg+'><span class="aae-scheck'+(it.qdone?' on':'')+'" data-check="'+it.key+'"></span>'+grip+'<span class="aae-hi">'+it.ic+'</span><span class="aae-hn">'+esc(it.title)+'</span>'+gear+'</div>';
 }
@@ -3708,8 +3709,7 @@ var AAE_CSS='<style>'+
 'details.aae-hb[open] .aae-chev{transform:rotate(90deg)}'+
 '.aae-dur{font-size:11px;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel));padding:2px 8px;border-radius:99px;font-weight:600;white-space:nowrap;margin-left:8px}'+
 '.aae-hb.flat .aae-dur{margin-left:auto}'+
-'.aae-gvalid{margin-left:8px;flex:none;cursor:pointer;font-size:10.5px;font-weight:700;color:var(--mint);border:1px solid color-mix(in srgb,var(--mint) 45%,var(--brd));background:color-mix(in srgb,var(--mint) 10%,var(--panel));border-radius:99px;padding:2px 9px;line-height:1.3;white-space:nowrap}'+
-'.aae-gvalid:hover{background:color-mix(in srgb,var(--mint) 22%,var(--panel))}'+
+'.aae-gcheck{flex:none;margin-top:0}'+
 '.aae-gear{margin-left:8px;color:var(--dim2);font-size:14px;cursor:pointer;flex:none}'+
 '.aae-gear:hover{color:var(--gold)}'+
 '.aae-hb.flat .aae-gear{margin-left:auto}'+
