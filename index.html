@@ -1692,8 +1692,14 @@ function openProjectManage(mId){
   Object.keys(STATS).forEach(function(k){var s2=STATS[k];
     h+='<button class="movecap'+(k===cap?" on":"")+'" data-pmcap="'+k+'" style="--cc:'+s2.col+'"><span class="mci">'+s2.ic+'</span><span class="mcn">'+esc(s2.name)+'</span></button>';});
   h+='</div>';
-  h+='<div class="plab" style="margin-top:16px">Thème dans '+st.ic+' '+esc(st.name)+' (facultatif)</div>';
-  h+='<input type="text" id="pm-theme" list="pm-themes" value="'+esc(PROJSEL.theme)+'" placeholder="Laisse vide pour ranger le projet directement dans la capacité" style="width:100%">';
+  h+='<div class="plab" style="margin-top:16px">Carré (thème) dans '+st.ic+' '+esc(st.name)+' (facultatif)</div>';
+  if(themes.length){
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px">';
+    themes.forEach(function(t){var sel=(PROJSEL.theme===t);h+='<button type="button" data-pmtheme="'+esc(t)+'" style="border:1px solid '+(sel?'var(--gold)':'var(--brd)')+';background:'+(sel?'color-mix(in srgb,var(--gold) 16%,var(--panel))':'var(--panel)')+';color:var(--txt);border-radius:99px;padding:5px 12px;font-size:12.5px;cursor:pointer">◆ '+esc(t)+'</button>';});
+    h+='<button type="button" data-pmtheme="" style="border:1px solid '+(!PROJSEL.theme?'var(--gold)':'var(--brd)')+';background:'+(!PROJSEL.theme?'color-mix(in srgb,var(--gold) 16%,var(--panel))':'var(--panel)')+';color:var(--dim);border-radius:99px;padding:5px 12px;font-size:12.5px;cursor:pointer">— Aucun</button>';
+    h+='</div>';
+  }
+  h+='<input type="text" id="pm-theme" list="pm-themes" value="'+esc(PROJSEL.theme)+'" placeholder="'+(themes.length?'ou tape un nouveau carré...':'Laisse vide pour ranger directement dans la capacité')+'" style="width:100%">';
   h+='<datalist id="pm-themes">'+themes.map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist>';
   h+='<div class="plab" style="margin-top:16px">Rang</div><div class="rankrow">';
   RANKS.slice().reverse().forEach(function(r){
@@ -1710,6 +1716,8 @@ function openProjectManage(mId){
     };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmrank]"),function(el){
     el.onclick=function(){pmStash();PROJSEL.rank=el.getAttribute("data-pmrank");openProjectManage(mId);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmtheme]"),function(el){
+    el.onclick=function(){pmStash();PROJSEL.theme=el.getAttribute("data-pmtheme");openProjectManage(mId);};}); // choisir un carré (thème) existant d'un clic
   var sv=document.getElementById("pm-save");
   if(sv)sv.onclick=function(){
     var t=(document.getElementById("pm-title").value||"").trim();
