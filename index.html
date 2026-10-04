@@ -2545,7 +2545,7 @@ function vAujourdhui(){
     return false;
   });
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
-  var s='<div class="solo aujc"><style>.solo.aujc{gap:10px;padding-top:0}.solo.aujc .tbar{margin-bottom:0}.solo.aujc .tbar .tt{font-size:22px}.solo.aujc .tbar small{font-size:12.5px}.solo.aujc .aae-resvbar{margin-bottom:0}.aujcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start}.aujcols .spanel{margin:0}</style><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
+  var s='<div class="solo aujc"><style>.solo.aujc{gap:10px;padding-top:0}.solo.aujc .tbar{margin-bottom:0}.solo.aujc .tbar .tt{font-size:22px}.solo.aujc .tbar small{font-size:12.5px}.solo.aujc .aae-resvbar{margin-bottom:0}.aujcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start}.aujcols .spanel{margin:0}.aujbottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start;margin-top:2px}.aujbottom .spanel,.aujbottom .courbcard{margin:0}</style><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Ta journée par moment, prépa et tâches ensemble</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
   s+=courbeCard(true);                               // « Où j'en suis » discret, en haut à gauche (permanent)
   if(momentOf()==="matin")s+=defiCard("epictete");   // rituel du matin : le défi d'Épictète
@@ -2567,7 +2567,19 @@ function vAujourdhui(){
     s+='</div></div>';
   });
   s+='</div>';                                          // fin .aujcols
-  s+=citationForgeCard();                               // citation du jour, en bas de l'onglet Aujourd'hui
+  s+='<div class="aujbottom">'+missedCard()+citationForgeCard()+'</div>'; // bas : tâches d'hier non faites + citation, côte à côte
+  s+='</div>';
+  return s;
+}
+function missedCard(){ // tâches (ponctuelles) dues HIER et toujours pas faites
+  var y=isoPlus(today(),-1);
+  var list=S.quests.filter(function(q){
+    if(q.daily||q.done||q.pub||isBlocked(q)||pubSuppressed(q))return false;
+    if(isMulti(q))return (q.dueDates||[]).indexOf(y)>=0 && (q.doneDates||[]).indexOf(y)<0;
+    return q.due===y;
+  });
+  var s='<div class="spanel"><div class="spl">⏰ Pas fait hier<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span></div>';
+  s+=list.length?list.map(function(q){return questRow(q,0,true);}).join(''):'<div class="subhead" style="margin:0">Rien resté d\'hier. Beau travail.</div>';
   s+='</div>';
   return s;
 }
