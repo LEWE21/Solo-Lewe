@@ -2571,15 +2571,15 @@ function vAujourdhui(){
   s+='</div>';
   return s;
 }
-function missedCard(){ // tâches (ponctuelles) dues HIER et toujours pas faites
-  var y=isoPlus(today(),-1);
+function missedCard(){ // toutes les tâches (ponctuelles) en retard : dues AVANT aujourd'hui et pas faites
+  var t=today();
   var list=S.quests.filter(function(q){
     if(q.daily||q.done||q.pub||isBlocked(q)||pubSuppressed(q))return false;
-    if(isMulti(q))return (q.dueDates||[]).indexOf(y)>=0 && (q.doneDates||[]).indexOf(y)<0;
-    return q.due===y;
-  });
-  var s='<div class="spanel"><div class="spl">⏰ Pas fait hier<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span></div>';
-  s+=list.length?list.map(function(q){return questRow(q,0,true);}).join(''):'<div class="subhead" style="margin:0">Rien resté d\'hier. Beau travail.</div>';
+    if(isMulti(q))return multiPending(q).some(function(d){return d<t;});
+    return q.due&&q.due<t;
+  }).sort(function(a,b){var ad=a.due||"9999",bd=b.due||"9999";return ad<bd?-1:(ad>bd?1:0);}); // la plus ancienne en haut
+  var s='<div class="spanel"><div class="spl" style="color:var(--pink)">⏰ En retard<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2)">'+list.length+'</span></div>';
+  s+=list.length?list.map(function(q){return questRow(q,0,true);}).join(''):'<div class="subhead" style="margin:0">Rien en retard. Beau travail.</div>';
   s+='</div>';
   return s;
 }
