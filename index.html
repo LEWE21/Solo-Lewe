@@ -2549,7 +2549,7 @@ function ritualCard(mo){
   var s='<div class="spanel ritcard"><div class="spl wkhead" data-wkfold="rit_'+mo+'">'+cfg.t+(done?' <span class="ritok">✓ fait</span>':'')+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2);font-size:11px">⏰ '+cfg.hh+'</span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
   if(open){
     s+='<div class="subhead" style="margin:0 0 8px">'+cfg.intro+'</div>';
-    if(mo==='soir')s+=defiCard('epictete'); // Épictète fondu dans le rituel du soir
+    if(mo==='matin')s+=defiCard('epictete'); // Épictète : cadrer la journée (tirage stoïcien), au matin
     cfg.q.forEach(function(q){
       var val=(r[q[0]]!=null)?r[q[0]]:'';
       s+='<div class="ritq"><div class="ritl">'+esc(q[1])+'</div>';
@@ -2612,7 +2612,7 @@ function vAujourdhui(){
     s+='</div></div>';
   });
   s+='</div>';                                          // fin .aujcols
-  s+=ritualCard('soir');                                // rituel du soir (journal + Épictète + humeur fondus : bilan, apprentissage, clôture)
+  s+=ritualCard('soir');                                // rituel du soir (journal + humeur fondus : bilan, apprentissage, clôture)
   s+='<div class="aujbottom">'+missedCard()+citationForgeCard()+'</div>'; // bas : tâches en retard + citation, côte à côte
   s+='</div>';
   return s;
