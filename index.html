@@ -751,7 +751,7 @@ function seed(){
       {id:"q_ip",title:"Trouver un logiciel d'analyse vidéo (IP)",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"},
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
-    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],doneLog:[],rituals:{},wheel:{},identite:"",journal:[],focus:{sessions:0,totalMin:0},chat:[],
+    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],doneLog:[],rituals:{},wheel:{},identite:"",mars:{},bilan:{},journal:[],focus:{sessions:0,totalMin:0},chat:[],
     absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0,ft:null,coachStyle:"robi",ch:{}
   };
 }
@@ -763,7 +763,7 @@ function load(){
   if(!r){r=seed();}
   else{
     if(!r.stats)r.stats={};Object.keys(STATS).forEach(function(k){if(!r.stats[k])r.stats[k]={level:1,xp:0};});
-    if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];if(!r.doneLog)r.doneLog=[];if(!r.rituals)r.rituals={};if(!r.wheel)r.wheel={};if(!("identite" in r))r.identite="";
+    if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];if(!r.doneLog)r.doneLog=[];if(!r.rituals)r.rituals={};if(!r.wheel)r.wheel={};if(!("identite" in r))r.identite="";if(!r.mars)r.mars={};if(!r.bilan)r.bilan={};
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
     if(typeof r.costUsd!=="number")r.costUsd=0;
@@ -881,7 +881,7 @@ function syncPull(force){
     var rem=r&&r.state;
     if(rem&&rem.hunter&&(force||(rem.syncedAt||0)>(S.syncedAt||0))){
       S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});
-      if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.doneLog)S.doneLog=[];if(!S.rituals)S.rituals={};if(!S.wheel)S.wheel={};if(!("identite" in S))S.identite="";if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];
+      if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.doneLog)S.doneLog=[];if(!S.rituals)S.rituals={};if(!S.wheel)S.wheel={};if(!("identite" in S))S.identite="";if(!S.mars)S.mars={};if(!S.bilan)S.bilan={};if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];
       writeLocal();render();return true;
     }
     return false;
@@ -2574,7 +2574,84 @@ function vPilotage(){
     });
   }
   s+='</div>';
-  s+='<div class="subhead" style="margin:10px 2px 0;color:var(--dim2)">Bientôt ici (Phase 3) : M.A.R.S (lundi), bilan hebdo (vendredi) et tes courbes de tendance.</div>';
+  s+=marsCard();
+  s+=bilanCard();
+  s+=tendancesCard();
+  s+='</div>';return s;
+}
+/* ---- Système en boucle : rituels hebdo (M.A.R.S lundi, Bilan vendredi) + tendances ---- */
+function weekKey(){return isoPlus(today(),-weekdayMon(today()));} // lundi de la semaine en cours
+function marsGet(){return (S.mars||{})[weekKey()]||{};}
+function marsSet(k,v){S.mars=S.mars||{};var w=S.mars[weekKey()]=S.mars[weekKey()]||{};w[k]=v;save();}
+function bilanGet(){return (S.bilan||{})[weekKey()]||{};}
+function bilanSet(k,v){S.bilan=S.bilan||{};var w=S.bilan[weekKey()]=S.bilan[weekKey()]||{};w[k]=v;save();}
+function marsCard(){
+  var m=marsGet(),open=!WKFOLD.pil_mars,done=!!m._done;
+  var s='<div class="spanel"><div class="spl wkhead" data-wkfold="pil_mars">🔄 M.A.R.S — Habitudes'+(done?' <span class="ritok">✓</span>':'')+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2);font-size:11px">lundi 6h</span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
+  if(open){
+    s+='<div class="subhead" style="margin:0 0 8px">État des lieux de tes habitudes pour la semaine : que Modifier, Adopter, Renforcer, Supprimer ? (Changer une habitude, ce n\'est pas supprimer, c\'est remplacer.)</div>';
+    [['modifier','Modifier'],['adopter','Adopter'],['renforcer','Renforcer'],['supprimer','Supprimer']].forEach(function(q){
+      s+='<div class="ritq"><div class="ritl">'+q[1]+'</div><textarea class="ritin" data-marsin="'+q[0]+'" rows="2" placeholder="...">'+esc(m[q[0]]||'')+'</textarea></div>';
+    });
+    s+='<button class="btn'+(done?' ghost':'')+'" data-marsdone="1" style="width:100%;margin-top:4px">'+(done?'✓ Validé — rouvrir':'Valider mon M.A.R.S')+'</button>';
+  }
+  s+='</div>';return s;
+}
+var BILAN_Q=[
+ ['trainings','As-tu respecté tes trainings cette semaine ?','yn'],
+ ['blocages','Quels blocages t\'ont ralenti ? (logistique, mental, énergie, autre)','area'],
+ ['discipline','Ta discipline cette semaine (1-10)','scale'],
+ ['energie','Niveau d\'énergie global cette semaine (1-10)','scale'],
+ ['douleurs','Douleurs, gênes, inconforts physiques notables ?','area'],
+ ['victoires','Tes micro-victoires de la semaine ? (même minuscule)','area'],
+ ['sommeil','Ton sommeil (qualité + quantité) ?','text'],
+ ['failli','Le moment où tu as failli lâcher ? Pourquoi ?','area'],
+ ['levier','Un levier à activer la semaine prochaine pour faire mieux ?','area'],
+ ['difference','Qu\'est-ce qui ferait une vraie différence cette semaine si tu t\'y tenais ?','area'],
+ ['autoscore','Ton auto-score de ta forme cette semaine','multi']
+];
+function bilanCard(){
+  var b=bilanGet(),open=!WKFOLD.pil_bilan,done=!!b._done;
+  var s='<div class="spanel"><div class="spl wkhead" data-wkfold="pil_bilan">📋 Bilan hebdo'+(done?' <span class="ritok">✓</span>':'')+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2);font-size:11px">vendredi 20h</span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
+  if(open){
+    s+='<div class="subhead" style="margin:0 0 8px">5 minutes pour scanner tes performances, ton mindset et ce qui va te faire avancer.</div>';
+    BILAN_Q.forEach(function(q){
+      if(q[2]==='multi'){
+        s+='<div class="ritl" style="margin-top:6px">'+q[1]+'</div>';
+        [['as_discipline','💗 Discipline'],['as_energie','🔋 Énergie'],['as_clarte','🧠 Clarté mentale'],['as_engagement','💪 Engagement']].forEach(function(sub){
+          s+='<div class="ritq" style="margin:4px 0 0"><div class="ritl">'+sub[1]+'</div><div class="ritscale">';
+          for(var n=1;n<=10;n++)s+='<button type="button" class="ritsc'+(String(b[sub[0]])===String(n)?' on':'')+'" data-bscale="'+sub[0]+'|'+n+'">'+n+'</button>';
+          s+='</div></div>';
+        });
+        return;
+      }
+      s+='<div class="ritq"><div class="ritl">'+q[1]+'</div>';
+      if(q[2]==='yn'){s+='<div class="ritscale"><button type="button" class="ritsc'+(b[q[0]]==='oui'?' on':'')+'" data-byn="'+q[0]+'|oui" style="width:auto;padding:0 14px">Oui</button><button type="button" class="ritsc'+(b[q[0]]==='non'?' on':'')+'" data-byn="'+q[0]+'|non" style="width:auto;padding:0 14px">Non</button></div>';}
+      else if(q[2]==='scale'){s+='<div class="ritscale">';for(var n=1;n<=10;n++)s+='<button type="button" class="ritsc'+(String(b[q[0]])===String(n)?' on':'')+'" data-bscale="'+q[0]+'|'+n+'">'+n+'</button>';s+='</div>';}
+      else if(q[2]==='area'){s+='<textarea class="ritin" data-bin="'+q[0]+'" rows="2" placeholder="...">'+esc(b[q[0]]||'')+'</textarea>';}
+      else {s+='<input class="ritin" type="text" data-bin="'+q[0]+'" value="'+esc(b[q[0]]||'')+'" placeholder="...">';}
+      s+='</div>';
+    });
+    s+='<button class="btn'+(done?' ghost':'')+'" data-bilandone="1" style="width:100%;margin-top:4px">'+(done?'✓ Validé — rouvrir':'Valider mon bilan')+'</button>';
+  }
+  s+='</div>';return s;
+}
+function sparkline(vals,color){
+  if(!vals.length)return '<div class="eisempty" style="padding:6px 0">Pas encore de données.</div>';
+  var W=280,H=46,n=vals.length;
+  var pts=vals.map(function(v,i){var x=n>1?(i/(n-1))*(W-6)+3:W/2;var y=H-3-((v-0)/10)*(H-6);return x.toFixed(1)+','+y.toFixed(1);});
+  var dots=vals.map(function(v,i){var x=n>1?(i/(n-1))*(W-6)+3:W/2;var y=H-3-((v-0)/10)*(H-6);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2" fill="'+color+'"/>';}).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:46px"><polyline points="'+pts.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+dots+'</svg>';
+}
+function tendancesCard(){
+  var en=[];for(var i=13;i>=0;i--){var d=isoPlus(today(),-i);var r=((S.rituals||{})[d]||{}).matin||{};if(r.energie!=null)en.push(+r.energie);}
+  var disc=[];Object.keys(S.bilan||{}).sort().forEach(function(k){var b=S.bilan[k];if(b.discipline!=null)disc.push(+b.discipline);});
+  var open=!WKFOLD.pil_trend;
+  var s='<div class="spanel"><div class="spl wkhead" data-wkfold="pil_trend">📈 Tendances<span style="flex:1"></span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
+  if(open){
+    s+='<div class="ritl" style="margin-top:4px">🔋 Énergie du matin (14 derniers jours)</div>'+sparkline(en,'#2fd39b');
+    s+='<div class="ritl" style="margin-top:8px">💗 Discipline (par semaine, via le bilan)</div>'+sparkline(disc,'#ffb057');
+  }
   s+='</div>';return s;
 }
 /* ---- Système en boucle : rituels matin / soir (journaling structuré, réponses stockées par jour) ---- */
@@ -3931,6 +4008,13 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wscore]"),function(el){el.onclick=function(){var p=el.getAttribute("data-wscore").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{}).score=+p[1];save();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-win]"),function(el){el.addEventListener("change",function(){var p=el.getAttribute("data-win").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{})[p[1]]=el.value;save();});});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wfold]"),function(el){el.onclick=function(){var k='wd_'+el.getAttribute("data-wfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
+  // Pilotage hebdo : M.A.R.S + Bilan
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-marsin]"),function(el){el.addEventListener("change",function(){marsSet(el.getAttribute("data-marsin"),el.value);});});
+  var _md=document.querySelector("#view [data-marsdone]");if(_md)_md.onclick=function(){marsSet('_done',!marsGet()._done);render();};
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-bin]"),function(el){el.addEventListener("change",function(){bilanSet(el.getAttribute("data-bin"),el.value);});});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-bscale]"),function(el){el.onclick=function(){var p=el.getAttribute("data-bscale").split("|");bilanSet(p[0],+p[1]);render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-byn]"),function(el){el.onclick=function(){var p=el.getAttribute("data-byn").split("|");bilanSet(p[0],p[1]);render();};});
+  var _bd=document.querySelector("#view [data-bilandone]");if(_bd)_bd.onclick=function(){bilanSet('_done',!bilanGet()._done);render();};
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
