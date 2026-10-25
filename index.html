@@ -651,6 +651,25 @@ function guessProjStat(title){
   return "business";
 }
 function capOf(m){return (m&&STATS[m.stat])?m.stat:guessProjStat(m&&m.title);}
+// Domaine de vie d'un projet (taxonomie unique, partagée avec la Roue de la Vie)
+function guessDomain(m){
+  if(m&&m.domain&&/^(armee|sante|sport|alim|couple|famille|amis|argent|travail|emotions|contrib|apprentissage)$/.test(m.domain))return m.domain;
+  var t=((m&&m.title||"")+" "+(m&&m.theme||"")+" "+(m&&m.note||"")).toLowerCase();
+  if(/arm[ée]e|a[ée]rien|r[ée]serve|\bjdc\b|cirfa|\bosc\b|s[ée]lection|aviateur|cursus|psychotechn/.test(t))return "armee";
+  if(/crypto|pimky|\bokx\b|budget|bourse|invest|portefeuille|trading|finance/.test(t))return "argent";
+  if(/\bbd\b|volontaires|pacifique|[ée]coles?|dessin|planche|illustration|sc[ée]nario/.test(t))return "contrib";
+  if(/couple|do nothing|\bdnfm\b|amoureuse|mariage/.test(t))return "couple";
+  if(/famille|maman|m[èe]re|fr[èe]re|gaby|parent/.test(t))return "famille";
+  if(/\bami(e|s|cal)?\b|sortie|copain/.test(t))return "amis";
+  if(/sport|muscu|strong|sinister|forge|kettlebell|course|tractions|luc l[ée]ger|killy/.test(t))return "sport";
+  if(/self.?care|housecore|maison|m[ée]nage|rangement|nettoyer|\bordi\b|linge|toilette|bureau|draps|joints|sant[ée]|m[ée]dical|soin|sommeil/.test(t))return "sante";
+  if(/alimentation|nutrition|prot[ée]ine|repas/.test(t))return "alim";
+  if(/journal|sto[ïi]|[ée]pict[èe]te|[ée]motion|m[ée]ditation/.test(t))return "emotions";
+  if(/formation|apprend|learn|langue|anglais|english|lecture/.test(t))return "apprentissage";
+  if(/wanala[ïi]|marina|\bsite\b|\bweb\b|\bapp\b|robi|proxy|vatican|youtube|client|\bd[ée]v\b|\bcode\b|travail/.test(t))return "travail";
+  var byCap={physique:"sport",mental:"emotions",creativite:"contrib",business:"travail",social:"amis",discipline:"sante"};
+  return byCap[m&&m.stat]||"travail";
+}
 function xpNeed(lvl){return 100+(lvl-1)*40;}
 function statNeed(lvl){return 60+(lvl-1)*25;}
 /* ---- Niveau d'une capacité = nombre de semaines où tu l'as touchée. La constance, pas le volume. ---- */
@@ -806,7 +825,7 @@ function load(){
     if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;if(!("ft" in r))r.ft=null;if(!r.coachStyle)r.coachStyle="robi";
     if(r.hunter&&r.hunter.name==="MATHILDE")r.hunter.name="Mathilde"; // le prénom stocké tout en capitales
     /* Chaque projet appartient à une capacité (migration des projets existants) */
-    if(Array.isArray(r.missions))r.missions.forEach(function(m){if(!m.stat||!STATS[m.stat])m.stat=guessProjStat(m.title);});
+    if(Array.isArray(r.missions))r.missions.forEach(function(m){if(!m.stat||!STATS[m.stat])m.stat=guessProjStat(m.title);if(!m.domain)m.domain=guessDomain(m);});
     if(!r.structV2&&Array.isArray(r.missions)){
       r.structV2=1;
       // 1. Le rangement voulu : la capacité, c'est le muscle que le projet développe
@@ -1678,7 +1697,7 @@ var PROJSEL=null; // la capacite choisie dans la fenetre de gestion de projet
 function openProjectManage(mId){
   var m=find(S.missions,mId);if(!m)return;
   if(!PROJSEL||PROJSEL.m!==mId){
-    PROJSEL={m:mId,cap:capOf(m),rank:m.rank,title:m.title,note:m.note||"",theme:m.theme||"",themes:{}};
+    PROJSEL={m:mId,cap:capOf(m),rank:m.rank,title:m.title,note:m.note||"",theme:m.theme||"",themes:{},domain:(m.domain||guessDomain(m))};
     PROJSEL.themes[capOf(m)]=m.theme||"";   // le thème d'origine, retrouvé si elle revient sur cette capacité
   }
   var cap=PROJSEL.cap,st=STATS[cap];
@@ -1688,7 +1707,10 @@ function openProjectManage(mId){
   h+='<div class="subhead" style="margin:6px 0 14px">'+qs.length+' tâche'+(qs.length>1?'s':'')+' dans ce projet.</div>';
   h+='<div class="plab">Nom</div><input type="text" id="pm-title" value="'+esc(PROJSEL.title)+'" style="width:100%">';
   h+='<div class="plab" style="margin-top:14px">But (facultatif)</div><input type="text" id="pm-note" value="'+esc(PROJSEL.note)+'" placeholder="Ce que tu veux atteindre" style="width:100%">';
-  h+='<div class="plab" style="margin-top:16px">Capacité</div><div class="movecaps">';
+  h+='<div class="plab" style="margin-top:16px">Domaine de vie</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px">';
+  DOMAINS_VIE.forEach(function(d){var sel=(PROJSEL.domain===d[0]);h+='<button type="button" data-pmdom="'+d[0]+'" style="border:1px solid '+(sel?'var(--gold)':'var(--brd)')+';background:'+(sel?'color-mix(in srgb,var(--gold) 16%,var(--panel))':'var(--panel)')+';color:var(--txt);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer">'+d[2]+' '+esc(d[1])+'</button>';});
+  h+='</div>';
+  h+='<div class="plab" style="margin-top:16px">Capacité <span style="font-weight:400;text-transform:none;color:var(--dim2)">(interne, pour tes stats)</span></div><div class="movecaps">';
   Object.keys(STATS).forEach(function(k){var s2=STATS[k];
     h+='<button class="movecap'+(k===cap?" on":"")+'" data-pmcap="'+k+'" style="--cc:'+s2.col+'"><span class="mci">'+s2.ic+'</span><span class="mcn">'+esc(s2.name)+'</span></button>';});
   h+='</div>';
@@ -1716,6 +1738,8 @@ function openProjectManage(mId){
     };});
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmrank]"),function(el){
     el.onclick=function(){pmStash();PROJSEL.rank=el.getAttribute("data-pmrank");openProjectManage(mId);};});
+  Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmdom]"),function(el){
+    el.onclick=function(){pmStash();PROJSEL.domain=el.getAttribute("data-pmdom");openProjectManage(mId);};}); // changer le domaine de vie du projet
   Array.prototype.forEach.call(document.querySelectorAll("#modal [data-pmtheme]"),function(el){
     el.onclick=function(){pmStash();PROJSEL.theme=el.getAttribute("data-pmtheme");openProjectManage(mId);};}); // choisir un carré (thème) existant d'un clic
   var sv=document.getElementById("pm-save");
@@ -1726,7 +1750,7 @@ function openProjectManage(mId){
     m.title=t.slice(0,120);
     m.note=(document.getElementById("pm-note").value||"").trim().slice(0,160);
     m.theme=(document.getElementById("pm-theme").value||"").trim().slice(0,40);
-    m.stat=PROJSEL.cap;m.rank=PROJSEL.rank;
+    m.stat=PROJSEL.cap;m.rank=PROJSEL.rank;m.domain=PROJSEL.domain;
     // Les tâches suivent leur projet : sans ça elles resteraient comptées dans l'ancienne capacité
     if(capAvant!==m.stat)S.quests.forEach(function(q){if(q.mission===m.id)q.stat=m.stat;});
     PROJSEL=null;save();closeModal();
@@ -2085,12 +2109,8 @@ function renderNav(){
   h+='<button data-v="agenda" class="capnav'+(view==="agenda"?" on":"")+'" style="--cc:#3b6bff"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="capnav'+(view==="suivi"?" on":"")+'" style="--cc:#e5484d"><span class="ni">🎖️</span><span class="nl">Prépa</span></button>';
-  Object.keys(STATS).forEach(function(k){
-    var m=STATS[k],v="cap:"+k;
-    h+='<button data-v="'+v+'" class="capnav'+(view===v?" on":"")+'" style="--cc:'+m.col+'" title="'+esc(m.name)+'">'+
-       '<span class="ni">'+m.ic+'</span><span class="nl">'+esc(NAVSHORT[k]||m.name)+'</span></button>';
-  });
-  h+='<button data-v="historique" class="capnav'+(view==="historique"?" on":"")+'" style="--cc:#2fd39b"><span class="ni">✅</span><span class="nl">Historique</span></button>'; // tout en bas, après les capacités
+  // Les 6 capacités (Force/Mental/Créa/Business/Social/Discip.) ne sont plus dans la nav : les projets sont rangés par domaine de vie dans Cap. La capacité reste une donnée interne (stats Pilotage).
+  h+='<button data-v="historique" class="capnav'+(view==="historique"?" on":"")+'" style="--cc:#2fd39b"><span class="ni">✅</span><span class="nl">Historique</span></button>';
   n.innerHTML=h;
   Array.prototype.forEach.call(n.querySelectorAll("button"),function(b){b.onclick=function(){view=b.dataset.v;objSel=null;render();};});
 }
@@ -3032,22 +3052,54 @@ var EIS_CSS='<style>'
 +'.eisempty{font-size:11px;color:var(--dim2)}'
 +'.eisover{outline:2px dashed var(--qc,var(--gold));outline-offset:-4px}'
 +'</style>';
+var OBJVIEW='domaines';
+var OBJ_CSS='<style>'
++'.objtog{display:flex;gap:6px;margin:0 0 10px}'
++'.objtogb{font-size:12px;padding:5px 13px;border-radius:99px;border:1px solid var(--brd);background:var(--panel);color:var(--dim);cursor:pointer}'
++'.objtogb.on{background:color-mix(in srgb,var(--gold) 16%,var(--panel));border-color:var(--gold);color:var(--txt);font-weight:600}'
++'.domsec{margin:0 0 8px}'
++'.domsec-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--txt);padding:6px 2px;cursor:pointer}'
++'.objrow2{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:2px 0;border:1px solid var(--brd);border-radius:9px;background:var(--panel);cursor:pointer}'
++'.objrow2:hover{border-color:var(--gold)}'
++'.objrow2 .otag{font-weight:800;font-size:12px;min-width:16px;text-align:center}'
++'.objrow2 .oname{flex:1;min-width:0;font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
++'.objrow2 .obar{width:56px;height:6px;border-radius:99px;background:var(--panel-2);overflow:hidden;flex:none}'
++'.objrow2 .obar i{display:block;height:100%;transform-origin:left;border-radius:99px}'
++'.objrow2 .op{font-size:11px;color:var(--dim2);min-width:34px;text-align:right}'
++'</style>';
+function projRow(m){
+  var qs=S.quests.filter(function(q){return q.mission===m.id;});
+  var done=qs.filter(function(q){return q.done;}).length,frac=qs.length?done/qs.length:0;
+  var rk=(RANKS.filter(function(r){return r.r===m.rank;})[0]||RANKS[0]);
+  return '<div class="objrow2" data-obj-sel="'+m.id+'"><span class="otag" style="color:'+rk.c+'">'+m.rank+'</span><span class="oname">'+esc(m.title)+'</span><span class="obar"><i style="transform:scaleX('+frac.toFixed(2)+');background:'+rk.c+'"></i></span><span class="op">'+(qs.length?done+'/'+qs.length:'—')+'</span></div>';
+}
 function vObjectifs(){
   if(objSel){var mm=find(S.missions,objSel);if(mm)return vObjDetail(mm);objSel=null;}
-  var quads=EIS();
-  var s=pilotTabs("objectifs")+EIS_CSS+'<div class="win"><div class="win-h"><span class="t">◈ Objectifs</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
-  s+='<div class="subhead" style="margin:0 0 10px">Range chaque objectif dans la matrice d\'Eisenhower selon son urgence et son importance : glisse-le, ou touche ⤴ pour le classer. Touche son nom pour l\'ouvrir.</div>';
-  var untri=S.missions.filter(function(m){return ['do','plan','deleg','drop'].indexOf(m.eis)<0;});
-  s+='<div class="eistri" data-eisdrop=""><div class="eistri-h">À trier · '+untri.length+'</div><div class="eischips">'+(untri.length?untri.map(eisChip).join(''):'<span class="eisempty">Tout est classé 🎉</span>')+'</div></div>';
-  s+='<div class="eisgrid">';
-  quads.forEach(function(q){
-    var list=S.missions.filter(function(m){return m.eis===q.k;});
-    s+='<div class="eisq" data-eisdrop="'+q.k+'" style="--qc:'+q.col+'"><div class="eisq-h"><b>'+q.t+'</b><span>'+q.s+'</span></div><div class="eischips">'+(list.length?list.map(eisChip).join(''):'<span class="eisempty">Dépose ici</span>')+'</div></div>';
-  });
-  s+='</div>';
+  var s=pilotTabs("objectifs")+OBJ_CSS+'<div class="win"><div class="win-h"><span class="t">◈ Projets</span><span class="ln"></span><span class="r">'+S.missions.length+'</span></div>';
+  s+='<div class="objtog"><button class="objtogb'+(OBJVIEW==='domaines'?' on':'')+'" data-objview="domaines">◆ Par domaine</button><button class="objtogb'+(OBJVIEW==='matrice'?' on':'')+'" data-objview="matrice">▦ Matrice</button></div>';
+  if(OBJVIEW==='matrice'){
+    var quads=EIS();
+    s+=EIS_CSS+'<div class="subhead" style="margin:0 0 10px">Range par urgence/importance : glisse ou touche ⤴ pour classer.</div>';
+    var untri=S.missions.filter(function(m){return ['do','plan','deleg','drop'].indexOf(m.eis)<0;});
+    s+='<div class="eistri" data-eisdrop=""><div class="eistri-h">À trier · '+untri.length+'</div><div class="eischips">'+(untri.length?untri.map(eisChip).join(''):'<span class="eisempty">Tout est classé 🎉</span>')+'</div></div><div class="eisgrid">';
+    quads.forEach(function(q){var list=S.missions.filter(function(m){return m.eis===q.k;});s+='<div class="eisq" data-eisdrop="'+q.k+'" style="--qc:'+q.col+'"><div class="eisq-h"><b>'+q.t+'</b><span>'+q.s+'</span></div><div class="eischips">'+(list.length?list.map(eisChip).join(''):'<span class="eisempty">Dépose ici</span>')+'</div></div>';});
+    s+='</div>';
+  } else {
+    s+='<div class="subhead" style="margin:0 0 8px">Tes projets rangés par domaine de vie. Touche un projet pour l\'ouvrir ; change son domaine depuis sa fiche.</div>';
+    var shown=0;
+    DOMAINS_VIE.forEach(function(d){
+      var list=S.missions.filter(function(m){return (m.domain||guessDomain(m))===d[0];}).sort(byRankDesc);
+      if(!list.length)return;shown++;
+      var open=!WKFOLD['dom_'+d[0]];
+      s+='<div class="domsec"><div class="domsec-h wkhead" data-wkfold="dom_'+d[0]+'"><span>'+d[2]+' '+esc(d[1])+'</span><span style="flex:1"></span><span style="color:var(--dim2);font-weight:400">'+list.length+'</span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
+      if(open)s+=list.map(projRow).join('');
+      s+='</div>';
+    });
+    if(!shown)s+='<div class="empty">Aucun projet pour l\'instant.</div>';
+  }
   s+='<div class="addrow" style="margin-top:14px"><input type="text" id="m-title" placeholder="Nouvel objectif (projet)..."><input type="text" id="m-note" placeholder="But (facultatif)"><button class="btn" id="m-add">Ajouter</button></div>';
   s+='</div>';
-  s+=objAdviceCard();   // carte "L'avis de Claude" (analyse Ray Dalio + jeu de questions)
+  s+=objAdviceCard();
   return s;
 }
 function vObjDetail(m){
@@ -4118,6 +4170,7 @@ function bind(){
     zone.addEventListener("drop",function(e){e.preventDefault();zone.classList.remove("eisover");var id="";try{id=e.dataTransfer.getData("text/plain");}catch(_){}if(id)setEisQuad(id,zone.getAttribute("data-eisdrop"));});
   });
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-eispick]"),function(el){el.onclick=function(e){e.stopPropagation();openEisPicker(el.getAttribute("data-eispick"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-objview]"),function(el){el.onclick=function(){OBJVIEW=el.getAttribute("data-objview");render();};});
   // Onglets Habitudes / Tâches de chaque moment
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-daytab]"),function(el){el.onclick=function(){var p=el.getAttribute("data-daytab").split("|");dayTab[p[0]]=p[1];render();};});
   var qa=document.getElementById("q-add");
