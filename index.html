@@ -751,7 +751,7 @@ function seed(){
       {id:"q_ip",title:"Trouver un logiciel d'analyse vidéo (IP)",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"},
       {id:"q_substack",title:"Lire : Claude Code content distribution AI agent",stat:"mental",daily:false,prio:"low",base:12,done:false,mission:"m_skills"}
     ],
-    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],doneLog:[],rituals:{},journal:[],focus:{sessions:0,totalMin:0},chat:[],
+    streak:0,best:0,combo:0,doneCount:0,lastDate:today(),history:[],log:[],doneLog:[],rituals:{},wheel:{},identite:"",journal:[],focus:{sessions:0,totalMin:0},chat:[],
     absences:[],lastLearning:null,greetDate:null,greetLine:null,lastReview:null,reviewCount:0,ft:null,coachStyle:"robi",ch:{}
   };
 }
@@ -763,7 +763,7 @@ function load(){
   if(!r){r=seed();}
   else{
     if(!r.stats)r.stats={};Object.keys(STATS).forEach(function(k){if(!r.stats[k])r.stats[k]={level:1,xp:0};});
-    if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];if(!r.doneLog)r.doneLog=[];if(!r.rituals)r.rituals={};
+    if(!r.journal)r.journal=[];if(!r.focus)r.focus={sessions:0,totalMin:0};if(!r.log)r.log=[];if(!r.history)r.history=[];if(!r.doneLog)r.doneLog=[];if(!r.rituals)r.rituals={};if(!r.wheel)r.wheel={};if(!("identite" in r))r.identite="";
     if(typeof r.combo!=="number")r.combo=0;if(!r.chat)r.chat=[];
     if(!("lastEpreuve" in r))r.lastEpreuve=null;if(!("epreuveOn" in r))r.epreuveOn=null;
     if(typeof r.costUsd!=="number")r.costUsd=0;
@@ -881,7 +881,7 @@ function syncPull(force){
     var rem=r&&r.state;
     if(rem&&rem.hunter&&(force||(rem.syncedAt||0)>(S.syncedAt||0))){
       S=rem;if(!S.stats)S.stats={};Object.keys(STATS).forEach(function(k){if(!S.stats[k])S.stats[k]={level:1,xp:0};});
-      if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.doneLog)S.doneLog=[];if(!S.rituals)S.rituals={};if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];
+      if(!S.journal)S.journal=[];if(!S.log)S.log=[];if(!S.doneLog)S.doneLog=[];if(!S.rituals)S.rituals={};if(!S.wheel)S.wheel={};if(!("identite" in S))S.identite="";if(!S.quests)S.quests=[];if(!S.missions)S.missions=[];if(!S.absences)S.absences=[];if(!S.chat)S.chat=[];
       writeLocal();render();return true;
     }
     return false;
@@ -2060,6 +2060,7 @@ function render(){
   else if(view==="priorites")html=vPriorites();
   else if(view==="agenda")html=vAgenda();
   else if(view==="historique")html=vHistorique();
+  else if(view==="pilotage")html=vPilotage();
   else if(view==="suivi")html=vSuivi();
   else if(view==="aujourdhui")html=vAujourdhui();
   else {view="cockpit";html=vCockpit();}
@@ -2080,6 +2081,7 @@ function renderNav(){
   var n=document.getElementById("nav");if(!n)return;
   var h='<button data-v="aujourdhui" class="'+(view==="aujourdhui"?"on":"")+'"><span class="ni">☀️</span><span class="nl">Aujourd\'hui</span></button>';
   h+='<button data-v="cockpit" class="capnav'+(/^(cockpit|objectifs|priorites)$/.test(view)?" on":"")+'" style="--cc:#ffb057"><span class="ni">🧭</span><span class="nl">Cap</span></button>';
+  h+='<button data-v="pilotage" class="capnav'+(view==="pilotage"?" on":"")+'" style="--cc:#7b5cff"><span class="ni">🎛️</span><span class="nl">Pilotage</span></button>';
   h+='<button data-v="agenda" class="capnav'+(view==="agenda"?" on":"")+'" style="--cc:#3b6bff"><span class="ni">📆</span><span class="nl">Agenda</span></button>';
   // Objectifs et Priorités ne sont plus des boutons de nav : ce sont des onglets à l'intérieur du Cockpit (voir pilotTabs)
   h+='<button data-v="suivi" class="'+(view==="suivi"?"on":"")+'"><span class="ni">📊</span><span class="nl">EAE</span></button>';
@@ -2523,6 +2525,57 @@ function courbeCard(compact){
   if(cur){var pp=LEARNCURVE.filter(function(p){return p.k===cur;})[0];if(pp)s+='<div class="courbmsg'+(cur==="deprime"?" dip":"")+'"><b>'+pp.ic+' '+esc(pp.lab)+'</b><br>'+esc(pp.msg)+'</div>';}
   s+='</div>';
   return s;
+}
+/* ---- Système en boucle : Pilotage (Identité + Roue de la Vie) ---- */
+var DOMAINS_VIE=[
+ ['armee','Armée','🎖️'],['sante','Santé','❤️'],['sport','Sport','🏋️'],['alim','Alimentation','🥗'],
+ ['couple','Couple','💞'],['famille','Famille','👨‍👩‍👧'],['amis','Amis','🤝'],['argent','Argent','💰'],
+ ['travail','Travail / Projets','💼'],['emotions','Émotions','🧠'],['contrib','Contribution','🌍'],['apprentissage','Apprentissage','📚']
+];
+var WHEEL_Q=[['quoi','Quoi ? Quels résultats finaux veux-tu vraiment ?'],['pourquoi','Pourquoi ? Pour quelles raisons ?'],['qui','Qui ? Quelle personne dois-tu devenir ?'],['quand','Quand ? Dans combien de temps ?']];
+function wheelRadar(){
+  var W=280,cx=W/2,cy=W/2,R=96,n=DOMAINS_VIE.length,g='',pts=[];
+  for(var ring=2;ring<=10;ring+=2){g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*ring/10)+'" fill="none" stroke="var(--brd)" stroke-width="0.6"/>';}
+  DOMAINS_VIE.forEach(function(d,i){
+    var ang=-Math.PI/2+i*2*Math.PI/n,ax=cx+R*Math.cos(ang),ay=cy+R*Math.sin(ang);
+    g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+ax.toFixed(1)+'" y2="'+ay.toFixed(1)+'" stroke="var(--brd)" stroke-width="0.6"/>';
+    var sc=((S.wheel||{})[d[0]]||{}).score||0,rr=R*sc/10;
+    pts.push((cx+rr*Math.cos(ang)).toFixed(1)+','+(cy+rr*Math.sin(ang)).toFixed(1));
+    var lx=cx+(R+13)*Math.cos(ang),ly=cy+(R+13)*Math.sin(ang);
+    g+='<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" font-size="11" text-anchor="middle" dominant-baseline="middle">'+d[2]+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+W+'" style="width:100%;max-width:300px;display:block;margin:4px auto 8px">'+g+'<polygon points="'+pts.join(' ')+'" fill="color-mix(in srgb,var(--gold) 22%,transparent)" stroke="var(--gold)" stroke-width="1.6"/></svg>';
+}
+var PILOTAGE_CSS='<style>.wrow{border:1px solid var(--brd);border-radius:10px;padding:8px 10px;margin:0 0 7px;background:var(--panel)}.wrow-h{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:13px;color:var(--txt);font-weight:600}.wscore{font-size:12px;color:var(--gold);font-weight:700}</style>';
+function vPilotage(){
+  var s='<div class="solo">'+PILOTAGE_CSS+'<div class="tbar"><span class="tt">🎛️ Pilotage</span><small>Ton tableau de bord : qui tu deviens, et où en est ta vie</small></div>';
+  // Identité
+  var idOpen=!WKFOLD.pil_id;
+  s+='<div class="spanel"><div class="spl wkhead" data-wkfold="pil_id">🧬 Mon identité<span style="flex:1"></span><span class="wkchev">'+(idOpen?'▾':'▸')+'</span></div>';
+  if(idOpen){
+    s+='<div class="subhead" style="margin:0 0 8px">Qui tu veux devenir. Tu agis selon ton identité, pas seulement selon tes objectifs. Relis-la chaque matin.</div>';
+    s+='<textarea class="ritin" data-identite rows="4" placeholder="Je suis quelqu\'un qui... (ton code génétique, la personne que tu incarnes)">'+esc(S.identite||'')+'</textarea>';
+  }
+  s+='</div>';
+  // Roue de la Vie
+  var wOpen=!WKFOLD.pil_wheel;
+  s+='<div class="spanel"><div class="spl wkhead" data-wkfold="pil_wheel">🎯 Roue de la Vie<span style="flex:1"></span><span class="wkchev">'+(wOpen?'▾':'▸')+'</span></div>';
+  if(wOpen){
+    s+='<div class="subhead" style="margin:0 0 6px">Note chaque domaine de 1 à 10. Un rayon faible et toute la roue vibre. Tu vois ce que tu entretiens pendant que tu sprintes sur l\'Armée.</div>';
+    s+=wheelRadar();
+    DOMAINS_VIE.forEach(function(d){
+      var w=(S.wheel||{})[d[0]]||{},open=!!WKFOLD['wd_'+d[0]];
+      s+='<div class="wrow"><div class="wrow-h" data-wfold="'+d[0]+'"><span>'+d[2]+' '+esc(d[1])+'</span><span class="wscore">'+(w.score?w.score+'/10':'—')+' '+(open?'▾':'▸')+'</span></div>';
+      s+='<div class="ritscale" style="margin:6px 0 2px">';
+      for(var nn=1;nn<=10;nn++)s+='<button type="button" class="ritsc'+(String(w.score)===String(nn)?' on':'')+'" data-wscore="'+d[0]+'|'+nn+'">'+nn+'</button>';
+      s+='</div>';
+      if(open){WHEEL_Q.forEach(function(q){s+='<div class="ritq" style="margin-top:6px"><div class="ritl">'+q[1]+'</div><input class="ritin" type="text" data-win="'+d[0]+'|'+q[0]+'" value="'+esc(w[q[0]]||'')+'" placeholder="..."></div>';});}
+      s+='</div>';
+    });
+  }
+  s+='</div>';
+  s+='<div class="subhead" style="margin:10px 2px 0;color:var(--dim2)">Bientôt ici (Phase 3) : M.A.R.S (lundi), bilan hebdo (vendredi) et tes courbes de tendance.</div>';
+  s+='</div>';return s;
 }
 /* ---- Système en boucle : rituels matin / soir (journaling structuré, réponses stockées par jour) ---- */
 var RITUELS={
@@ -3873,6 +3926,11 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritin]"),function(el){el.addEventListener("change",function(){var p=el.getAttribute("data-ritin").split("|");ritSet(p[0],p[1],el.value);});});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritscale]"),function(el){el.onclick=function(){var p=el.getAttribute("data-ritscale").split("|");ritSet(p[0],p[1],+p[2]);render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritdone]"),function(el){el.onclick=function(){ritValidate(el.getAttribute("data-ritdone"));};});
+  // Pilotage : identité + roue de la vie
+  var _idEl=document.querySelector("#view [data-identite]");if(_idEl)_idEl.addEventListener("change",function(){S.identite=_idEl.value;save();});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-wscore]"),function(el){el.onclick=function(){var p=el.getAttribute("data-wscore").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{}).score=+p[1];save();render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-win]"),function(el){el.addEventListener("change",function(){var p=el.getAttribute("data-win").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{})[p[1]]=el.value;save();});});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-wfold]"),function(el){el.onclick=function(){var k='wd_'+el.getAttribute("data-wfold");WKFOLD[k]=!WKFOLD[k];saveWkfold();render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-habtab]"),function(el){el.onclick=function(){habTab=el.getAttribute("data-habtab");render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-openplan]"),function(el){el.onclick=function(){PLANSEL=null;openPlan();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-bilan]"),function(el){el.onclick=function(){reflectWithRobi();};});
