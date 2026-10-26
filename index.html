@@ -649,9 +649,9 @@ function guessProjStat(title){
 function capOf(m){return (m&&STATS[m.stat])?m.stat:guessProjStat(m&&m.title);}
 // Domaine de vie d'un projet (taxonomie unique, partagée avec la Roue de la Vie)
 function guessDomain(m){
-  if(m&&m.domain&&/^(armee|sante|sport|alim|couple|famille|amis|argent|travail|emotions|contrib|apprentissage)$/.test(m.domain))return m.domain;
+  if(m&&m.domain&&/^(sante|sport|alim|couple|famille|amis|argent|travail|emotions|contrib|apprentissage)$/.test(m.domain))return m.domain;
   var t=((m&&m.title||"")+" "+(m&&m.theme||"")+" "+(m&&m.note||"")).toLowerCase();
-  if(/arm[ée]e|a[ée]rien|r[ée]serve|\bjdc\b|cirfa|\bosc\b|s[ée]lection|aviateur|cursus|psychotechn/.test(t))return "armee";
+  if(/arm[ée]e|a[ée]rien|r[ée]serve|\bjdc\b|cirfa|\bosc\b|s[ée]lection|aviateur|cursus|psychotechn/.test(t))return "travail";
   if(/crypto|pimky|\bokx\b|budget|bourse|invest|portefeuille|trading|finance/.test(t))return "argent";
   if(/\bbd\b|volontaires|pacifique|[ée]coles?|dessin|planche|illustration|sc[ée]nario/.test(t))return "contrib";
   if(/couple|do nothing|\bdnfm\b|amoureuse|mariage/.test(t))return "couple";
@@ -821,7 +821,7 @@ function load(){
     if(!("lastReview" in r))r.lastReview=null;if(typeof r.reviewCount!=="number")r.reviewCount=0;if(!("ft" in r))r.ft=null;if(!r.coachStyle)r.coachStyle="robi";
     if(r.hunter&&r.hunter.name==="MATHILDE")r.hunter.name="Mathilde"; // le prénom stocké tout en capitales
     /* Chaque projet appartient à une capacité (migration des projets existants) */
-    if(Array.isArray(r.missions))r.missions.forEach(function(m){if(!m.stat||!STATS[m.stat])m.stat=guessProjStat(m.title);if(!m.domain)m.domain=guessDomain(m);});
+    if(Array.isArray(r.missions))r.missions.forEach(function(m){if(!m.stat||!STATS[m.stat])m.stat=guessProjStat(m.title);if(m.domain==="armee")m.domain="travail";if(!m.domain)m.domain=guessDomain(m);});
     if(!r.structV2&&Array.isArray(r.missions)){
       r.structV2=1;
       // 1. Le rangement voulu : la capacité, c'est le muscle que le projet développe
@@ -2572,7 +2572,7 @@ function prepaCard(){
 }
 /* ---- Système en boucle : Pilotage (Identité + Roue de la Vie) ---- */
 var DOMAINS_VIE=[
- ['armee','Armée','🎖️'],['sante','Santé','❤️'],['sport','Sport','🏋️'],['alim','Alimentation','🥗'],
+ ['sante','Santé','❤️'],['sport','Sport','🏋️'],['alim','Alimentation','🥗'],
  ['couple','Couple','💞'],['famille','Famille','👨‍👩‍👧'],['amis','Amis','🤝'],['argent','Argent','💰'],
  ['travail','Travail / Projets','💼'],['emotions','Émotions','🧠'],['contrib','Contribution','🌍'],['apprentissage','Apprentissage','📚']
 ];
