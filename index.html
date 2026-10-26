@@ -2799,7 +2799,7 @@ function vAujourdhui(){
   if(!totJ)s+='<div class="dpempty">Rien pour aujourd\'hui.</div>';
   s+='</div></div>';
   s+=ritualCard('soir');                                // rituel du soir (journal + humeur fondus : bilan, apprentissage, clôture)
-  s+='<div class="aujbottom">'+missedCard()+citationForgeCard()+'</div>'; // bas : tâches en retard + citation, côte à côte
+  s+='<div class="aujbottom">'+missedCard()+'</div>'; // bas : tâches en retard
   s+='</div>';
   return s;
 }
