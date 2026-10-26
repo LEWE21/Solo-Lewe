@@ -2553,7 +2553,8 @@ var PREPA_ROT=[
  {k:'francais',lab:'Français',ic:'📖',todo:'Aisance verbale : synonymes / antonymes / analogies + orthographe. Tes Quizlet de voca, chronométré.'}
 ];
 var PREPA_DRILL=['Raisonnement','Perception des espaces','Attention','Codage'];
-function prepaFocus(){var n=Math.floor(Date.parse(today()+'T00:00:00Z')/86400000);return PREPA_ROT[((n%3)+3)%3];}
+function prepaRot(){var n=Math.floor(Date.parse(today()+'T00:00:00Z')/86400000);return PREPA_ROT[((n%3)+3)%3];} // suggestion du jour (boucle de 3)
+function prepaFocus(){var sel=ritGet('matin').prepaFocus;if(sel){var f=PREPA_ROT.filter(function(r){return r.k===sel;})[0];if(f)return f;}return prepaRot();} // ton choix du rituel du matin prime
 function prepaGet(){return (S.prepa||{})[today()]||{};}
 function prepaSet(k,v){S.prepa=S.prepa||{};var d=S.prepa[today()]=S.prepa[today()]||{};d[k]=v;save();}
 function prepaCard(){
@@ -2722,7 +2723,13 @@ function ritualCard(mo){
   var s='<div class="spanel ritcard"><div class="spl wkhead" data-wkfold="rit_'+mo+'">'+cfg.t+(done?' <span class="ritok">✓ fait</span>':'')+'<span style="flex:1"></span><span style="font-weight:400;color:var(--dim2);font-size:11px">⏰ '+cfg.hh+'</span><span class="wkchev">'+(open?'▾':'▸')+'</span></div>';
   if(open){
     s+='<div class="subhead" style="margin:0 0 8px">'+cfg.intro+'</div>';
-    if(mo==='matin')s+=defiCard('epictete'); // Épictète : cadrer la journée (tirage stoïcien), au matin
+    if(mo==='matin'){
+      s+=defiCard('epictete'); // Épictète : cadrer la journée (tirage stoïcien), au matin
+      var curF=r.prepaFocus||prepaRot().k;
+      s+='<div class="ritq"><div class="ritl">🎯 Focus Prépa Armée du jour'+(!r.prepaFocus?' <span style="color:var(--dim2)">(suggéré : '+prepaRot().lab+')</span>':'')+'</div><div class="ritscale">';
+      PREPA_ROT.forEach(function(f){s+='<button type="button" class="ritsc'+(curF===f.k?' on':'')+'" data-prepafocus="'+f.k+'" style="width:auto;padding:0 12px;font-size:12px">'+f.ic+' '+esc(f.lab)+'</button>';});
+      s+='</div></div>';
+    }
     cfg.q.forEach(function(q){
       var val=(r[q[0]]!=null)?r[q[0]]:'';
       s+='<div class="ritq"><div class="ritl">'+esc(q[1])+'</div>';
@@ -4079,6 +4086,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritin]"),function(el){el.addEventListener("change",function(){var p=el.getAttribute("data-ritin").split("|");ritSet(p[0],p[1],el.value);});});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritscale]"),function(el){el.onclick=function(){var p=el.getAttribute("data-ritscale").split("|");ritSet(p[0],p[1],+p[2]);render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritdone]"),function(el){el.onclick=function(){ritValidate(el.getAttribute("data-ritdone"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-prepafocus]"),function(el){el.onclick=function(){ritSet('matin','prepaFocus',el.getAttribute("data-prepafocus"));render();};});
   // Pilotage : identité + roue de la vie
   var _idEl=document.querySelector("#view [data-identite]");if(_idEl)_idEl.addEventListener("change",function(){S.identite=_idEl.value;save();});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wscore]"),function(el){el.onclick=function(){var p=el.getAttribute("data-wscore").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{}).score=+p[1];save();render();};});
