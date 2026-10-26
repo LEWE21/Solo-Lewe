@@ -2767,6 +2767,7 @@ function aujRow(q){
   return '<div class="aae-hb flat'+(done?' done':'')+'" draggable="true" data-drag="'+q.id+'" data-droptask="'+q.id+'"><span class="aae-scheck'+(done?' on':'')+'" data-check="'+q.id+'"></span><span class="aae-grip" title="Glisser vers un autre moment">⠿</span><span class="aae-hi">'+ic+'</span><span class="aae-hn">'+esc(q.title)+'</span><span class="aae-gear" data-tset="'+q.id+'" title="Régler (moment, fréquence...)">⚙</span></div>';
 }
 // Onglet AUJOURD'HUI : une carte par moment (Matin / Midi / Soir), chacune mélangeant les items EAE ET les tâches Cockpit du moment. Tout est déplaçable par glisser-déposer.
+var AUJTAB='journee'; // onglet actif dans Aujourd'hui : matin / journee / soir / retard
 function vAujourdhui(){
   var ids=suiviAaeMissionIds();
   var eaeItems=aaeDayItems(ids); // socle matin/soir, sport, habitudes EAE (chacun avec .mo)
@@ -2783,23 +2784,26 @@ function vAujourdhui(){
   var MO=[["matin","🌅 Matin"],["midi","☀️ Midi"],["soir","🌙 Soir"],["libre","🕒 À tout moment"]];
   var s='<div class="solo aujc"><style>.solo.aujc{gap:10px;padding-top:0}.solo.aujc .tbar{margin-bottom:0}.solo.aujc .tbar .tt{font-size:22px}.solo.aujc .tbar small{font-size:12.5px}.solo.aujc .aae-resvbar{margin-bottom:0}.aujcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start}.aujcols .spanel{margin:0}.aujbottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start;margin-top:2px}.aujbottom .spanel,.aujbottom .courbcard{margin:0}.ritcard .ritq{margin:0 0 9px}.ritl{font-size:12px;color:var(--dim);margin-bottom:4px}.ritin{width:100%;font-size:13px;box-sizing:border-box}.ritscale{display:flex;gap:4px;flex-wrap:wrap}.ritsc{width:30px;height:30px;border:1px solid var(--brd);background:var(--panel-2);border-radius:8px;cursor:pointer;color:var(--txt);font-size:12px;font-weight:600}.ritsc.on{background:var(--gold);border-color:var(--gold);color:#1b2430}.ritok{font-size:10.5px;color:var(--mint);font-weight:700;margin-left:6px}.ritsyn{padding:2px 0 2px}.ritsynrow{font-size:12.5px;color:var(--txt);margin:5px 0;line-height:1.4}.ritsynrow b{color:var(--dim);font-weight:600;margin-right:4px}.prepacard{border-left:3px solid var(--gold)}.prepabig{font-size:20px;font-weight:800;color:var(--gold);letter-spacing:-.01em}</style><div class="tbar"><span class="tt">📅 Aujourd\'hui</span><small>Tes rituels, ta prépa et tes tâches du jour</small></div>';
   if(aaeIsReserveDay())s+='<div class="aae-resvbar">🎖️ Jour de réserve — journée plus chargée, mais tu fais ta séance le matin comme d\'habitude.</div>';
-  s+=courbeCard(true);                               // « Où j'en suis » discret, en haut à gauche (permanent)
-  s+=ritualCard('matin');                            // rituel du matin (feuille de route : pourquoi, objectif, 3 actions, ressources)
-  s+=prepaCard();                                    // Prépa Armée : focus du jour (rotation maths/anglais/français) + drill
-  // Liste unique, sans découpage par moment (matin et soir sont gérés par les rituels)
-  var eaeAll=eaeItems.filter(function(it){return !aaeItemFullyDone(it);});
-  var habAll=dueList.filter(function(q){return !doneForToday(q);});
-  var taskOrd=todayT.filter(function(q){return isPlan(q);}).concat(todayT.filter(function(q){return !isPlan(q);}));
-  var totJ=eaeAll.length+habAll.length+taskOrd.length;
-  s+='<div class="spanel"><div class="spl">📅 Ma journée<span style="flex:1"></span>'+(totJ?'<span style="font-weight:400;color:var(--dim2)">'+totJ+'</span>':'')+'</div>';
-  s+='<div class="aae-mzone" data-daypart="libre">';
-  s+=eaeAll.map(function(it){return aaeItemHtml(it);}).join("");
-  s+=habAll.map(function(q){return aujRow(q);}).join("");
-  s+=taskOrd.map(function(q){return aujRow(q);}).join("");
-  if(!totJ)s+='<div class="dpempty">Rien pour aujourd\'hui.</div>';
-  s+='</div></div>';
-  s+=ritualCard('soir');                                // rituel du soir (journal + humeur fondus : bilan, apprentissage, clôture)
-  s+='<div class="aujbottom">'+missedCard()+'</div>'; // bas : tâches en retard
+  s+=courbeCard(true);                               // « Où j'en suis » discret, permanent au-dessus des onglets
+  var AUJTABS=[['matin','🌅 Rituel du matin'],['journee','📅 Ma journée'],['soir','🌙 Rituel du soir'],['retard','⏰ En retard']];
+  s+='<div class="habtabs" style="margin:6px 0 10px;flex-wrap:wrap">'+AUJTABS.map(function(t){return '<button class="habtab'+(AUJTAB===t[0]?' on':'')+'" data-aujtab="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>';
+  if(AUJTAB==='matin'){ s+=ritualCard('matin'); }
+  else if(AUJTAB==='soir'){ s+=ritualCard('soir'); }
+  else if(AUJTAB==='retard'){ s+=missedCard(); }
+  else {                                               // Ma journée : prépa + liste unique
+    s+=prepaCard();
+    var eaeAll=eaeItems.filter(function(it){return !aaeItemFullyDone(it);});
+    var habAll=dueList.filter(function(q){return !doneForToday(q);});
+    var taskOrd=todayT.filter(function(q){return isPlan(q);}).concat(todayT.filter(function(q){return !isPlan(q);}));
+    var totJ=eaeAll.length+habAll.length+taskOrd.length;
+    s+='<div class="spanel"><div class="spl">📅 Ma journée<span style="flex:1"></span>'+(totJ?'<span style="font-weight:400;color:var(--dim2)">'+totJ+'</span>':'')+'</div>';
+    s+='<div class="aae-mzone" data-daypart="libre">';
+    s+=eaeAll.map(function(it){return aaeItemHtml(it);}).join("");
+    s+=habAll.map(function(q){return aujRow(q);}).join("");
+    s+=taskOrd.map(function(q){return aujRow(q);}).join("");
+    if(!totJ)s+='<div class="dpempty">Rien pour aujourd\'hui.</div>';
+    s+='</div></div>';
+  }
   s+='</div>';
   return s;
 }
@@ -4092,6 +4096,7 @@ function bind(){
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritscale]"),function(el){el.onclick=function(){var p=el.getAttribute("data-ritscale").split("|");ritSet(p[0],p[1],+p[2]);render();};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-ritdone]"),function(el){el.onclick=function(){ritValidate(el.getAttribute("data-ritdone"));};});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-prepafocus]"),function(el){el.onclick=function(){ritSet('matin','prepaFocus',el.getAttribute("data-prepafocus"));render();};});
+  Array.prototype.forEach.call(document.querySelectorAll("#view [data-aujtab]"),function(el){el.onclick=function(){AUJTAB=el.getAttribute("data-aujtab");render();};});
   // Pilotage : identité + roue de la vie
   var _idEl=document.querySelector("#view [data-identite]");if(_idEl)_idEl.addEventListener("change",function(){S.identite=_idEl.value;save();});
   Array.prototype.forEach.call(document.querySelectorAll("#view [data-wscore]"),function(el){el.onclick=function(){var p=el.getAttribute("data-wscore").split("|");S.wheel=S.wheel||{};(S.wheel[p[0]]=S.wheel[p[0]]||{}).score=+p[1];save();render();};});
